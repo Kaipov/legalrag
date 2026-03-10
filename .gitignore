@@ -1,0 +1,26 @@
+# Secrets
+.env
+api_key.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Data (downloaded at runtime, large PDFs)
+docs_corpus/
+data/
+questions.json
+
+# Build artifacts
+submission.json
+code_archive.zip
+*.zip
+
+# IDE
+.idea/
+.vscode/
+*.swp
