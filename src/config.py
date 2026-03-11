@@ -1,4 +1,4 @@
-"""
+﻿"""
 Configuration for the ARLC RAG pipeline.
 Extends the starter kit config with additional settings.
 """
@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from dataclasses import dataclass
 
 try:
     from dotenv import load_dotenv
@@ -63,8 +62,12 @@ MIN_CHUNK_TOKENS = 100
 OCR_MIN_CHARS = 50          # if pdfplumber extracts fewer chars, use OCR
 
 # --- Device ---
-import torch
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+try:
+    import torch
+except ImportError:  # pragma: no cover - depends on local environment
+    torch = None
+
+DEVICE = "cuda" if torch is not None and torch.cuda.is_available() else "cpu"
 
 
 def get_llm_api_key() -> str:

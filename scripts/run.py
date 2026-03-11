@@ -1,4 +1,4 @@
-"""
+﻿"""
 Main execution script: download data, answer all questions, submit.
 
 Usage:
@@ -11,6 +11,7 @@ import argparse
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -20,7 +21,7 @@ sys.path.insert(0, str(ROOT / "starter_kit"))
 
 from src.config import (
     ensure_dirs, DOCUMENTS_DIR, DATA_DIR,
-    EVAL_API_KEY, PROJECT_ROOT,
+    EVAL_API_KEY, PROJECT_ROOT, GENERATION_MODEL,
 )
 from src.pipeline import RAGPipeline
 
@@ -87,7 +88,7 @@ def create_code_archive(archive_path: Path) -> Path:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ARLC RAG pipeline — answer and submit")
+    parser = argparse.ArgumentParser(description="ARLC RAG pipeline - answer and submit")
     parser.add_argument("--no-download", action="store_true", help="Skip data download")
     parser.add_argument("--no-submit", action="store_true", help="Don't submit to API")
     parser.add_argument("--dry-run", action="store_true", help="Answer only first 5 questions")
@@ -142,22 +143,24 @@ def main():
 
     for i, question_item in enumerate(questions, 1):
         print(f"[{i}/{len(questions)}] {question_item['id'][:12]}... ({question_item.get('answer_type', '?')})")
+        started_at = time.perf_counter()
 
         try:
             answer = pipeline.answer_question(question_item)
             builder.add_answer(answer)
         except Exception as e:
             logging.error(f"Error on question {question_item['id']}: {e}")
+            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
             # Add a fallback answer to avoid missing questions
             from arlc import SubmissionAnswer, Telemetry, TimingMetrics, UsageMetrics
             builder.add_answer(SubmissionAnswer(
                 question_id=question_item["id"],
                 answer=None,
                 telemetry=Telemetry(
-                    timing=TimingMetrics(ttft_ms=0, tpot_ms=0, total_time_ms=0),
+                    timing=TimingMetrics(ttft_ms=0, tpot_ms=0, total_time_ms=elapsed_ms),
                     retrieval=[],
                     usage=UsageMetrics(input_tokens=0, output_tokens=0),
-                    model_name="gpt-4o",
+                    model_name=GENERATION_MODEL,
                 ),
             ))
 

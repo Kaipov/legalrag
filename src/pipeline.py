@@ -1,5 +1,5 @@
 """
-Main RAG pipeline: question → retrieval → null check → generation → answer + grounding.
+Main RAG pipeline: question в†’ retrieval в†’ null check в†’ generation в†’ answer + grounding.
 
 Orchestrates all components into a single answer_question() function.
 """
@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 import sys
-import time
 from pathlib import Path
 
 # Add starter_kit to path for arlc imports
@@ -16,11 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "starter_kit"))
 import tiktoken
 
 from src.config import GENERATION_MODEL
+from src.constants import NULL_FREE_TEXT_ANSWER
 from src.retrieve.hybrid import HybridRetriever
 from src.retrieve.grounding import collect_grounding_pages
 from src.generate.prompts import build_prompt
 from src.generate.llm import stream_generate
-from src.generate.parse import parse_answer, NULL_MARKER
+from src.generate.parse import parse_answer
 from src.generate.null_detect import detect_null
 
 from arlc.telemetry import TelemetryTimer, TimingMetrics, UsageMetrics, RetrievalRef, Telemetry
@@ -101,7 +101,7 @@ class RAGPipeline:
 
             # For free_text null, give a natural language response
             if answer_type == "free_text":
-                answer_value = "This question cannot be answered based on the available DIFC documents."
+                answer_value = NULL_FREE_TEXT_ANSWER
             else:
                 answer_value = None
 
@@ -174,7 +174,7 @@ class RAGPipeline:
 
         # For free_text null from LLM
         if is_llm_null and answer_type == "free_text":
-            answer_value = "This question cannot be answered based on the available DIFC documents."
+            answer_value = NULL_FREE_TEXT_ANSWER
 
         logger.info(
             f"[{question_id[:8]}] type={answer_type} "

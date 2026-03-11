@@ -1,4 +1,4 @@
-# ARLC RAG Pipeline — Dependencies
+﻿# ARLC RAG Pipeline - Dependencies
 
 # PDF extraction
 pdfplumber>=0.10
@@ -29,3 +29,4 @@ tiktoken
 
 # Utilities
 tqdm
+pytest>=8.0
