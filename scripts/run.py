@@ -1,4 +1,4 @@
-﻿"""
+"""
 Main execution script: download data, answer all questions, submit.
 
 Usage:
@@ -14,6 +14,8 @@ import sys
 import time
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
+
+import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -108,8 +110,21 @@ def main():
         if not EVAL_API_KEY:
             print("WARNING: EVAL_API_KEY not set. Skipping download.")
         else:
-            client = EvaluationClient.from_env()
-            questions = download_data(client)
+            try:
+                client = EvaluationClient.from_env()
+                questions = download_data(client)
+            except requests.HTTPError as e:
+                status_code = getattr(getattr(e, "response", None), "status_code", None)
+                if status_code == 401:
+                    print("WARNING: Evaluation API rejected EVAL_API_KEY (401). Falling back to local data.")
+                else:
+                    print(f"WARNING: Download failed with HTTP {status_code}. Falling back to local data.")
+                logging.warning("Download failed: %s", e)
+                client = None
+            except Exception as e:
+                print(f"WARNING: Download failed ({e}). Falling back to local data.")
+                logging.warning("Download failed: %s", e)
+                client = None
 
     # --- Load questions ---
     if args.questions:
