@@ -12,7 +12,7 @@ CRITICAL RULES:
 1. Answer ONLY based on the provided context. Never use external legal knowledge.
 2. If the context does NOT contain sufficient information to answer the question, respond with exactly: NULL_ANSWER
 3. Be precise and cite specific articles, sections, or provisions from the context.
-4. For legal questions, accuracy is paramount — do not guess or speculate."""
+4. For legal questions, accuracy is paramount - do not guess or speculate."""
 
 TYPE_INSTRUCTIONS = {
     "number": (
@@ -44,7 +44,6 @@ TYPE_INSTRUCTIONS = {
     ),
 }
 
-# For null answer_type in the question itself (already expected null)
 TYPE_INSTRUCTIONS["null"] = "This question has answer_type 'null'. Return exactly: NULL_ANSWER"
 
 
@@ -59,24 +58,24 @@ def build_context_block(chunks: list[tuple[dict, float]]) -> str:
         Formatted context string with source markers
     """
     blocks = []
-    for i, (chunk, score) in enumerate(chunks):
+    for i, (chunk, _score) in enumerate(chunks):
         doc_id = chunk["doc_id"]
         pages = chunk.get("page_numbers", [])
         section = chunk.get("section_path", "")
         title = chunk.get("doc_title", "")
         text = chunk["text"]
 
-        # Source marker for traceability
-        page_str = ", ".join(str(p) for p in pages)
+        page_str = ", ".join(str(page) for page in pages)
         header_parts = []
         if title:
             header_parts.append(title)
         if section:
             header_parts.append(section)
         header_parts.append(f"pages {page_str}")
+        header_parts.append(f"doc {doc_id[:8]}")
 
         header = " | ".join(header_parts)
-        blocks.append(f"[Source {i+1}: {header}]\n{text}")
+        blocks.append(f"[Source {i + 1}: {header}]\n{text}")
 
     return "\n\n---\n\n".join(blocks)
 
@@ -85,6 +84,7 @@ def build_prompt(
     question: str,
     answer_type: str,
     chunks: list[tuple[dict, float]],
+    max_chunks: int | None = None,
 ) -> list[dict]:
     """
     Build the full prompt (messages format) for the LLM.
@@ -93,12 +93,14 @@ def build_prompt(
         question: Question text
         answer_type: Expected answer type (number, boolean, name, etc.)
         chunks: Retrieved chunks with scores
+        max_chunks: Optional cap on how many retrieved chunks to include
 
     Returns:
         List of message dicts for OpenAI chat API
     """
     instruction = TYPE_INSTRUCTIONS.get(answer_type, TYPE_INSTRUCTIONS["free_text"])
-    context = build_context_block(chunks)
+    selected_chunks = chunks[:max_chunks] if max_chunks is not None else chunks
+    context = build_context_block(selected_chunks)
 
     user_message = (
         f"FORMAT INSTRUCTION: {instruction}\n\n"

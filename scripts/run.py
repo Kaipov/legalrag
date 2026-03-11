@@ -22,8 +22,14 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "starter_kit"))
 
 from src.config import (
-    ensure_dirs, DOCUMENTS_DIR, DATA_DIR,
-    EVAL_API_KEY, PROJECT_ROOT, GENERATION_MODEL,
+    DATA_DIR,
+    DOCUMENTS_DIR,
+    ENABLE_RERANKER,
+    EVAL_API_KEY,
+    GENERATION_MODEL,
+    GENERATION_TOP_K,
+    PROJECT_ROOT,
+    ensure_dirs,
 )
 from src.pipeline import RAGPipeline
 
@@ -48,18 +54,16 @@ def load_questions(path: Path | None = None) -> list[dict]:
     """Load questions from local JSON file."""
     path = path or DATA_DIR / "questions.json"
     if not path.exists():
-        # Try public dataset
         alt_path = DATA_DIR / "public_dataset.json"
         if alt_path.exists():
             path = alt_path
         else:
             raise FileNotFoundError(f"No questions file found at {path} or {alt_path}")
 
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    with open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
 
 
-# Directories/files to skip when archiving
 _EXCLUDE_DIRS = {"__pycache__", "data", "index", "storage", ".venv", "venv", "env", ".git", "node_modules"}
 _EXCLUDE_FILES = {".env", "submission.json", "questions.json", "code_archive.zip"}
 
@@ -69,7 +73,7 @@ def create_code_archive(archive_path: Path) -> Path:
     archive_path.parent.mkdir(parents=True, exist_ok=True)
     archive_resolved = archive_path.resolve()
 
-    with ZipFile(archive_path, "w", compression=ZIP_DEFLATED) as zf:
+    with ZipFile(archive_path, "w", compression=ZIP_DEFLATED) as archive:
         for file_path in PROJECT_ROOT.rglob("*"):
             if not file_path.is_file():
                 continue
@@ -80,13 +84,28 @@ def create_code_archive(archive_path: Path) -> Path:
                 continue
             if file_path.name in _EXCLUDE_FILES:
                 continue
-            # Skip large files
-            if file_path.stat().st_size > 10_000_000:  # 10MB
+            if file_path.stat().st_size > 10_000_000:
                 continue
-            zf.write(file_path, file_path.relative_to(PROJECT_ROOT))
+            archive.write(file_path, file_path.relative_to(PROJECT_ROOT))
 
     print(f"Code archive created: {archive_path} ({archive_path.stat().st_size / 1024:.0f} KB)")
     return archive_path
+
+
+def build_architecture_summary() -> str:
+    """Describe the currently active pipeline for the submission metadata."""
+    retrieval_summary = "BM25+bge-m3 hybrid search with RRF fusion"
+    if ENABLE_RERANKER:
+        retrieval_summary += ", bge-reranker-v2-m3 cross-encoder rerank"
+    else:
+        retrieval_summary += ", reranker disabled"
+
+    return (
+        "Hybrid RAG: pdfplumber+PaddleOCR extraction, structure-aware chunking, "
+        f"{retrieval_summary}, "
+        f"gpt-4o streaming generation over top-{GENERATION_TOP_K} chunks, "
+        "3-tier null detection."
+    )
 
 
 def main():
@@ -104,7 +123,6 @@ def main():
 
     ensure_dirs()
 
-    # --- Download ---
     client = None
     if not args.no_download and not args.dry_run:
         if not EVAL_API_KEY:
@@ -113,20 +131,19 @@ def main():
             try:
                 client = EvaluationClient.from_env()
                 questions = download_data(client)
-            except requests.HTTPError as e:
-                status_code = getattr(getattr(e, "response", None), "status_code", None)
+            except requests.HTTPError as exc:
+                status_code = getattr(getattr(exc, "response", None), "status_code", None)
                 if status_code == 401:
                     print("WARNING: Evaluation API rejected EVAL_API_KEY (401). Falling back to local data.")
                 else:
                     print(f"WARNING: Download failed with HTTP {status_code}. Falling back to local data.")
-                logging.warning("Download failed: %s", e)
+                logging.warning("Download failed: %s", exc)
                 client = None
-            except Exception as e:
-                print(f"WARNING: Download failed ({e}). Falling back to local data.")
-                logging.warning("Download failed: %s", e)
+            except Exception as exc:
+                print(f"WARNING: Download failed ({exc}). Falling back to local data.")
+                logging.warning("Download failed: %s", exc)
                 client = None
 
-    # --- Load questions ---
     if args.questions:
         questions = load_questions(Path(args.questions))
     else:
@@ -142,19 +159,11 @@ def main():
 
     print(f"\nLoaded {len(questions)} questions")
 
-    # --- Initialize pipeline ---
     print("\nInitializing RAG pipeline...")
     pipeline = RAGPipeline()
 
-    # --- Answer all questions ---
     print(f"\nAnswering {len(questions)} questions...\n")
-    builder = SubmissionBuilder(
-        architecture_summary=(
-            "Hybrid RAG: pdfplumber+PaddleOCR extraction, structure-aware chunking, "
-            "BM25+bge-m3 hybrid search with RRF fusion, bge-reranker-v2-m3 cross-encoder, "
-            "gpt-4o streaming generation with type-specific prompts, 3-tier null detection."
-        ),
-    )
+    builder = SubmissionBuilder(architecture_summary=build_architecture_summary())
 
     for i, question_item in enumerate(questions, 1):
         print(f"[{i}/{len(questions)}] {question_item['id'][:12]}... ({question_item.get('answer_type', '?')})")
@@ -163,11 +172,11 @@ def main():
         try:
             answer = pipeline.answer_question(question_item)
             builder.add_answer(answer)
-        except Exception as e:
-            logging.error(f"Error on question {question_item['id']}: {e}")
+        except Exception as exc:
+            logging.error(f"Error on question {question_item['id']}: {exc}")
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            # Add a fallback answer to avoid missing questions
             from arlc import SubmissionAnswer, Telemetry, TimingMetrics, UsageMetrics
+
             builder.add_answer(SubmissionAnswer(
                 question_id=question_item["id"],
                 answer=None,
@@ -179,12 +188,10 @@ def main():
                 ),
             ))
 
-    # --- Save ---
     submission_path = PROJECT_ROOT / "submission.json"
     builder.save(str(submission_path))
     print(f"\nSubmission saved to {submission_path}")
 
-    # --- Submit ---
     if not args.no_submit and not args.dry_run:
         if client is None:
             if EVAL_API_KEY:
@@ -200,8 +207,8 @@ def main():
         try:
             response = client.submit_submission(str(submission_path), str(archive_path))
             print(f"Submission response: {json.dumps(response, indent=2)}")
-        except Exception as e:
-            print(f"Submission failed: {e}")
+        except Exception as exc:
+            print(f"Submission failed: {exc}")
     else:
         print("\nSkipping submission (--no-submit or --dry-run)")
 

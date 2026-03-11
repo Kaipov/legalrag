@@ -1,4 +1,4 @@
-﻿"""
+"""
 Configuration for the ARLC RAG pipeline.
 Extends the starter kit config with additional settings.
 """
@@ -55,6 +55,8 @@ SEMANTIC_TOP_K = 30
 RRF_K = 60
 RERANK_TOP_K = 10          # how many chunks to keep after reranking
 RERANK_CANDIDATES = 30     # how many candidates to feed the reranker
+ENABLE_RERANKER = _get("ENABLE_RERANKER", "0").lower() in {"1", "true", "yes", "on"}
+GENERATION_TOP_K = int(_get("GENERATION_TOP_K", "4") or "4")
 
 # --- Chunking Settings ---
 MAX_CHUNK_TOKENS = 1500
