@@ -88,3 +88,4 @@ def ensure_dirs():
     """Create required directories if they don't exist."""
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+

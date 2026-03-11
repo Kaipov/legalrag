@@ -5,13 +5,68 @@ Based on logic from starter kit baseline examples.
 """
 from __future__ import annotations
 
-import re
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 # Marker for null/unanswerable detection
 NULL_MARKER = "NULL_ANSWER"
+_SOURCE_LINE_RE = re.compile(r"^\s*SOURCES?\s*:\s*(.*?)\s*$", re.IGNORECASE | re.MULTILINE)
+_ANSWER_PREFIX_RE = re.compile(r"^\s*ANSWER\s*:\s*", re.IGNORECASE | re.MULTILINE)
+
+
+def extract_source_ids(raw_text: str) -> list[int]:
+    """Extract 1-based source ids from the model response."""
+    text = (raw_text or "").strip()
+    match = _SOURCE_LINE_RE.search(text)
+    raw_ids: list[str]
+
+    if match:
+        source_blob = match.group(1).strip()
+        if not source_blob or source_blob.upper() in {"NONE", "NULL", "N/A"}:
+            return []
+        raw_ids = re.findall(r"\d+", source_blob)
+    else:
+        raw_ids = re.findall(r"\bsource\s*(\d+)\b", text, re.IGNORECASE)
+
+    seen: set[int] = set()
+    source_ids: list[int] = []
+    for raw_id in raw_ids:
+        source_id = int(raw_id)
+        if source_id <= 0 or source_id in seen:
+            continue
+        seen.add(source_id)
+        source_ids.append(source_id)
+
+    return source_ids
+
+
+def extract_answer_text(raw_text: str) -> str:
+    """Strip SOURCES/ANSWER scaffolding and return only the answer body."""
+    text = (raw_text or "").strip()
+    answer_match = _ANSWER_PREFIX_RE.search(text)
+    if answer_match:
+        return text[answer_match.end():].strip()
+
+    lines: list[str] = []
+    for line in text.splitlines():
+        if _SOURCE_LINE_RE.match(line):
+            continue
+        lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def parse_model_output(raw_text: str, answer_type: str):
+    """
+    Parse the raw LLM response into answer value, cited source ids, and answer text.
+
+    Returns:
+        (parsed_answer, source_ids, answer_text)
+    """
+    answer_text = extract_answer_text(raw_text)
+    source_ids = extract_source_ids(raw_text)
+    return parse_answer(answer_text, answer_type), source_ids, answer_text
 
 
 def parse_answer(raw_text: str, answer_type: str):
@@ -20,12 +75,12 @@ def parse_answer(raw_text: str, answer_type: str):
 
     Args:
         raw_text: Raw text from the LLM
-        answer_type: Expected type (number, boolean, name, names, date, free_text, null)
+        answer_type: Expected type (number, boolean, name, etc.)
 
     Returns:
         Parsed answer value (int/float/bool/str/list[str]/None)
     """
-    text = (raw_text or "").strip()
+    text = extract_answer_text(raw_text)
     at = str(answer_type or "free_text").lower()
 
     # Check for null marker first (any type can be null)

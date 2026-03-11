@@ -46,6 +46,13 @@ TYPE_INSTRUCTIONS = {
 
 TYPE_INSTRUCTIONS["null"] = "This question has answer_type 'null'. Return exactly: NULL_ANSWER"
 
+SOURCE_SELECTION_INSTRUCTIONS = """OUTPUT FORMAT:
+SOURCES: <comma-separated source numbers you directly used, e.g. 1,2. Use NONE if the answer is NULL_ANSWER.>
+ANSWER: <the answer only, following the format instruction above>
+
+Use the minimum number of sources needed to support the answer.
+Do not mention source numbers inside the answer text itself."""
+
 
 def build_context_block(chunks: list[tuple[dict, float]]) -> str:
     """
@@ -104,9 +111,10 @@ def build_prompt(
 
     user_message = (
         f"FORMAT INSTRUCTION: {instruction}\n\n"
+        f"{SOURCE_SELECTION_INSTRUCTIONS}\n\n"
         f"CONTEXT:\n{context}\n\n"
         f"QUESTION: {question}\n\n"
-        f"ANSWER:"
+        "Respond using the exact two-line format above."
     )
 
     return [

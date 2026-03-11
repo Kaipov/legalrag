@@ -99,7 +99,8 @@ def build_architecture_summary() -> str:
     return (
         "Hybrid RAG: pdfplumber+PaddleOCR extraction, structure-aware chunking, "
         f"{retrieval_summary}, "
-        f"{GENERATION_MODEL} streaming generation over top-{GENERATION_TOP_K} chunks, "
+        f"{GENERATION_MODEL} streaming generation over adaptive top-k chunks (up to {GENERATION_TOP_K}), "
+        "answer-aware grounding from cited source blocks, "
         "3-tier null detection."
     )
 

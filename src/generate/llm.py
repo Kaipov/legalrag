@@ -13,7 +13,7 @@ from typing import Generator
 
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
 
-from src.config import get_llm_api_key, get_llm_api_base, GENERATION_MODEL, GENERATION_TEMPERATURE
+from src.config import GENERATION_MODEL, GENERATION_TEMPERATURE, get_llm_api_base, get_llm_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ _client: OpenAI | None = None
 _MAX_RETRIES = 4
 _INITIAL_RETRY_DELAY_S = 2.0
 _MAX_RETRY_DELAY_S = 20.0
+_MAX_OUTPUT_TOKENS = 500
 _RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
 
 
@@ -89,19 +90,40 @@ def _compute_retry_delay(exc: Exception, attempt: int) -> float:
     return min(_MAX_RETRY_DELAY_S, base_delay + jitter)
 
 
+def _uses_max_completion_tokens(model: str) -> bool:
+    """GPT-5 chat models require max_completion_tokens instead of max_tokens."""
+    return str(model or "").lower().startswith("gpt-5")
+
+
+def _supports_custom_temperature(model: str) -> bool:
+    """GPT-5 chat models currently only support the default temperature."""
+    return not _uses_max_completion_tokens(model)
+
+
+def _build_create_kwargs(
+    messages: list[dict],
+    model: str,
+    temperature: float,
+) -> dict:
+    kwargs = {
+        "model": model,
+        "messages": messages,
+        "stream": True,
+    }
+    if _supports_custom_temperature(model):
+        kwargs["temperature"] = temperature
+    token_param_name = "max_completion_tokens" if _uses_max_completion_tokens(model) else "max_tokens"
+    kwargs[token_param_name] = _MAX_OUTPUT_TOKENS
+    return kwargs
+
+
 def _stream_once(
     client: OpenAI,
     messages: list[dict],
     model: str,
     temperature: float,
 ) -> Generator[str, None, None]:
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        stream=True,
-        max_tokens=500,
-    )
+    response = client.chat.completions.create(**_build_create_kwargs(messages, model, temperature))
 
     for chunk in response:
         if chunk.choices and chunk.choices[0].delta.content:
@@ -159,3 +181,4 @@ def generate(
     """
     chunks = list(stream_generate(messages, model, temperature))
     return "".join(chunks)
+

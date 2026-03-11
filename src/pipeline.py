@@ -17,7 +17,7 @@ from src.config import GENERATION_MODEL, GENERATION_TOP_K
 from src.constants import NULL_FREE_TEXT_ANSWER
 from src.generate.llm import stream_generate
 from src.generate.null_detect import detect_null
-from src.generate.parse import parse_answer
+from src.generate.parse import parse_model_output
 from src.generate.prompts import build_prompt
 from src.retrieve.grounding import collect_grounding_pages
 from src.retrieve.hybrid import HybridRetriever
@@ -28,6 +28,18 @@ from arlc.telemetry import RetrievalRef, Telemetry, TelemetryTimer, TimingMetric
 logger = logging.getLogger(__name__)
 
 _tokenizer = None
+_GENERATION_TOP_K_BY_TYPE = {
+    "number": 2,
+    "date": 2,
+    "name": 2,
+    "names": 3,
+}
+_GROUNDING_FALLBACK_TOP_K_BY_TYPE = {
+    "number": 1,
+    "date": 1,
+    "name": 1,
+    "names": 2,
+}
 
 
 def _get_tokenizer():
@@ -38,6 +50,40 @@ def _get_tokenizer():
         except KeyError:
             _tokenizer = tiktoken.get_encoding("o200k_base")
     return _tokenizer
+
+
+def _generation_top_k_for(answer_type: str) -> int:
+    """Use narrower prompt context for answer types that are usually single-hop."""
+    answer_type = str(answer_type or "free_text").lower()
+    capped_top_k = _GENERATION_TOP_K_BY_TYPE.get(answer_type, GENERATION_TOP_K)
+    return max(1, min(GENERATION_TOP_K, capped_top_k))
+
+
+def _select_grounding_chunks(
+    answer_type: str,
+    generation_chunks: list[tuple[dict, float]],
+    cited_source_ids: list[int],
+) -> list[tuple[dict, float]]:
+    """Prefer chunks explicitly cited by the model, with a conservative fallback."""
+    if not generation_chunks:
+        return []
+
+    selected_chunks: list[tuple[dict, float]] = []
+    seen_indexes: set[int] = set()
+
+    for source_id in cited_source_ids:
+        chunk_index = source_id - 1
+        if chunk_index < 0 or chunk_index >= len(generation_chunks) or chunk_index in seen_indexes:
+            continue
+        seen_indexes.add(chunk_index)
+        selected_chunks.append(generation_chunks[chunk_index])
+
+    if selected_chunks:
+        return selected_chunks
+
+    answer_type = str(answer_type or "free_text").lower()
+    fallback_top_k = _GROUNDING_FALLBACK_TOP_K_BY_TYPE.get(answer_type, len(generation_chunks))
+    return generation_chunks[: max(1, min(len(generation_chunks), fallback_top_k))]
 
 
 class RAGPipeline:
@@ -114,7 +160,8 @@ class RAGPipeline:
                 ),
             )
 
-        generation_chunks = reranked_chunks[:GENERATION_TOP_K]
+        generation_top_k = _generation_top_k_for(answer_type)
+        generation_chunks = reranked_chunks[:generation_top_k]
         messages = build_prompt(
             question_text,
             answer_type,
@@ -131,15 +178,20 @@ class RAGPipeline:
 
         response_text = "".join(response_chunks)
         output_tokens = len(tokenizer.encode(response_text))
-        answer_value = parse_answer(response_text, answer_type)
+        answer_value, cited_source_ids, answer_text = parse_model_output(response_text, answer_type)
         is_llm_null = answer_value is None
 
-        grounding_refs = collect_grounding_pages(
+        grounding_chunks = _select_grounding_chunks(
+            answer_type,
             generation_chunks,
+            cited_source_ids,
+        )
+        grounding_refs = collect_grounding_pages(
+            grounding_chunks,
             score_threshold=self.grounding_threshold,
             is_null=is_llm_null,
             question_text=question_text,
-            answer_text=response_text,
+            answer_text=answer_text,
         )
         retrieval_refs = [
             RetrievalRef(doc_id=ref["doc_id"], page_numbers=ref["page_numbers"])
@@ -168,6 +220,7 @@ class RAGPipeline:
             f"[{question_id[:8]}] type={answer_type} "
             f"ttft={timing.ttft_ms}ms total={timing.total_time_ms}ms "
             f"prompt_chunks={len(generation_chunks)} "
+            f"used_sources={cited_source_ids or 'fallback'} "
             f"pages={sum(len(ref.page_numbers) for ref in retrieval_refs)} "
             f"answer={str(answer_value)[:50]}"
         )
