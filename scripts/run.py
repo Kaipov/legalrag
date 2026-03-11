@@ -54,11 +54,7 @@ def load_questions(path: Path | None = None) -> list[dict]:
     """Load questions from local JSON file."""
     path = path or DATA_DIR / "questions.json"
     if not path.exists():
-        alt_path = DATA_DIR / "public_dataset.json"
-        if alt_path.exists():
-            path = alt_path
-        else:
-            raise FileNotFoundError(f"No questions file found at {path} or {alt_path}")
+        raise FileNotFoundError(f"No questions file found at {path}")
 
     with open(path, "r", encoding="utf-8") as handle:
         return json.load(handle)
@@ -150,7 +146,7 @@ def main():
         try:
             questions = load_questions()
         except FileNotFoundError:
-            print("ERROR: No questions file found. Run with --no-download=false or provide --questions path.")
+            print("ERROR: No questions file found at data/questions.json. Run without --no-download or provide --questions path.")
             sys.exit(1)
 
     if args.dry_run:

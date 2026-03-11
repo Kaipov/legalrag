@@ -1,4 +1,4 @@
-﻿# ARLC Baseline v1
+# ARLC Baseline v1
 
 Baseline RAG pipeline for the ARLC legal challenge over DIFC documents.
 
@@ -60,7 +60,7 @@ pip install -U "paddleocr[doc-parser]"
 
 ## Typical workflow
 
-1. Put documents into `data/documents/` or download them through the run script.
+1. Put documents into `data/documents/` and questions into `data/questions.json`, or download them through the run script.
 2. Build indices:
 
 ```powershell

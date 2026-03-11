@@ -29,7 +29,7 @@ def load_submission(path: Path) -> dict:
 def load_questions(path: Path | None = None) -> list[dict]:
     path = path or DATA_DIR / "questions.json"
     if not path.exists():
-        path = DATA_DIR / "public_dataset.json"
+        raise FileNotFoundError(f"No questions file found at {path}")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
