@@ -42,10 +42,11 @@ FAISS_IDS = INDEX_DIR / "faiss_ids.json"
 OPENAI_API_KEY = _get("OPENAI_API_KEY")
 OPENROUTER_API_KEY = _get("OPENROUTER_API_KEY")
 EVAL_API_KEY = _get("EVAL_API_KEY")
+LLM_PROVIDER = _get("LLM_PROVIDER").lower()
 
 # --- Model Settings ---
 EMBEDDING_MODEL = "BAAI/bge-m3"
-RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
+RERANKER_MODEL = _get("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
 GENERATION_MODEL = _get("GENERATION_MODEL", "gpt-4.1-mini")
 GENERATION_TEMPERATURE = 0.1
 
@@ -55,7 +56,10 @@ SEMANTIC_TOP_K = 30
 RRF_K = 60
 RERANK_TOP_K = 10          # how many chunks to keep after reranking
 RERANK_CANDIDATES = 30     # how many candidates to feed the reranker
-ENABLE_RERANKER = _get("ENABLE_RERANKER", "0").lower() in {"1", "true", "yes", "on"}
+ENABLE_RERANKER = _get("ENABLE_RERANKER", "1").lower() in {"1", "true", "yes", "on"}
+RERANKER_BATCH_SIZE = max(1, int(_get("RERANKER_BATCH_SIZE", "4") or "4"))
+RERANKER_MAX_LENGTH = max(128, int(_get("RERANKER_MAX_LENGTH", "512") or "512"))
+RERANKER_USE_FP16 = _get("RERANKER_USE_FP16", "1").lower() in {"1", "true", "yes", "on"}
 GENERATION_TOP_K = int(_get("GENERATION_TOP_K", "4") or "4")
 
 # --- Chunking Settings ---
@@ -72,13 +76,29 @@ except ImportError:  # pragma: no cover - depends on local environment
 DEVICE = "cuda" if torch is not None and torch.cuda.is_available() else "cpu"
 
 
-def get_llm_api_key() -> str:
-    """API key for LLM generation (OpenAI preferred, fallback to OpenRouter)."""
+def model_uses_openrouter(model_name: str | None = None) -> bool:
+    """Decide whether the selected model should be routed through OpenRouter."""
+    model_name = str(model_name or GENERATION_MODEL).strip().lower()
+
+    if LLM_PROVIDER == "openrouter":
+        return True
+    if LLM_PROVIDER == "openai":
+        return False
+
+    return bool(OPENROUTER_API_KEY and "/" in model_name)
+
+
+def get_llm_api_key(model_name: str | None = None) -> str:
+    """API key for LLM generation based on the selected model/provider."""
+    if model_uses_openrouter(model_name):
+        return OPENROUTER_API_KEY or OPENAI_API_KEY
     return OPENAI_API_KEY or OPENROUTER_API_KEY
 
 
-def get_llm_api_base() -> str:
-    """API base URL for LLM generation."""
+def get_llm_api_base(model_name: str | None = None) -> str:
+    """API base URL for LLM generation based on the selected model/provider."""
+    if model_uses_openrouter(model_name):
+        return _get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
     if OPENAI_API_KEY:
         return _get("OPENAI_API_BASE", "https://api.openai.com/v1")
     return _get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
@@ -88,4 +108,3 @@ def ensure_dirs():
     """Create required directories if they don't exist."""
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-

@@ -24,8 +24,9 @@ TYPE_INSTRUCTIONS = {
         "No explanation, no qualification."
     ),
     "name": (
-        "Return ONLY the exact name or entity as it appears in the documents. "
-        "No explanation, no additional text."
+        "Return ONLY one exact name, case identifier, claim number, or document name. "
+        "If the question asks you to choose between options, return ONLY the winning option exactly as written in the question. "
+        "Do not return dates, amounts, both options, or a sentence."
     ),
     "names": (
         "Return a semicolon-separated list of exact names only. "

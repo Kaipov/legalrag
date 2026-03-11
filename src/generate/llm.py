@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 # Lazy-initialized client
 _client: OpenAI | None = None
+_client_signature: tuple[str, str] | None = None
 _MAX_RETRIES = 4
 _INITIAL_RETRY_DELAY_S = 2.0
 _MAX_RETRY_DELAY_S = 20.0
@@ -26,16 +27,21 @@ _MAX_OUTPUT_TOKENS = 500
 _RETRYABLE_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
 
 
-def _get_client() -> OpenAI:
-    """Get or create OpenAI client."""
-    global _client
-    if _client is None:
-        api_key = get_llm_api_key()
-        api_base = get_llm_api_base()
-        if not api_key:
-            raise ValueError("No LLM API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY.")
+def _get_client(model: str | None = None) -> OpenAI:
+    """Get or create OpenAI client for the selected provider/model route."""
+    global _client, _client_signature
+
+    selected_model = model or GENERATION_MODEL
+    api_key = get_llm_api_key(selected_model)
+    api_base = get_llm_api_base(selected_model)
+    if not api_key:
+        raise ValueError("No LLM API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY.")
+
+    signature = (api_key, api_base)
+    if _client is None or _client_signature != signature:
         _client = OpenAI(api_key=api_key, base_url=api_base)
-        logger.info("OpenAI client initialized (base=%s, model=%s)", api_base, GENERATION_MODEL)
+        _client_signature = signature
+        logger.info("OpenAI client initialized (base=%s, model=%s)", api_base, selected_model)
     return _client
 
 
@@ -141,8 +147,8 @@ def stream_generate(
     Yields individual text chunks as they arrive.
     Use with TelemetryTimer.mark_token() for TTFT tracking.
     """
-    client = _get_client()
     model = model or GENERATION_MODEL
+    client = _get_client(model)
     temperature = temperature if temperature is not None else GENERATION_TEMPERATURE
 
     attempt = 0
@@ -181,4 +187,3 @@ def generate(
     """
     chunks = list(stream_generate(messages, model, temperature))
     return "".join(chunks)
-

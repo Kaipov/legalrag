@@ -178,7 +178,11 @@ class RAGPipeline:
 
         response_text = "".join(response_chunks)
         output_tokens = len(tokenizer.encode(response_text))
-        answer_value, cited_source_ids, answer_text = parse_model_output(response_text, answer_type)
+        answer_value, cited_source_ids, answer_text = parse_model_output(
+            response_text,
+            answer_type,
+            question_text=question_text,
+        )
         is_llm_null = answer_value is None
 
         grounding_chunks = _select_grounding_chunks(
@@ -230,3 +234,4 @@ class RAGPipeline:
             answer=answer_value,
             telemetry=telemetry,
         )
+

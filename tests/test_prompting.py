@@ -31,6 +31,22 @@ def test_build_prompt_includes_answer_aware_output_contract() -> None:
     assert "Use the minimum number of sources needed" in user_content
 
 
+def test_build_prompt_name_instruction_demands_single_winning_option() -> None:
+    chunks = [
+        ({"doc_id": "doc-1", "page_numbers": [1], "section_path": "Section 1", "doc_title": "Title 1", "text": "Text 1"}, 1.0)
+    ]
+
+    messages = build_prompt(
+        "Between ARB 034/2025 and SCT 295/2025, which was issued first?",
+        "name",
+        chunks,
+    )
+    user_content = messages[1]["content"]
+
+    assert "return ONLY the winning option exactly as written in the question" in user_content
+    assert "Do not return dates, amounts, both options, or a sentence" in user_content
+
+
 def test_build_architecture_summary_reflects_reranker_setting(monkeypatch) -> None:
     monkeypatch.setattr(run_mod, "GENERATION_TOP_K", 4)
 

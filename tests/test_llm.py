@@ -43,7 +43,7 @@ def test_stream_generate_retries_on_rate_limit(monkeypatch) -> None:
     ])
     fake_client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
 
-    monkeypatch.setattr(llm_mod, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(llm_mod, "_get_client", lambda *_args, **_kwargs: fake_client)
     monkeypatch.setattr(llm_mod.time, "sleep", lambda *_args, **_kwargs: None)
 
     output = "".join(llm_mod.stream_generate([{"role": "user", "content": "hi"}]))
@@ -80,3 +80,4 @@ def test_build_create_kwargs_uses_legacy_chat_parameters() -> None:
     assert kwargs["max_tokens"] == 500
     assert "max_completion_tokens" not in kwargs
     assert kwargs["temperature"] == 0.1
+
