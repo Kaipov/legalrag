@@ -33,7 +33,10 @@ _tokenizer = None
 def _get_tokenizer():
     global _tokenizer
     if _tokenizer is None:
-        _tokenizer = tiktoken.encoding_for_model("gpt-4o")
+        try:
+            _tokenizer = tiktoken.encoding_for_model(GENERATION_MODEL)
+        except KeyError:
+            _tokenizer = tiktoken.get_encoding("o200k_base")
     return _tokenizer
 
 
@@ -115,8 +118,7 @@ class RAGPipeline:
         messages = build_prompt(
             question_text,
             answer_type,
-            reranked_chunks,
-            max_chunks=GENERATION_TOP_K,
+            generation_chunks,
         )
 
         prompt_text = " ".join(message["content"] for message in messages)
@@ -133,9 +135,11 @@ class RAGPipeline:
         is_llm_null = answer_value is None
 
         grounding_refs = collect_grounding_pages(
-            reranked_chunks,
+            generation_chunks,
             score_threshold=self.grounding_threshold,
             is_null=is_llm_null,
+            question_text=question_text,
+            answer_text=response_text,
         )
         retrieval_refs = [
             RetrievalRef(doc_id=ref["doc_id"], page_numbers=ref["page_numbers"])

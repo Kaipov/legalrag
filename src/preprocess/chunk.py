@@ -201,6 +201,45 @@ def _split_text_to_fit(text: str, max_tokens: int) -> list[str]:
     return _split_by_paragraphs(text, max_tokens)
 
 
+def _assign_pages_to_split_parts(
+    source_text: str,
+    parts: list[str],
+    page_offsets: list[tuple[int, int, int]],
+    *,
+    base_start: int = 0,
+) -> list[list[int]]:
+    """Map ordered split parts back to the pages they overlap."""
+    assigned_pages: list[list[int]] = []
+    search_start = 0
+
+    for part in parts:
+        if not part:
+            assigned_pages.append([])
+            continue
+
+        match_start = source_text.find(part, search_start)
+        if match_start == -1:
+            probe = part[: min(120, len(part))]
+            if probe:
+                match_start = source_text.find(probe, search_start)
+
+        if match_start == -1:
+            assigned_pages.append([])
+            continue
+
+        match_end = match_start + len(part)
+        assigned_pages.append(
+            _get_pages_for_span(
+                base_start + match_start,
+                base_start + match_end,
+                page_offsets,
+            )
+        )
+        search_start = match_end
+
+    return assigned_pages
+
+
 def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
     """
     Chunk a single document into structure-aware segments.
@@ -252,14 +291,22 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
         if _approx_tokens(pre_text) >= MIN_CHUNK_TOKENS:
             pre_pages = _get_pages_for_span(0, boundaries[0][0], page_char_offsets)
             pre_parts = _split_text_to_fit(pre_text, MAX_CHUNK_TOKENS)
-            for offset, sub_text in enumerate(pre_parts, start=1):
+            pre_part_pages = _assign_pages_to_split_parts(
+                pre_text,
+                pre_parts,
+                page_char_offsets,
+            )
+            for offset, (sub_text, sub_pages) in enumerate(
+                zip(pre_parts, pre_part_pages),
+                start=1,
+            ):
                 section_path = doc_title or "Preamble"
                 if len(pre_parts) > 1:
                     section_path = f"{section_path} (part {offset})"
                 chunks.append({
                     "chunk_id": f"{doc_id}_{chunk_idx:03d}",
                     "doc_id": doc_id,
-                    "page_numbers": pre_pages,
+                    "page_numbers": sub_pages or pre_pages,
                     "section_path": section_path,
                     "doc_title": doc_title,
                     "text": sub_text,
@@ -283,8 +330,16 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
 
         if segment_tokens > MAX_CHUNK_TOKENS:
             sub_texts = _split_text_to_fit(segment_text, MAX_CHUNK_TOKENS)
-            for j, sub_text in enumerate(sub_texts, start=1):
-                sub_pages = _get_pages_for_text(sub_text, full_text, page_char_offsets)
+            sub_pages_by_text = _assign_pages_to_split_parts(
+                segment_text,
+                sub_texts,
+                page_char_offsets,
+                base_start=pos,
+            )
+            for j, (sub_text, sub_pages) in enumerate(
+                zip(sub_texts, sub_pages_by_text),
+                start=1,
+            ):
                 part_section_path = section_path
                 if len(sub_texts) > 1:
                     part_section_path = f"{section_path} (part {j})"

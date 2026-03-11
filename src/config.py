@@ -46,7 +46,7 @@ EVAL_API_KEY = _get("EVAL_API_KEY")
 # --- Model Settings ---
 EMBEDDING_MODEL = "BAAI/bge-m3"
 RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
-GENERATION_MODEL = "gpt-4o"
+GENERATION_MODEL = _get("GENERATION_MODEL", "gpt-4.1-mini")
 GENERATION_TEMPERATURE = 0.1
 
 # --- Retrieval Settings ---
