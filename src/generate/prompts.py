@@ -6,6 +6,8 @@ Context includes source markers for grounding traceability.
 """
 from __future__ import annotations
 
+from src.retrieve.grounding_policy import GroundingIntent
+
 SYSTEM_PROMPT = """You are a legal expert specializing in DIFC (Dubai International Financial Centre) law and regulations.
 
 CRITICAL RULES:
@@ -38,10 +40,10 @@ TYPE_INSTRUCTIONS = {
         "No explanation, no additional text."
     ),
     "free_text": (
-        "Answer in 1-3 concise sentences (maximum 280 characters total). "
-        "Ground every statement in the provided context. "
-        "Express appropriate uncertainty where the context is ambiguous. "
-        "Be clear, relevant, and directly address the question."
+        "Answer in 1-2 short sentences (maximum 220 characters total). "
+        "Prefer the shortest standalone answer that fully resolves the question. "
+        "If a single entity, date, obligation, amount, or outcome phrase is enough, return just that phrase or one short sentence. "
+        "Do not restate the question. Do not begin with 'According to the context', 'The context states', or 'The context does not specify' unless you are returning NULL_ANSWER."
     ),
 }
 
@@ -53,6 +55,27 @@ ANSWER: <the answer only, following the format instruction above>
 
 Use the minimum number of sources needed to support the answer.
 Do not mention source numbers inside the answer text itself."""
+
+
+def _intent_instruction(intent: GroundingIntent | None) -> str:
+    if intent is None or intent.kind == "generic":
+        return ""
+    if intent.kind in {"title_page", "date_of_issue"}:
+        return (
+            "QUESTION-SPECIFIC FOCUS: This is a page-local question. Prioritize first-page title/header/date-of-issue evidence "
+            "over general body text when selecting sources and answering."
+        )
+    if intent.kind == "last_page":
+        return (
+            "QUESTION-SPECIFIC FOCUS: This is a page-local question. Prioritize the last page, conclusion, and 'IT IS HEREBY ORDERED THAT' "
+            "language over earlier procedural background."
+        )
+    if intent.kind in {"judge_compare", "party_compare"}:
+        return (
+            "QUESTION-SPECIFIC FOCUS: This question compares case-file metadata. Prioritize header/caption/title-page details and prefer the "
+            "smallest set of documents needed to resolve the comparison."
+        )
+    return ""
 
 
 def build_context_block(chunks: list[tuple[dict, float]]) -> str:
@@ -93,6 +116,7 @@ def build_prompt(
     answer_type: str,
     chunks: list[tuple[dict, float]],
     max_chunks: int | None = None,
+    intent: GroundingIntent | None = None,
 ) -> list[dict]:
     """
     Build the full prompt (messages format) for the LLM.
@@ -102,6 +126,7 @@ def build_prompt(
         answer_type: Expected answer type (number, boolean, name, etc.)
         chunks: Retrieved chunks with scores
         max_chunks: Optional cap on how many retrieved chunks to include
+        intent: Optional retrieval/grounding intent for page-local steering
 
     Returns:
         List of message dicts for OpenAI chat API
@@ -109,10 +134,12 @@ def build_prompt(
     instruction = TYPE_INSTRUCTIONS.get(answer_type, TYPE_INSTRUCTIONS["free_text"])
     selected_chunks = chunks[:max_chunks] if max_chunks is not None else chunks
     context = build_context_block(selected_chunks)
+    extra_instruction = _intent_instruction(intent)
 
     user_message = (
         f"FORMAT INSTRUCTION: {instruction}\n\n"
         f"{SOURCE_SELECTION_INSTRUCTIONS}\n\n"
+        f"{extra_instruction}\n\n"
         f"CONTEXT:\n{context}\n\n"
         f"QUESTION: {question}\n\n"
         "Respond using the exact two-line format above."

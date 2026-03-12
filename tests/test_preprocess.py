@@ -81,6 +81,82 @@ def test_chunk_document_maps_split_segments_to_narrower_pages(monkeypatch) -> No
     assert not all(chunk["page_numbers"] == [1, 2, 3] for chunk in article_chunks)
 
 
+def test_find_boundaries_detects_numbered_statutory_headings() -> None:
+    text = (
+        "GENERAL PARTNERSHIP LAW\n"
+        "PART 2: FORMATION AND REGISTRATION\n"
+        "13. Recognised Partnership\n"
+        "(1) The Partners of a General Partnership formed outside of the DIFC...\n"
+        "14. Maintenance of Accounting Records\n"
+        "(1) A Recognised Partnership shall keep Accounting Records...\n"
+        "15. Licence\n"
+        "A General Partnership shall hold a Commercial Licence.\n"
+    )
+
+    boundaries = chunk_mod._find_boundaries(text, doc_title="GENERAL PARTNERSHIP LAW")
+    labels = [label for _pos, _kind, label in boundaries]
+
+    assert labels == [
+        "13. Recognised Partnership",
+        "14. Maintenance of Accounting Records",
+        "15. Licence",
+    ]
+
+
+def test_find_boundaries_ignores_inline_article_references() -> None:
+    text = (
+        "OPERATING LAW\n"
+        "PART 3: CONDUCT OF BUSINESS IN THE DIFC\n"
+        "15. Licence\n"
+        "A General Partnership shall hold a Commercial Licence pursuant to\n"
+        "Article 9 of the Operating Law.\n"
+        "16. Conduct of Business in the DIFC\n"
+        "A General Partnership shall comply with the requirements of this Law.\n"
+    )
+
+    boundaries = chunk_mod._find_boundaries(text, doc_title="OPERATING LAW")
+    labels = [label for _pos, _kind, label in boundaries]
+
+    assert labels == [
+        "15. Licence",
+        "16. Conduct of Business in the DIFC",
+    ]
+
+
+def test_find_boundaries_ignores_table_of_contents_lines() -> None:
+    text = (
+        "TRUST LAW\n"
+        "CONTENTS\n"
+        "1. Title ................................................................ 1\n"
+        "2. Legislative authority .................................................. 1\n"
+        "PART 1: GENERAL\n"
+        "1. Title\n"
+        "This Law repeals and replaces the Trust Law 2005.\n"
+    )
+
+    boundaries = chunk_mod._find_boundaries(text, doc_title="TRUST LAW")
+    labels = [label for _pos, _kind, label in boundaries]
+
+    assert labels == ["1. Title"]
+
+
+def test_find_boundaries_accepts_indented_article_heading_with_punctuation() -> None:
+    text = (
+        "DIGITAL ASSETS LAW\n"
+        "  Article 15.\n"
+        "General obligations of issuers\n"
+        "Text body.\n"
+        "  Article 16:\n"
+        "Compliance requirements\n"
+        "More text.\n"
+    )
+
+    boundaries = chunk_mod._find_boundaries(text, doc_title="DIGITAL ASSETS LAW")
+    labels = [label for _pos, _kind, label in boundaries]
+
+    assert labels == ["Article 15.", "Article 16:"]
+
+
 class _FakeEmbeddingClient:
     def __init__(self) -> None:
         self.calls: list[int] = []

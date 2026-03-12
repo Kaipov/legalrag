@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from scripts import run as run_mod
 from src.generate.prompts import build_prompt
+from src.retrieve.grounding_policy import GroundingIntent
 
 
 def test_build_prompt_limits_number_of_sources() -> None:
@@ -45,6 +46,31 @@ def test_build_prompt_name_instruction_demands_single_winning_option() -> None:
 
     assert "return ONLY the winning option exactly as written in the question" in user_content
     assert "Do not return dates, amounts, both options, or a sentence" in user_content
+
+
+def test_build_prompt_free_text_discourages_context_prefaces() -> None:
+    chunks = [
+        ({"doc_id": "doc-1", "page_numbers": [1], "section_path": "Section 1", "doc_title": "Title 1", "text": "Text 1"}, 1.0)
+    ]
+
+    messages = build_prompt("Who administers the Foundations Law?", "free_text", chunks)
+    user_content = messages[1]["content"]
+
+    assert "Do not begin with 'According to the context'" in user_content
+    assert "Prefer the shortest standalone answer" in user_content
+
+
+def test_build_prompt_adds_page_local_instruction_for_date_of_issue() -> None:
+    chunks = [
+        ({"doc_id": "doc-1", "page_numbers": [1], "section_path": "Section 1", "doc_title": "Title 1", "text": "Text 1"}, 1.0)
+    ]
+    intent = GroundingIntent(kind="date_of_issue", page_focus="first")
+
+    messages = build_prompt("Which case has an earlier Date of Issue?", "name", chunks, intent=intent)
+    user_content = messages[1]["content"]
+
+    assert "page-local question" in user_content
+    assert "first-page title/header/date-of-issue evidence" in user_content
 
 
 def test_build_architecture_summary_reflects_reranker_setting(monkeypatch) -> None:

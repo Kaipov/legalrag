@@ -3,7 +3,7 @@ Step 2: Structure-aware chunking of extracted pages.
 
 Strategy:
   - Detect legal document structure via regex (Part, Chapter, Article, Section)
-  - Chunk at Article/Section level (natural legal boundaries)
+  - Chunk at natural legal boundaries (Article/Section headings or numbered statute headings)
   - Short docs (amendments, court orders): single chunk per document
   - Track page numbers for each chunk (1-based PDF pages)
 
@@ -32,32 +32,34 @@ _MAX_APPROX_TO_SKIP_EXACT_MULTIPLIER = 4
 
 # Matches: PART 1, PART I, PART IV, Part One, etc.
 RE_PART = re.compile(
-    r"^(?:PART|Part)\s+(?:[IVXLC]+|\d+|One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten)",
+    r"^\s*(?:PART|Part)\s+(?:[IVXLC]+|\d+|One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten)\b",
     re.MULTILINE,
 )
 
 # Matches: CHAPTER 1, Chapter 2, etc.
 RE_CHAPTER = re.compile(
-    r"^(?:CHAPTER|Chapter)\s+(?:\d+|[IVXLC]+)",
+    r"^\s*(?:CHAPTER|Chapter)\s+(?:\d+|[IVXLC]+)\b",
     re.MULTILINE,
 )
 
-# Matches: Article 1, ARTICLE 15, etc. (primary chunk boundary)
+# Matches: Article 1, ARTICLE 15., Article 15: Heading, etc.
 RE_ARTICLE = re.compile(
-    r"^(?:Article|ARTICLE)\s+(\d+[A-Z]?)",
-    re.MULTILINE,
+    r"^\s*(?:Article|ARTICLE)\s+(?:No\.\s*)?(?P<number>\d+[A-Z]?)(?:(?:\s*[\.:-]\s*|\s+)(?P<title>.*?))?\s*$"
 )
 
-# Matches: Section 1, SECTION 15, etc. (alternative chunk boundary)
+# Matches: Section 1, SECTION 15., Section 15: Heading, etc.
 RE_SECTION = re.compile(
-    r"^(?:Section|SECTION)\s+(\d+[A-Z]?)",
-    re.MULTILINE,
+    r"^\s*(?:Section|SECTION)\s+(?:No\.\s*)?(?P<number>\d+[A-Z]?)(?:(?:\s*[\.:-]\s*|\s+)(?P<title>.*?))?\s*$"
 )
 
 # Matches: Regulation 1, REGULATION 15, Rule 1, etc.
 RE_REGULATION = re.compile(
-    r"^(?:Regulation|REGULATION|Rule|RULE)\s+(\d+[A-Z]?)",
-    re.MULTILINE,
+    r"^\s*(?:Regulation|REGULATION|Rule|RULE)\s+(?:No\.\s*)?(?P<number>\d+[A-Z]?)(?:(?:\s*[\.:-]\s*|\s+)(?P<title>.*?))?\s*$"
+)
+
+# Matches: 13. Recognised Partnership / 39A. Dissolution by expiration or notice
+RE_NUMBERED_HEADING = re.compile(
+    r"^\s*(?P<number>\d+[A-Z]?)\.\s+(?P<title>.*?)\s*$"
 )
 
 # Combined boundary patterns (ordered by specificity)
@@ -66,6 +68,46 @@ BOUNDARY_PATTERNS = [
     ("section", RE_SECTION),
     ("regulation", RE_REGULATION),
 ]
+_CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
+_TOC_DOT_PATTERN = re.compile(r"\.{3,}")
+_INLINE_REFERENCE_TITLE_PREFIXES = (
+    "of ",
+    "or ",
+    "and ",
+    "shall ",
+    "must ",
+    "may ",
+    "is ",
+    "are ",
+    "was ",
+    "were ",
+    "has ",
+    "have ",
+    "had ",
+    "applies ",
+    "means ",
+    "includes ",
+    "include ",
+)
+_HEADING_LOWERCASE_ALLOWLIST = {
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "under",
+    "with",
+}
 
 
 def _approx_tokens(text: str) -> int:
@@ -120,12 +162,107 @@ def _detect_doc_title(pages_text: str) -> str:
     return title_candidates[0] if title_candidates else ""
 
 
-def _find_boundaries(text: str) -> list[tuple[int, str, str]]:
+def _is_statutory_document(doc_title: str, text: str) -> bool:
+    sample = "\n".join(part for part in (doc_title, text[:2000]) if part).upper()
+    if not sample:
+        return False
+    if _CASE_ID_RE.search(sample):
+        return False
+    if any(marker in sample for marker in ("COURT OF", "ORDER WITH REASONS", "CLAIM NO", "CASE NO")):
+        return False
+    if "DIFC LAW NO." in sample:
+        return True
+    return any(keyword in sample for keyword in (" LAW", "LAW ", "REGULATION", "RULES"))
+
+
+def _looks_like_heading_title(title: str) -> bool:
+    title = " ".join((title or "").split())
+    if not title:
+        return True
+    if len(title) > 160:
+        return False
+    if _TOC_DOT_PATTERN.search(title):
+        return False
+    if title.endswith((".", ";")):
+        return False
+    if re.search(r"\s\d+\s*$", title):
+        return False
+
+    words = [word for word in re.findall(r"[A-Za-z][A-Za-z'/-]*", title) if word]
+    if not words:
+        return False
+    if len(words) > 20:
+        return False
+
+    lowercase_disallowed = sum(
+        1
+        for word in words
+        if word[0].islower() and word.lower() not in _HEADING_LOWERCASE_ALLOWLIST
+    )
+    return lowercase_disallowed <= max(1, len(words) // 3)
+
+
+def _is_toc_line(line: str) -> bool:
+    stripped = (line or "").strip()
+    if not stripped:
+        return False
+    if _TOC_DOT_PATTERN.search(stripped):
+        return True
+    return bool(re.search(r"\s\d+\s*$", stripped) and "." in stripped)
+
+
+def _is_valid_prefixed_heading(match: re.Match[str]) -> bool:
+    title = " ".join((match.group("title") or "").split()).strip()
+    if not title:
+        return True
+    lowered = title.lower()
+    if lowered.startswith(_INLINE_REFERENCE_TITLE_PREFIXES):
+        return False
+    return _looks_like_heading_title(title)
+
+
+def _iter_lines_with_offsets(text: str) -> list[tuple[int, str]]:
+    lines: list[tuple[int, str]] = []
+    offset = 0
+    for raw_line in text.splitlines(keepends=True):
+        line = raw_line.rstrip("\r\n")
+        lines.append((offset, line))
+        offset += len(raw_line)
+    return lines
+
+
+def _find_boundaries(text: str, *, doc_title: str = "") -> list[tuple[int, str, str]]:
     """Find structural boundaries as (char_position, boundary_type, label)."""
     boundaries = []
-    for btype, pattern in BOUNDARY_PATTERNS:
-        for match in pattern.finditer(text):
-            boundaries.append((match.start(), btype, match.group(0).strip()))
+    detect_numbered_headings = _is_statutory_document(doc_title, text)
+
+    for line_start, line in _iter_lines_with_offsets(text):
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        indent = len(line) - len(line.lstrip())
+        boundary_pos = line_start + indent
+
+        for btype, pattern in BOUNDARY_PATTERNS:
+            match = pattern.match(line)
+            if not match or not _is_valid_prefixed_heading(match):
+                continue
+            boundaries.append((boundary_pos, btype, stripped))
+            break
+        else:
+            if not detect_numbered_headings or _is_toc_line(line):
+                continue
+
+            match = RE_NUMBERED_HEADING.match(line)
+            if not match:
+                continue
+
+            title = match.group("title") or ""
+            if not _looks_like_heading_title(title):
+                continue
+            boundaries.append((boundary_pos, "article", stripped))
+
     boundaries.sort(key=lambda item: item[0])
     return boundaries
 
@@ -326,7 +463,7 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
             "text": full_text.strip(),
         }]
 
-    boundaries = _find_boundaries(full_text)
+    boundaries = _find_boundaries(full_text, doc_title=doc_title)
     current_part = ""
     current_chapter = ""
 
