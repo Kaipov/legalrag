@@ -250,3 +250,97 @@ def test_answer_question_retries_compare_when_grounding_is_empty(monkeypatch) ->
     assert retrieval_calls == ["party_compare", "generic"]
     assert result.answer is True
     assert result.telemetry.retrieval[0].doc_id == "doc-generic"
+
+
+def test_run_generation_pass_limits_page_retrieval_to_generation_docs(monkeypatch) -> None:
+    call_kwargs: dict[str, object] = {}
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None):
+        return [{"role": "user", "content": "prompt"}]
+
+    def fake_collect_grounding_pages(reranked_chunks, **kwargs):
+        call_kwargs["allowed_doc_ids"] = kwargs.get("allowed_doc_ids")
+        return [{"doc_id": "doc-a", "page_numbers": [1]}]
+
+    monkeypatch.setattr(pipeline_mod, "build_prompt", fake_build_prompt)
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: claimed answer"]))
+    monkeypatch.setattr(
+        pipeline_mod,
+        "parse_model_output",
+        lambda response_text, answer_type, question_text=None: ("claimed answer", [1], "claimed answer"),
+    )
+    monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+
+    timer = pipeline_mod.TelemetryTimer()
+    pipeline_mod._run_generation_pass(
+        "Which claim number is referenced?",
+        "name",
+        [
+            ({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [1], "text": "claim text a"}, 0.9),
+            ({"chunk_id": "c2", "doc_id": "doc-b", "page_numbers": [2], "text": "claim text b"}, 0.8),
+        ],
+        FakeTokenizer(),
+        timer,
+        grounding_threshold=-1.0,
+        intent=None,
+    )
+
+    assert call_kwargs["allowed_doc_ids"] == {"doc-a", "doc-b"}
+
+
+def test_answer_question_ttft_is_marked_before_grounding_collection(monkeypatch) -> None:
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return [({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [1], "text": "claim text"}, 0.9)]
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    class FakeTimer:
+        def __init__(self) -> None:
+            self.marked = False
+
+        def mark_token(self) -> None:
+            self.marked = True
+
+        def finish(self):
+            return pipeline_mod.TimingMetrics(ttft_ms=123, tpot_ms=0, total_time_ms=999)
+
+    fake_timer = FakeTimer()
+    grounding_seen = {"marked": False}
+
+    def fake_collect_grounding_pages(reranked_chunks, **kwargs):
+        grounding_seen["marked"] = fake_timer.marked
+        return [{"doc_id": "doc-a", "page_numbers": [1]}]
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "TelemetryTimer", lambda: fake_timer)
+    monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
+    monkeypatch.setattr(pipeline_mod, "build_prompt", lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}])
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: example answer"]))
+    monkeypatch.setattr(
+        pipeline_mod,
+        "parse_model_output",
+        lambda response_text, answer_type, question_text=None: ("example answer", [1], "example answer"),
+    )
+    monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-ttft-grounding",
+            "question": "What is the claim number?",
+            "answer_type": "name",
+        }
+    )
+
+    assert grounding_seen["marked"] is True
+    assert result.telemetry.timing.ttft_ms == 123
+    assert result.telemetry.timing.total_time_ms == 999

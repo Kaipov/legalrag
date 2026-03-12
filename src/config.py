@@ -1,4 +1,4 @@
-"""
+﻿"""
 Configuration for the ARLC RAG pipeline.
 Extends the starter kit config with additional settings.
 """
@@ -46,6 +46,9 @@ CHUNKS_JSONL = INDEX_DIR / "chunks.jsonl"
 BM25_INDEX = INDEX_DIR / "bm25.pkl"
 FAISS_INDEX = INDEX_DIR / "faiss.index"
 FAISS_IDS = INDEX_DIR / "faiss_ids.json"
+PAGE_BM25_INDEX = INDEX_DIR / "page_bm25.pkl"
+PAGE_FAISS_INDEX = INDEX_DIR / "page_faiss.index"
+PAGE_FAISS_IDS = INDEX_DIR / "page_faiss_ids.json"
 
 # --- API Keys ---
 OPENAI_API_KEY = _get("OPENAI_API_KEY")
@@ -71,6 +74,9 @@ GENERATION_TEMPERATURE = 0.1
 # --- Retrieval Settings ---
 BM25_TOP_K = 30
 SEMANTIC_TOP_K = 30
+PAGE_BM25_TOP_K = max(1, _get_int("PAGE_BM25_TOP_K", 20))
+PAGE_SEMANTIC_TOP_K = max(1, _get_int("PAGE_SEMANTIC_TOP_K", 20))
+PAGE_GROUNDING_TOP_K = max(1, _get_int("PAGE_GROUNDING_TOP_K", 6))
 RRF_K = 60
 RERANK_TOP_K = 10          # how many chunks to keep after reranking
 RERANK_CANDIDATES = 30     # how many candidates to feed the reranker

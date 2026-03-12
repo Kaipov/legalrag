@@ -1,4 +1,4 @@
-"""
+﻿"""
 Main RAG pipeline: question -> retrieval -> null check -> generation -> answer + grounding.
 
 Orchestrates all components into a single answer_question() function.
@@ -249,6 +249,16 @@ def _select_generation_chunks(
     return selected
 
 
+def _generation_doc_ids(generation_chunks: list[tuple[dict, float]]) -> set[str]:
+    doc_ids: set[str] = set()
+    for chunk_with_score in generation_chunks:
+        chunk = chunk_with_score[0]
+        doc_id = str(chunk.get("doc_id") or "").strip()
+        if doc_id:
+            doc_ids.add(doc_id)
+    return doc_ids
+
+
 def _select_grounding_chunks(
     answer_type: str,
     generation_chunks: list[tuple[dict, float]],
@@ -363,6 +373,7 @@ def _run_generation_pass(
         question_text=question_text,
         answer_text=answer_text,
         intent=intent,
+        allowed_doc_ids=_generation_doc_ids(generation_chunks),
     )
     retrieval_refs = [
         RetrievalRef(doc_id=ref["doc_id"], page_numbers=ref["page_numbers"])

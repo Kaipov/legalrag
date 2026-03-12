@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 import re
@@ -28,6 +28,7 @@ class GroundingIntent:
     generation_top_k: int | None = None
     grounding_chunk_top_k: int | None = None
     max_pages_per_chunk: int | None = None
+    max_pages_per_doc: int | None = None
 
     @property
     def is_page_local(self) -> bool:
@@ -69,6 +70,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             generation_top_k=3,
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
+            max_pages_per_doc=1,
         )
 
     if any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
@@ -81,6 +83,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             generation_top_k=3,
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
+            max_pages_per_doc=1,
         )
 
     if any(marker in text for marker in ("last page", "conclusion", "it is hereby ordered that")):
@@ -93,6 +96,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             generation_top_k=3,
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
+            max_pages_per_doc=1,
         )
 
     if "judge" in text and _is_compare_question(text):
@@ -105,6 +109,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             generation_top_k=4,
             grounding_chunk_top_k=3,
             max_pages_per_chunk=2,
+            max_pages_per_doc=1,
         )
 
     if answer_type in {"boolean", "name", "names"} and any(marker in text for marker in _PARTY_MARKERS) and _is_compare_question(text):
@@ -117,9 +122,10 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             generation_top_k=4,
             grounding_chunk_top_k=3,
             max_pages_per_chunk=2,
+            max_pages_per_doc=1,
         )
 
-    return GroundingIntent(kind="generic", case_ids=case_ids)
+    return GroundingIntent(kind="generic", case_ids=case_ids, max_pages_per_doc=2)
 
 
 def _page_focus_bias(intent: GroundingIntent, pages: list[int], doc_max_page: int | None) -> float:
@@ -179,4 +185,5 @@ def score_chunk_for_intent(chunk: dict[str, Any], intent: GroundingIntent, doc_m
     score += min(2, case_hits) * 0.8
 
     return score
+
 

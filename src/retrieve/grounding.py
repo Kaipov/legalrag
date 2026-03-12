@@ -1,20 +1,22 @@
-"""
+﻿"""
 Grounding: collect and filter page references from retrieved chunks.
 
 Grounding uses F-beta (beta=2.5): recall ~6x more important than precision.
 Strategy: start from the chunks used for generation, then prune each chunk
 back down to the pages most likely to contain the supporting evidence.
+If page-level indices are available, run a second page retrieval pass limited
+to the documents already present in generation chunks.
 """
 from __future__ import annotations
 
 import json
 import logging
-import re
 from pathlib import Path
 from typing import Any
 
 from src.config import PAGES_JSONL
 from src.retrieve.grounding_policy import GroundingIntent
+from src.retrieve.lexical import tokenize_legal_text
 
 logger = logging.getLogger(__name__)
 
@@ -23,22 +25,13 @@ DEFAULT_SCORE_THRESHOLD = -1.0  # bge-reranker outputs logits, can be negative
 MAX_PAGES_PER_CHUNK = 2
 MAX_PAGES_PER_WIDE_CHUNK = 3
 _PAGE_TEXTS: dict[str, dict[int, str]] | None = None
-_STOPWORDS = {
-    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-    "have", "has", "had", "do", "does", "did", "will", "would", "could",
-    "should", "may", "might", "shall", "can", "of", "in", "to", "for",
-    "with", "on", "at", "by", "from", "as", "into", "through", "during",
-    "and", "or", "but", "not", "no", "nor", "if", "then", "than",
-    "that", "this", "these", "those", "it", "its",
-}
+_PAGE_RETRIEVER: Any = None
+
 
 
 def _tokenize(text: str) -> set[str]:
-    return {
-        token
-        for token in re.findall(r"[a-z0-9]+", text.lower())
-        if len(token) > 1 and token not in _STOPWORDS
-    }
+    return set(tokenize_legal_text(text))
+
 
 
 def _load_page_texts() -> dict[str, dict[int, str]]:
@@ -66,6 +59,31 @@ def _load_page_texts() -> dict[str, dict[int, str]]:
     return _PAGE_TEXTS
 
 
+
+def _get_page_retriever():
+    global _PAGE_RETRIEVER
+    if _PAGE_RETRIEVER is False:
+        return None
+    if _PAGE_RETRIEVER is not None:
+        return _PAGE_RETRIEVER
+
+    try:
+        from src.retrieve.page_search import PageRetriever
+    except Exception as exc:  # pragma: no cover - defensive import fallback
+        logger.warning("Could not import page retriever; skipping page grounding rescue: %s", exc)
+        _PAGE_RETRIEVER = False
+        return None
+
+    try:
+        _PAGE_RETRIEVER = PageRetriever()
+    except FileNotFoundError:
+        logger.info("Page indices not found; grounding will use chunk-local page selection only")
+        _PAGE_RETRIEVER = False
+        return None
+    return _PAGE_RETRIEVER
+
+
+
 def _page_focus_bonus(page_num: int, doc_last_page: int, intent: GroundingIntent | None) -> float:
     if intent is None or intent.page_focus == "any":
         return 0.0
@@ -90,6 +108,7 @@ def _page_focus_bonus(page_num: int, doc_last_page: int, intent: GroundingIntent
     return 0.0
 
 
+
 def _intent_text_bonus(page_text: str, intent: GroundingIntent | None) -> float:
     if intent is None or intent.kind == "generic":
         return 0.0
@@ -111,6 +130,7 @@ def _intent_text_bonus(page_text: str, intent: GroundingIntent | None) -> float:
     return bonus
 
 
+
 def _score_page(
     page_text: str,
     query_terms: set[str],
@@ -130,11 +150,58 @@ def _score_page(
     return score, chunk_overlap, query_overlap, answer_overlap
 
 
+
 def _intent_page_limit(candidate_pages: list[int], intent: GroundingIntent | None) -> int:
     default_limit = MAX_PAGES_PER_WIDE_CHUNK if len(candidate_pages) > 10 else MAX_PAGES_PER_CHUNK
     if intent is None or intent.max_pages_per_chunk is None:
         return default_limit
     return max(1, min(default_limit, intent.max_pages_per_chunk))
+
+
+
+def _max_pages_per_doc_limit(intent: GroundingIntent | None) -> int:
+    if intent is None or intent.max_pages_per_doc is None:
+        return 2
+    return max(1, int(intent.max_pages_per_doc))
+
+
+
+def _select_top_pages_for_doc(
+    doc_id: str,
+    candidate_pages: list[int],
+    chunk_terms: set[str],
+    query_terms: set[str],
+    answer_terms: set[str],
+    page_texts_by_doc: dict[str, dict[int, str]],
+    intent: GroundingIntent | None,
+) -> list[int]:
+    limit = _max_pages_per_doc_limit(intent)
+    if len(candidate_pages) <= limit:
+        return sorted(candidate_pages)
+
+    doc_pages = page_texts_by_doc.get(doc_id, {})
+    doc_last_page = max(doc_pages.keys(), default=max(candidate_pages))
+    scored_pages: list[tuple[float, int, int, int, int]] = []
+    for page_num in candidate_pages:
+        score, chunk_overlap, query_overlap, answer_overlap = _score_page(
+            doc_pages.get(page_num, ""),
+            query_terms,
+            answer_terms,
+            chunk_terms,
+            page_num,
+            doc_last_page,
+            intent,
+        )
+        scored_pages.append((score, chunk_overlap, query_overlap, answer_overlap, page_num))
+
+    scored_pages.sort(key=lambda item: (-item[0], -item[1], -item[2], -item[3], item[4]))
+
+    if all(item[0] == 0 and item[1] == 0 and item[2] == 0 and item[3] == 0 for item in scored_pages):
+        ranked_pages = _rank_pages_by_intent(candidate_pages, doc_last_page, intent)
+        return sorted(ranked_pages[:limit])
+
+    return sorted(item[4] for item in scored_pages[:limit])
+
 
 
 def _rank_pages_by_intent(
@@ -150,6 +217,7 @@ def _rank_pages_by_intent(
         key=lambda page_num: (-_page_focus_bonus(page_num, doc_last_page, intent), page_num),
     )
     return ranked
+
 
 
 def _select_pages_for_chunk(
@@ -203,6 +271,93 @@ def _select_pages_for_chunk(
     return sorted(item[4] for item in scored_pages[:limit])
 
 
+
+def _normalize_allowed_doc_ids(
+    allowed_doc_ids: set[str] | None,
+    reranked_chunks: list[tuple[dict, float]],
+) -> set[str]:
+    if allowed_doc_ids is not None:
+        return {str(doc_id).strip() for doc_id in allowed_doc_ids if str(doc_id).strip()}
+
+    normalized: set[str] = set()
+    for chunk, _score in reranked_chunks:
+        doc_id = str(chunk.get("doc_id") or "").strip()
+        if doc_id:
+            normalized.add(doc_id)
+    return normalized
+
+
+
+def _is_null_like_answer(answer_text: str) -> bool:
+    normalized = " ".join(str(answer_text or "").strip().lower().split())
+    return normalized in {
+        "",
+        "null",
+        "this question cannot be answered based on the available difc documents.",
+    }
+
+
+
+def _build_page_retrieval_query(
+    question_text: str,
+    answer_text: str,
+    intent: GroundingIntent | None,
+) -> str:
+    parts: list[str] = []
+    question_text = str(question_text or "").strip()
+    if question_text:
+        parts.append(question_text)
+
+    answer_text = str(answer_text or "").strip()
+    if answer_text and not _is_null_like_answer(answer_text):
+        parts.append(answer_text)
+
+    if intent is not None:
+        for phrase in intent.keyphrases[:2]:
+            phrase = str(phrase or "").strip()
+            if phrase:
+                parts.append(phrase)
+
+    deduped_parts: list[str] = []
+    seen_parts: set[str] = set()
+    for part in parts:
+        lowered = part.lower()
+        if lowered in seen_parts:
+            continue
+        seen_parts.add(lowered)
+        deduped_parts.append(part)
+    return "\n".join(deduped_parts)
+
+
+
+def _retrieve_additional_pages(
+    question_text: str,
+    answer_text: str,
+    allowed_doc_ids: set[str],
+    intent: GroundingIntent | None,
+) -> list[tuple[dict[str, Any], float]]:
+    if not allowed_doc_ids:
+        return []
+
+    page_retriever = _get_page_retriever()
+    if page_retriever is None:
+        return []
+
+    retrieval_query = _build_page_retrieval_query(question_text, answer_text, intent)
+    if not retrieval_query:
+        return []
+
+    try:
+        return page_retriever.search(
+            retrieval_query,
+            allowed_doc_ids=allowed_doc_ids,
+        )
+    except Exception as exc:  # pragma: no cover - defensive runtime fallback
+        logger.warning("Page retrieval grounding rescue failed: %s", exc)
+        return []
+
+
+
 def collect_grounding_pages(
     reranked_chunks: list[tuple[dict, float]],
     score_threshold: float = DEFAULT_SCORE_THRESHOLD,
@@ -211,6 +366,7 @@ def collect_grounding_pages(
     answer_text: str = "",
     page_texts_by_doc: dict[str, dict[int, str]] | None = None,
     intent: GroundingIntent | None = None,
+    allowed_doc_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Collect page references for grounding from the chunks used for generation.
@@ -223,6 +379,7 @@ def collect_grounding_pages(
         answer_text: Model answer text for a light grounding bias.
         page_texts_by_doc: Optional injected page-text map for tests.
         intent: Detected grounding intent used for page-local selection priors.
+        allowed_doc_ids: Optional doc restriction for page retrieval rescue.
 
     Returns:
         List of {"doc_id": str, "page_numbers": [int]} for submission.
@@ -232,10 +389,13 @@ def collect_grounding_pages(
         return []
 
     pages_by_doc: dict[str, set[int]] = {}
+    doc_chunk_terms_by_doc: dict[str, set[str]] = {}
     query_terms = _tokenize(question_text)
     answer_terms = _tokenize(answer_text)
     if page_texts_by_doc is None:
         page_texts_by_doc = _load_page_texts()
+
+    normalized_allowed_doc_ids = _normalize_allowed_doc_ids(allowed_doc_ids, reranked_chunks)
 
     for chunk, score in reranked_chunks:
         if score < score_threshold:
@@ -244,6 +404,8 @@ def collect_grounding_pages(
         doc_id = str(chunk.get("doc_id") or "").strip()
         if not doc_id:
             continue
+
+        doc_chunk_terms_by_doc.setdefault(doc_id, set()).update(_tokenize(str(chunk.get("text") or "")))
 
         selected_pages = _select_pages_for_chunk(
             chunk,
@@ -257,9 +419,33 @@ def collect_grounding_pages(
 
         pages_by_doc.setdefault(doc_id, set()).update(selected_pages)
 
+    for page_ref, _score in _retrieve_additional_pages(
+        question_text,
+        answer_text,
+        normalized_allowed_doc_ids,
+        intent,
+    ):
+        doc_id = str(page_ref.get("doc_id") or "").strip()
+        page_num = int(page_ref.get("page_num") or 0)
+        if not doc_id or page_num <= 0:
+            continue
+        if normalized_allowed_doc_ids and doc_id not in normalized_allowed_doc_ids:
+            continue
+        if doc_id in page_texts_by_doc and page_num not in page_texts_by_doc.get(doc_id, {}):
+            continue
+        pages_by_doc.setdefault(doc_id, set()).add(page_num)
+
     result = []
     for doc_id in sorted(pages_by_doc.keys()):
-        pages = sorted(pages_by_doc[doc_id])
+        pages = _select_top_pages_for_doc(
+            doc_id,
+            sorted(pages_by_doc[doc_id]),
+            doc_chunk_terms_by_doc.get(doc_id, set()),
+            query_terms,
+            answer_terms,
+            page_texts_by_doc,
+            intent,
+        )
         if pages:
             result.append({
                 "doc_id": doc_id,
@@ -267,6 +453,7 @@ def collect_grounding_pages(
             })
 
     return result
+
 
 
 def compute_fbeta(
@@ -300,3 +487,4 @@ def compute_fbeta(
     beta_sq = beta ** 2
     f_beta = (1 + beta_sq) * precision * recall / (beta_sq * precision + recall)
     return f_beta
+
