@@ -85,6 +85,7 @@ python -m scripts.evaluate --submission submission.json --strict
 ```powershell
 python -m scripts.compare_answers
 python -m scripts.compare_submissions
+python -m scripts.regression_report --strict
 ```
 
 `golden_submission.json` is the current v3-aligned public-set reference snapshot. The compare scripts default to `golden_submission.json` as baseline and `submission.json` as candidate.
