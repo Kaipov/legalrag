@@ -6,6 +6,7 @@ api_key.txt
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 .venv/
 venv/
 env/
@@ -14,6 +15,7 @@ env/
 docs_corpus/
 data/
 questions.json
+index/
 
 # Build artifacts
 submission.json
@@ -21,6 +23,7 @@ code_archive.zip
 *.zip
 
 # IDE
+.claude/
 .idea/
 .vscode/
 *.swp

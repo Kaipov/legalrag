@@ -1,0 +1,32 @@
+﻿# ARLC RAG Pipeline - Dependencies
+
+# PDF extraction
+pdfplumber>=0.10
+pdf2image>=1.16
+
+# PaddleOCR-VL-1.5 (SOTA document parser, OCR fallback)
+# Install separately due to PaddlePaddle dependency:
+#   pip install paddlepaddle-gpu==3.2.1
+#   pip install -U "paddleocr[doc-parser]"
+
+# Local GPU models (embedding + reranker)
+torch>=2.0
+transformers>=4.36
+sentence-transformers>=2.3
+
+# Search & indexing
+rank-bm25>=0.2
+faiss-cpu>=1.7
+numpy<2.0
+
+# LLM generation
+openai>=1.0
+
+# From starter kit
+requests
+python-dotenv
+tiktoken
+
+# Utilities
+tqdm
+pytest>=8.0
