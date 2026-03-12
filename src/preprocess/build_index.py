@@ -1,4 +1,4 @@
-"""
+﻿"""
 Step 3: Build BM25 and FAISS indices from chunks.
 
 BM25: keyword-based retrieval (rank_bm25 library)
@@ -25,26 +25,12 @@ from src.config import (
     FAISS_INDEX,
 )
 from src.embeddings import GeminiApiError, get_embedding_client
+from src.retrieve.lexical import build_bm25_document_tokens
 
 logger = logging.getLogger(__name__)
 
 
 # --- BM25 Index ---
-
-def _tokenize_for_bm25(text: str) -> list[str]:
-    """Simple tokenization for BM25: lowercase, split on non-alphanumeric."""
-    import re
-
-    tokens = re.findall(r"[a-z0-9]+", text.lower())
-    stopwords = {
-        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "could",
-        "should", "may", "might", "shall", "can", "of", "in", "to", "for",
-        "with", "on", "at", "by", "from", "as", "into", "through", "during",
-        "and", "or", "but", "not", "no", "nor", "if", "then", "than",
-        "that", "this", "these", "those", "it", "its",
-    }
-    return [token for token in tokens if len(token) > 1 and token not in stopwords]
 
 
 def build_bm25_index(
@@ -69,7 +55,7 @@ def build_bm25_index(
         for line in tqdm(handle, desc="Tokenizing for BM25"):
             chunk = json.loads(line)
             chunk_ids.append(chunk["chunk_id"])
-            tokenized_corpus.append(_tokenize_for_bm25(chunk["text"]))
+            tokenized_corpus.append(build_bm25_document_tokens(chunk))
 
     logger.info("Building BM25 index over %s chunks...", len(chunk_ids))
     bm25 = BM25Okapi(tokenized_corpus)
