@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import json
 
-from scripts.compare_submissions import compare_submissions
+from scripts.compare_submissions import (
+    DEFAULT_BASELINE_PATH,
+    DEFAULT_CANDIDATE_PATH,
+    build_parser,
+    compare_submissions,
+)
 
 
 def test_compare_submissions_reports_totals_and_intent_buckets(tmp_path, capsys) -> None:
@@ -85,3 +90,11 @@ def test_compare_submissions_reports_totals_and_intent_buckets(tmp_path, capsys)
     assert "Candidate total pages: 3" in output
     assert "date_of_issue" in output
     assert "title_page" in output
+
+
+def test_compare_submissions_parser_defaults_to_golden_and_submission() -> None:
+    parser = build_parser()
+    args = parser.parse_args([])
+
+    assert args.baseline == str(DEFAULT_BASELINE_PATH)
+    assert args.candidate == str(DEFAULT_CANDIDATE_PATH)

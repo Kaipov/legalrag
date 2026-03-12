@@ -61,7 +61,7 @@ def load_questions(path: Path | None = None) -> list[dict]:
 
 
 _EXCLUDE_DIRS = {"__pycache__", "data", "index", "storage", ".venv", "venv", "env", ".git", "node_modules"}
-_EXCLUDE_FILES = {".env", "submission.json", "questions.json", "code_archive.zip"}
+_EXCLUDE_FILES = {".env", "submission.json", "golden_submission.json", "questions.json", "code_archive.zip"}
 
 
 def create_code_archive(archive_path: Path) -> Path:

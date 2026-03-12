@@ -2,6 +2,7 @@
 Compare grounding density between two submissions.
 
 Usage:
+    python -m scripts.compare_submissions
     python -m scripts.compare_submissions --baseline path/to/old.json --candidate path/to/new.json
 """
 from __future__ import annotations
@@ -15,12 +16,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.config import DATA_DIR
+from src.config import DATA_DIR, PROJECT_ROOT
 
 try:
     from src.retrieve.grounding_policy import detect_grounding_intent as _detect_grounding_intent
 except ImportError:
     _detect_grounding_intent = None
+
+DEFAULT_BASELINE_PATH = PROJECT_ROOT / "golden_submission.json"
+DEFAULT_CANDIDATE_PATH = PROJECT_ROOT / "submission.json"
 
 
 def load_json(path: Path) -> dict | list:
@@ -150,17 +154,37 @@ def compare_submissions(baseline_path: Path, candidate_path: Path, questions_pat
     return 0
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Compare grounding density between two submissions")
-    parser.add_argument("--baseline", required=True, help="Path to the baseline submission JSON")
-    parser.add_argument("--candidate", required=True, help="Path to the candidate submission JSON")
+    parser.add_argument(
+        "--baseline",
+        default=str(DEFAULT_BASELINE_PATH),
+        help=f"Path to the baseline submission JSON (default: {DEFAULT_BASELINE_PATH.name})",
+    )
+    parser.add_argument(
+        "--candidate",
+        default=str(DEFAULT_CANDIDATE_PATH),
+        help=f"Path to the candidate submission JSON (default: {DEFAULT_CANDIDATE_PATH.name})",
+    )
     parser.add_argument("--questions", default=str(DATA_DIR / "questions.json"), help="Path to the questions JSON")
-    args = parser.parse_args()
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
+    baseline_path = Path(args.baseline)
+    candidate_path = Path(args.candidate)
+    if not baseline_path.exists():
+        parser.error(f"baseline submission not found at {baseline_path}")
+    if not candidate_path.exists():
+        parser.error(f"candidate submission not found at {candidate_path}")
 
     raise SystemExit(
         compare_submissions(
-            Path(args.baseline),
-            Path(args.candidate),
+            baseline_path,
+            candidate_path,
             Path(args.questions),
         )
     )

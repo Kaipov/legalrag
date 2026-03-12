@@ -80,7 +80,16 @@ python -m scripts.run --no-submit
 python -m scripts.evaluate --submission submission.json --strict
 ```
 
-5. Run lightweight tests:
+5. Compare the fresh run to the committed golden baseline:
+
+```powershell
+python -m scripts.compare_answers
+python -m scripts.compare_submissions
+```
+
+`golden_submission.json` is the current v3-aligned public-set reference snapshot. The compare scripts default to `golden_submission.json` as baseline and `submission.json` as candidate.
+
+6. Run lightweight tests:
 
 ```powershell
 python -m pytest

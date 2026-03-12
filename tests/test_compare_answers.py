@@ -35,3 +35,11 @@ def test_summarize_answer_changes_detects_changed_answers_and_null_regressions()
 
 def test_answer_signature_is_stable_for_lists() -> None:
     assert compare_answers_mod._answer_signature(["Alpha", "Beta"]) == '["Alpha", "Beta"]'
+
+
+def test_compare_answers_parser_defaults_to_golden_and_submission() -> None:
+    parser = compare_answers_mod.build_parser()
+    args = parser.parse_args([])
+
+    assert args.baseline == str(compare_answers_mod.DEFAULT_BASELINE_PATH)
+    assert args.candidate == str(compare_answers_mod.DEFAULT_CANDIDATE_PATH)
