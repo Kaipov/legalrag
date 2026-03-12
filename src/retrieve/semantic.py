@@ -1,5 +1,5 @@
 """
-Semantic (dense vector) search using FAISS + bge-m3 embeddings.
+Semantic (dense vector) search using FAISS + Gemini embeddings.
 """
 from __future__ import annotations
 
@@ -9,13 +9,14 @@ from pathlib import Path
 
 import numpy as np
 
-from src.config import FAISS_INDEX, FAISS_IDS, EMBEDDING_MODEL, DEVICE
+from src.config import EMBEDDING_MODEL, FAISS_IDS, FAISS_INDEX
+from src.embeddings import get_embedding_client
 
 logger = logging.getLogger(__name__)
 
 
 class SemanticSearcher:
-    """FAISS-based semantic search with local bge-m3 embeddings."""
+    """FAISS-based semantic search with Gemini embedding vectors."""
 
     def __init__(
         self,
@@ -32,21 +33,17 @@ class SemanticSearcher:
         with open(ids_path, "r", encoding="utf-8") as f:
             self.chunk_ids = json.load(f)
 
-        # Load embedding model
-        from sentence_transformers import SentenceTransformer
-        self.model = SentenceTransformer(EMBEDDING_MODEL, device=DEVICE)
+        self.client = get_embedding_client()
 
         logger.info(
-            f"Semantic searcher loaded: {len(self.chunk_ids)} chunks, "
-            f"model={EMBEDDING_MODEL}, device={DEVICE}"
+            "Semantic searcher loaded: %s chunks, model=%s",
+            len(self.chunk_ids),
+            EMBEDDING_MODEL,
         )
 
     def embed_query(self, query: str) -> np.ndarray:
         """Embed a single query."""
-        embedding = self.model.encode(
-            [query], normalize_embeddings=True
-        )
-        return embedding.astype(np.float32)
+        return self.client.embed_query(query).astype(np.float32)
 
     def search(self, query: str, top_k: int = 30) -> list[tuple[str, float]]:
         """

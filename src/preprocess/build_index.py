@@ -2,7 +2,7 @@
 Step 3: Build BM25 and FAISS indices from chunks.
 
 BM25: keyword-based retrieval (rank_bm25 library)
-FAISS: dense vector retrieval (bge-m3 embeddings)
+FAISS: dense vector retrieval (Gemini embeddings via API)
 
 Both indices are saved to index/ directory for online query use.
 """
@@ -19,12 +19,12 @@ from tqdm import tqdm
 from src.config import (
     BM25_INDEX,
     CHUNKS_JSONL,
-    DEVICE,
+    EMBEDDING_BATCH_SIZE,
     EMBEDDING_MODEL,
     FAISS_IDS,
     FAISS_INDEX,
-    MAX_CHUNK_TOKENS,
 )
+from src.embeddings import GeminiApiError, get_embedding_client
 
 logger = logging.getLogger(__name__)
 
@@ -71,84 +71,82 @@ def build_bm25_index(
             chunk_ids.append(chunk["chunk_id"])
             tokenized_corpus.append(_tokenize_for_bm25(chunk["text"]))
 
-    logger.info(f"Building BM25 index over {len(chunk_ids)} chunks...")
+    logger.info("Building BM25 index over %s chunks...", len(chunk_ids))
     bm25 = BM25Okapi(tokenized_corpus)
 
     with open(output_path, "wb") as handle:
         pickle.dump({"bm25": bm25, "chunk_ids": chunk_ids}, handle)
 
-    logger.info(f"BM25 index saved to {output_path}")
+    logger.info("BM25 index saved to %s", output_path)
     return output_path
 
 
 # --- FAISS Index ---
-
-def _load_embedding_model():
-    """Load the embedding model with a sane truncation limit for preprocessing."""
-    from sentence_transformers import SentenceTransformer
-
-    logger.info(f"Loading embedding model {EMBEDDING_MODEL} on {DEVICE}...")
-    model = SentenceTransformer(EMBEDDING_MODEL, device=DEVICE)
-
-    max_seq_length = getattr(model, "max_seq_length", None)
-    if isinstance(max_seq_length, int) and max_seq_length > 0:
-        model.max_seq_length = min(max_seq_length, MAX_CHUNK_TOKENS)
-        logger.info(f"Embedding max_seq_length set to {model.max_seq_length}")
-
-    logger.info(
-        f"Embedding model loaded. Dimension: {model.get_sentence_embedding_dimension()}"
-    )
-    return model
-
 
 def _count_chunks(chunks_path: Path) -> int:
     with open(chunks_path, "r", encoding="utf-8") as handle:
         return sum(1 for _ in handle)
 
 
-def _is_memory_error(exc: RuntimeError) -> bool:
-    message = str(exc).lower()
-    return "out of memory" in message or "not enough memory" in message
+def _is_batch_size_error(exc: Exception) -> bool:
+    if not isinstance(exc, GeminiApiError):
+        return False
+
+    message = f"{exc} {exc.response_text}".lower()
+    if exc.status_code == 413:
+        return True
+    return "payload" in message or "too large" in message or "request size" in message
 
 
-def _clear_torch_cache() -> None:
-    if DEVICE != "cuda":
-        return
-
-    try:
-        import torch
-    except ImportError:  # pragma: no cover - depends on local environment
-        return
-
-    torch.cuda.empty_cache()
+def _build_embedding_title(chunk: dict) -> str | None:
+    doc_title = str(chunk.get("doc_title") or "").strip()
+    section_path = str(chunk.get("section_path") or "").strip()
+    if doc_title and section_path and section_path != doc_title:
+        return f"{doc_title} - {section_path}"
+    return section_path or doc_title or None
 
 
-def _encode_with_backoff(model, texts: list[str], batch_size: int) -> tuple[np.ndarray, int]:
-    """Retry embedding with smaller batch sizes when the runtime runs out of memory."""
+def _encode_with_backoff(
+    client,
+    texts: list[str],
+    batch_size: int,
+    *,
+    titles: list[str | None] | None = None,
+) -> tuple[np.ndarray, int]:
+    """Retry with smaller API batches if a request payload is too large."""
+    if not texts:
+        return np.zeros((0, 0), dtype=np.float32), max(1, batch_size)
+
+    if titles is not None and len(titles) != len(texts):
+        raise ValueError("titles length must match texts length")
+
     effective_batch_size = max(1, min(batch_size, len(texts)))
+    outputs: list[np.ndarray] = []
+    start = 0
 
-    while True:
-        try:
-            embeddings = model.encode(
-                texts,
-                batch_size=effective_batch_size,
-                show_progress_bar=False,
-                normalize_embeddings=True,
-                convert_to_numpy=True,
-            )
-            return embeddings.astype(np.float32), effective_batch_size
-        except RuntimeError as exc:
-            if not _is_memory_error(exc) or effective_batch_size == 1:
-                raise
+    while start < len(texts):
+        current_batch_size = min(effective_batch_size, len(texts) - start)
+        while True:
+            batch_texts = texts[start:start + current_batch_size]
+            batch_titles = titles[start:start + current_batch_size] if titles is not None else None
+            try:
+                outputs.append(client.embed_documents(batch_texts, titles=batch_titles))
+                start += current_batch_size
+                break
+            except Exception as exc:
+                if not _is_batch_size_error(exc) or current_batch_size == 1:
+                    raise
 
-            new_batch_size = max(1, effective_batch_size // 2)
-            logger.warning(
-                "Embedding batch failed with batch_size=%s; retrying with batch_size=%s",
-                effective_batch_size,
-                new_batch_size,
-            )
-            effective_batch_size = new_batch_size
-            _clear_torch_cache()
+                new_batch_size = max(1, current_batch_size // 2)
+                logger.warning(
+                    "Embedding batch failed with batch_size=%s; retrying with batch_size=%s",
+                    current_batch_size,
+                    new_batch_size,
+                )
+                current_batch_size = new_batch_size
+                effective_batch_size = min(effective_batch_size, new_batch_size)
+
+    return np.vstack(outputs).astype(np.float32), effective_batch_size
 
 
 def build_faiss_index(
@@ -166,7 +164,7 @@ def build_faiss_index(
     chunks_path = Path(chunks_path) if chunks_path else CHUNKS_JSONL
     index_path = Path(index_path) if index_path else FAISS_INDEX
     ids_path = Path(ids_path) if ids_path else FAISS_IDS
-    batch_size = batch_size or (8 if DEVICE == "cpu" else 32)
+    batch_size = batch_size or EMBEDDING_BATCH_SIZE
 
     index_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -174,72 +172,79 @@ def build_faiss_index(
     if total_chunks == 0:
         raise ValueError(f"No chunks found in {chunks_path}")
 
+    client = get_embedding_client()
     logger.info(
-        f"Embedding {total_chunks} chunks with {EMBEDDING_MODEL} using batch_size={batch_size}..."
+        "Embedding %s chunks with %s using batch_size=%s...",
+        total_chunks,
+        EMBEDDING_MODEL,
+        batch_size,
     )
 
-    model = _load_embedding_model()
     chunk_ids: list[str] = []
     current_ids: list[str] = []
     current_texts: list[str] = []
+    current_titles: list[str | None] = []
     current_batch_size = max(1, batch_size)
     index = None
     dim = 0
 
-    try:
-        with open(chunks_path, "r", encoding="utf-8") as handle, tqdm(
-            total=total_chunks,
-            desc="Embedding chunks",
-        ) as progress:
-            for line in handle:
-                chunk = json.loads(line)
-                current_ids.append(chunk["chunk_id"])
-                current_texts.append(chunk["text"])
+    with open(chunks_path, "r", encoding="utf-8") as handle, tqdm(
+        total=total_chunks,
+        desc="Embedding chunks",
+    ) as progress:
+        for line in handle:
+            chunk = json.loads(line)
+            current_ids.append(chunk["chunk_id"])
+            current_texts.append(chunk["text"])
+            current_titles.append(_build_embedding_title(chunk))
 
-                if len(current_texts) < current_batch_size:
-                    continue
+            if len(current_texts) < current_batch_size:
+                continue
 
-                batch_embeddings, current_batch_size = _encode_with_backoff(
-                    model,
-                    current_texts,
-                    current_batch_size,
-                )
-                if index is None:
-                    dim = batch_embeddings.shape[1]
-                    index = faiss.IndexFlatIP(dim)
-                index.add(batch_embeddings)
-                chunk_ids.extend(current_ids)
-                progress.update(len(current_ids))
-                current_ids = []
-                current_texts = []
+            batch_embeddings, current_batch_size = _encode_with_backoff(
+                client,
+                current_texts,
+                current_batch_size,
+                titles=current_titles,
+            )
+            if index is None:
+                dim = batch_embeddings.shape[1]
+                index = faiss.IndexFlatIP(dim)
+            index.add(batch_embeddings)
+            chunk_ids.extend(current_ids)
+            progress.update(len(current_ids))
+            current_ids = []
+            current_texts = []
+            current_titles = []
 
-            if current_texts:
-                batch_embeddings, current_batch_size = _encode_with_backoff(
-                    model,
-                    current_texts,
-                    current_batch_size,
-                )
-                if index is None:
-                    dim = batch_embeddings.shape[1]
-                    index = faiss.IndexFlatIP(dim)
-                index.add(batch_embeddings)
-                chunk_ids.extend(current_ids)
-                progress.update(len(current_ids))
+        if current_texts:
+            batch_embeddings, current_batch_size = _encode_with_backoff(
+                client,
+                current_texts,
+                current_batch_size,
+                titles=current_titles,
+            )
+            if index is None:
+                dim = batch_embeddings.shape[1]
+                index = faiss.IndexFlatIP(dim)
+            index.add(batch_embeddings)
+            chunk_ids.extend(current_ids)
+            progress.update(len(current_ids))
 
-        if index is None:
-            raise ValueError(f"Could not build FAISS index from {chunks_path}")
+    if index is None:
+        raise ValueError(f"Could not build FAISS index from {chunks_path}")
 
-        faiss.write_index(index, str(index_path))
-        with open(ids_path, "w", encoding="utf-8") as handle:
-            json.dump(chunk_ids, handle)
+    faiss.write_index(index, str(index_path))
+    with open(ids_path, "w", encoding="utf-8") as handle:
+        json.dump(chunk_ids, handle)
 
-        logger.info(
-            f"FAISS index saved to {index_path} ({len(chunk_ids)} vectors, dim={dim})"
-        )
-        return index_path
-    finally:
-        del model
-        _clear_torch_cache()
+    logger.info(
+        "FAISS index saved to %s (%s vectors, dim=%s)",
+        index_path,
+        len(chunk_ids),
+        dim,
+    )
+    return index_path
 
 
 def build_all_indices(chunks_path: Path | str | None = None) -> None:
@@ -255,4 +260,3 @@ def build_all_indices(chunks_path: Path | str | None = None) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     build_all_indices()
-

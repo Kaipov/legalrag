@@ -24,10 +24,12 @@ sys.path.insert(0, str(ROOT / "starter_kit"))
 from src.config import (
     DATA_DIR,
     DOCUMENTS_DIR,
+    EMBEDDING_MODEL,
     ENABLE_RERANKER,
     EVAL_API_KEY,
     GENERATION_MODEL,
     GENERATION_TOP_K,
+    MAX_CHUNK_TOKENS,
     PROJECT_ROOT,
     ensure_dirs,
 )
@@ -90,7 +92,11 @@ def create_code_archive(archive_path: Path) -> Path:
 
 def build_architecture_summary() -> str:
     """Describe the currently active pipeline for the submission metadata."""
-    retrieval_summary = "BM25+bge-m3 hybrid search with RRF fusion"
+    embedding_label = EMBEDDING_MODEL.split("/")[-1]
+    retrieval_summary = (
+        f"BM25+{embedding_label} hybrid search with RRF fusion over {MAX_CHUNK_TOKENS}-token "
+        "embedding-aware chunks"
+    )
     if ENABLE_RERANKER:
         retrieval_summary += ", bge-reranker-v2-m3 cross-encoder rerank"
     else:
