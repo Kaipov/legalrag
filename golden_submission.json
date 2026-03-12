@@ -139,7 +139,7 @@
     },
     {
       "question_id": "6863a7f4a5e76694620518758411bc743142897fa8077f2a73701b89fa2d0b0f",
-      "answer": "USD 1,500.",
+      "answer": "The maximum fine is USD 1,500.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1003,
@@ -754,7 +754,7 @@
     },
     {
       "question_id": "9596fb754439e6752034890c1272a2df7c0f9000db7d186db21aa232a253fca4",
-      "answer": "Pre-existing Accounts: 31 December 2016. New Accounts: 1 January 2017.",
+      "answer": "The effective date is 31 December 2016 for Pre-existing Accounts and 1 January 2017 for New Accounts.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1053,
@@ -780,7 +780,7 @@
     },
     {
       "question_id": "9f48d8eca6d10cf26f60226078f0d9cb32d3aa2fd25c90c312549cb6265ebd84",
-      "answer": "The Ruler of Dubai.",
+      "answer": "This Law was made by the Ruler of Dubai.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1927,
@@ -968,7 +968,7 @@
     },
     {
       "question_id": "f29159d38bf494e330b32f03507df593d5869a129796a3b7f6efe14fd1b1a0a5",
-      "answer": "The employee's remuneration, gross and net where applicable, and the applicable pay period.",
+      "answer": "The employer must keep records of the employee's remuneration, including gross and net amounts where applicable, and the applicable pay period.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1104,
@@ -1672,7 +1672,7 @@
     },
     {
       "question_id": "87a1294f4e8414adaf49579d914252f4c7a9e90c54a452b5a420bed4934ce335",
-      "answer": "An English translation must be provided to the Relevant Authority on request.",
+      "answer": "The institution must provide an English translation to the Relevant Authority on request.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1022,
@@ -1698,7 +1698,7 @@
     },
     {
       "question_id": "b2fcc22c0bfc27e799fec5df74c911114a91f83d0aa2995729390d6c8cb80c1a",
-      "answer": null,
+      "answer": "The provided DIFC documents do not state the enactment date of the DIFC Personal Property Law 2005.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1580,
@@ -1787,7 +1787,7 @@
     },
     {
       "question_id": "89f4b2e86cf7e48e185b9d5775d67e7c8a51beccbb20abce8dac2a1b0e80b723",
-      "answer": null,
+      "answer": "The provided DIFC documents do not contain information showing whether Miranda rights were properly administered in case ENF 269/2023.",
       "telemetry": {
         "timing": {
           "ttft_ms": 270,
@@ -1806,7 +1806,7 @@
     },
     {
       "question_id": "98d473221f50a845466544b43d6bb52b0497893aade63a8659db228459c271b4",
-      "answer": "November 2024.",
+      "answer": "The consolidated version was published in November 2024.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1312,
@@ -2324,7 +2324,7 @@
     },
     {
       "question_id": "0a414e1d999bcde13b5dac055194ed52527555ac577946acef75372eaad360fa",
-      "answer": null,
+      "answer": "The provided DIFC documents do not contain information about any jury decision in case ENF 269/2023.",
       "telemetry": {
         "timing": {
           "ttft_ms": 174,
@@ -2558,7 +2558,7 @@
     },
     {
       "question_id": "84a7c3564026e528c0a5e6a86a72447b4be016d6aa26ce5ce87843c58a975629",
-      "answer": null,
+      "answer": "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025.",
       "telemetry": {
         "timing": {
           "ttft_ms": 173,
@@ -2780,7 +2780,7 @@
     },
     {
       "question_id": "84941458c4ade946dae84cf5ebc4abf362a6f6e6fec835ba5c43ad2d3b4b14d7",
-      "answer": null,
+      "answer": "The provided DIFC documents do not contain information about parole hearings in case CFI 057/2025.",
       "telemetry": {
         "timing": {
           "ttft_ms": 188,
@@ -2851,7 +2851,7 @@
     },
     {
       "question_id": "095cb50318776a3b8ef11769cd941775694c194924783ee31109c25e3306600e",
-      "answer": "The DIFCA.",
+      "answer": "The DIFCA administers the Employment Law and its Regulations.",
       "telemetry": {
         "timing": {
           "ttft_ms": 971,
@@ -2877,7 +2877,7 @@
     },
     {
       "question_id": "c2cf8224f1166780b25c77feede37101c514517ed61485c9ae31f6b1eb8c744b",
-      "answer": "The Registrar.",
+      "answer": "The Registrar administers the Foundations Law.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1000,
@@ -2903,7 +2903,7 @@
     },
     {
       "question_id": "cd69f5dfe06d2e7afac26c7b332ea925987864cc6730f90cce020d34d823abbe",
-      "answer": "It empowers the Board of Directors of the DIFCA to make Regulations to facilitate the administration of the Law or further its objects.",
+      "answer": "Article 9(1) empowers the Board of Directors of the DIFCA to make Regulations to facilitate the administration of the Law or further its objects.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1008,
@@ -2929,3 +2929,4 @@
     }
   ]
 }
+
