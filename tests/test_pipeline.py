@@ -344,3 +344,45 @@ def test_answer_question_ttft_is_marked_before_grounding_collection(monkeypatch)
     assert grounding_seen["marked"] is True
     assert result.telemetry.timing.ttft_ms == 123
     assert result.telemetry.timing.total_time_ms == 999
+
+
+def test_free_text_null_answer_uses_question_specific_templates() -> None:
+    assert (
+        pipeline_mod._free_text_null_answer("On what date was the DIFC Personal Property Law 2005 enacted?")
+        == "The provided DIFC documents do not state the enactment date of the DIFC Personal Property Law 2005."
+    )
+    assert (
+        pipeline_mod._free_text_null_answer("Were the Miranda rights properly administered in case ENF 269/2023?")
+        == "The provided DIFC documents do not contain information showing whether Miranda rights were properly administered in case ENF 269/2023."
+    )
+
+
+def test_answer_question_uses_question_specific_free_text_abstention(monkeypatch) -> None:
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return []
+
+    class FakeTimer:
+        def mark_token(self) -> None:
+            return None
+
+        def finish(self):
+            return pipeline_mod.TimingMetrics(ttft_ms=12, tpot_ms=0, total_time_ms=12)
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "TelemetryTimer", lambda: FakeTimer())
+    monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: None)
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (True, "forced-null"))
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-free-text-null",
+            "question": "What was the plea bargain in case ARB 034/2025?",
+            "answer_type": "free_text",
+        }
+    )
+
+    assert result.answer == "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025."
+    assert result.telemetry.retrieval == []

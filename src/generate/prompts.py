@@ -40,10 +40,12 @@ TYPE_INSTRUCTIONS = {
         "No explanation, no additional text."
     ),
     "free_text": (
-        "Answer in 1-2 short sentences (maximum 220 characters total). "
-        "Prefer the shortest standalone answer that fully resolves the question. "
-        "If a single entity, date, obligation, amount, or outcome phrase is enough, return just that phrase or one short sentence. "
-        "Do not restate the question. Do not begin with 'According to the context', 'The context states', or 'The context does not specify' unless you are returning NULL_ANSWER."
+        "Answer in one short self-contained sentence by default, and use two short sentences only when the question clearly asks for two distinct facts. "
+        "Target 60-180 characters and never exceed 220 characters total. "
+        "State the answer directly in a standalone sentence, not as a fragment like 'USD 1,500.' or 'The DIFCA.' "
+        "Include every fact the question asks for, but do not add extra details that were not requested. "
+        "For outcome or order questions, state the ruling first and mention costs only if the question asks for costs or costs are part of the ruling itself. "
+        "Do not restate the question. Do not begin with 'According to the context', 'The context states', or 'The context does not specify'. If the context is insufficient, return NULL_ANSWER."
     ),
 }
 
@@ -55,6 +57,14 @@ ANSWER: <the answer only, following the format instruction above>
 
 Use the minimum number of sources needed to support the answer.
 Do not mention source numbers inside the answer text itself."""
+
+FREE_TEXT_POLICY_INSTRUCTIONS = """FREE-TEXT POLICY:
+- Prefer one standalone sentence that can be read without the question.
+- If the answer is a person, entity, date, amount, obligation, or publication date, write a full sentence rather than a noun phrase.
+- If the question asks for multiple requested items, include all of them and nothing extra.
+- For result or ruling questions, lead with the result; include costs only when asked or clearly integral to the ruling.
+- Do not hedge when the answer is explicit, and do not speculate when it is not explicit.
+- If the answer is missing from the context, return NULL_ANSWER rather than saying that the result is unspecified or unclear."""
 
 
 def _intent_instruction(intent: GroundingIntent | None) -> str:
@@ -76,6 +86,34 @@ def _intent_instruction(intent: GroundingIntent | None) -> str:
             "smallest set of documents needed to resolve the comparison."
         )
     return ""
+
+
+def _free_text_question_policy(question: str) -> str:
+    lower = str(question or "").lower()
+    policies: list[str] = []
+
+    outcome_markers = (
+        "what was the outcome",
+        "what was the result",
+        "final ruling",
+        "how did the court of appeal rule",
+        "how did the court rule",
+        "what did the court decide",
+        "it is hereby ordered that",
+        "conclusion section",
+        "what was the court's final ruling",
+    )
+    if any(marker in lower for marker in outcome_markers):
+        policies.append(
+            "OUTCOME QUESTION RULE: If any source states a ruling such as dismissed, refused, granted, allowed, discharged, restored, proceed to trial, or no order as to costs, state that ruling directly. Do not answer that the outcome or result is unspecified if such ruling language appears in the context. Do not substitute hearing dates, judge names, or procedural background for the ruling."
+        )
+
+    if any(marker in lower for marker in ("is there any information about", "plea bargain", "jury decide", "miranda rights")):
+        policies.append(
+            "ABSTENTION RULE: If the requested fact is absent, prefer NULL_ANSWER rather than a vague sentence about the context being unclear or unspecified."
+        )
+
+    return "\n".join(policies)
 
 
 def build_context_block(chunks: list[tuple[dict, float]]) -> str:
@@ -131,14 +169,19 @@ def build_prompt(
     Returns:
         List of message dicts for OpenAI chat API
     """
-    instruction = TYPE_INSTRUCTIONS.get(answer_type, TYPE_INSTRUCTIONS["free_text"])
+    normalized_answer_type = str(answer_type or "free_text").lower()
+    instruction = TYPE_INSTRUCTIONS.get(normalized_answer_type, TYPE_INSTRUCTIONS["free_text"])
     selected_chunks = chunks[:max_chunks] if max_chunks is not None else chunks
     context = build_context_block(selected_chunks)
     extra_instruction = _intent_instruction(intent)
+    free_text_policy = FREE_TEXT_POLICY_INSTRUCTIONS if normalized_answer_type == "free_text" else ""
+    question_policy = _free_text_question_policy(question) if normalized_answer_type == "free_text" else ""
 
     user_message = (
         f"FORMAT INSTRUCTION: {instruction}\n\n"
         f"{SOURCE_SELECTION_INSTRUCTIONS}\n\n"
+        f"{free_text_policy}\n\n"
+        f"{question_policy}\n\n"
         f"{extra_instruction}\n\n"
         f"CONTEXT:\n{context}\n\n"
         f"QUESTION: {question}\n\n"

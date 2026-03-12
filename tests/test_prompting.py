@@ -57,7 +57,20 @@ def test_build_prompt_free_text_discourages_context_prefaces() -> None:
     user_content = messages[1]["content"]
 
     assert "Do not begin with 'According to the context'" in user_content
-    assert "Prefer the shortest standalone answer" in user_content
+    assert "standalone sentence" in user_content
+    assert "not as a fragment like 'USD 1,500.' or 'The DIFCA.'" in user_content
+
+
+def test_build_prompt_free_text_policy_discourages_extra_outcome_details() -> None:
+    chunks = [
+        ({"doc_id": "doc-1", "page_numbers": [1], "section_path": "Section 1", "doc_title": "Title 1", "text": "Text 1"}, 1.0)
+    ]
+
+    messages = build_prompt("What was the outcome of the application?", "free_text", chunks)
+    user_content = messages[1]["content"]
+
+    assert "For outcome or order questions, state the ruling first" in user_content
+    assert "mention costs only if the question asks for costs" in user_content
 
 
 def test_build_prompt_adds_page_local_instruction_for_date_of_issue() -> None:
@@ -84,3 +97,14 @@ def test_build_architecture_summary_reflects_reranker_setting(monkeypatch) -> No
     monkeypatch.setattr(run_mod, "ENABLE_RERANKER", True)
     summary_with_reranker = run_mod.build_architecture_summary()
     assert "cross-encoder rerank" in summary_with_reranker
+
+def test_build_prompt_adds_outcome_question_rule() -> None:
+    chunks = [
+        ({"doc_id": "doc-1", "page_numbers": [1], "section_path": "Section 1", "doc_title": "Title 1", "text": "Text 1"}, 1.0)
+    ]
+
+    messages = build_prompt("What was the result of the application heard in case CFI 057/2025?", "free_text", chunks)
+    user_content = messages[1]["content"]
+
+    assert "OUTCOME QUESTION RULE" in user_content
+    assert "Do not answer that the outcome or result is unspecified" in user_content

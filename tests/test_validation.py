@@ -1,4 +1,4 @@
-﻿from src.constants import NULL_FREE_TEXT_ANSWER
+from src.constants import NULL_FREE_TEXT_ANSWER
 from src.validation import validate_answer_value, validate_telemetry_payload
 
 
@@ -13,6 +13,20 @@ def test_validate_answer_value_checks_boolean_shape():
 def test_validate_telemetry_allows_null_free_text_with_empty_sources():
     payload = {
         "answer": NULL_FREE_TEXT_ANSWER,
+        "telemetry": {
+            "timing": {"ttft_ms": 10, "tpot_ms": 0, "total_time_ms": 10},
+            "retrieval": {"retrieved_chunk_pages": []},
+            "usage": {"input_tokens": 0, "output_tokens": 0},
+            "model_name": "gpt-4o",
+        },
+    }
+
+    assert validate_telemetry_payload(payload) == []
+
+
+def test_validate_telemetry_allows_question_specific_free_text_abstention_with_empty_sources():
+    payload = {
+        "answer": "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025.",
         "telemetry": {
             "timing": {"ttft_ms": 10, "tpot_ms": 0, "total_time_ms": 10},
             "retrieval": {"retrieved_chunk_pages": []},

@@ -1,4 +1,4 @@
-# ARLC — Agentic RAG Legal Challenge
+# ARLC - Agentic RAG Legal Challenge
 
 ## Quick Reference
 - **Competition**: ARLC (agentic-challenge.ai)
@@ -30,7 +30,13 @@ FinalScore = base_QA_score * grounding * completeness * TTFT_multiplier
 
 ## Key Rules
 - Documents can be pre-processed (indexed, embedded, etc.)
-- Questions arrive "online" — TTFT measured from question receipt
+- Questions arrive "online" - TTFT measured from question receipt
 - `null` answer = question not covered by corpus; grounding sources must be empty
 - Submission = JSON (answers + telemetry) + code archive
 - Code must be reproducible: deps, README, .env.example
+- Pre-submit benchmark gate: compare every candidate submission against `golden_submission.json` before platform submission
+
+## Benchmark Gate
+- `golden_submission.json` is the repository benchmark for the public set.
+- The warmup platform evaluated it at `deterministic=1.000` and `grounding=0.941431` on March 12, 2026.
+- Because of that benchmark strength, no candidate submission should be sent to the platform until it has been compared against `golden_submission.json` and the regressions have been reviewed.

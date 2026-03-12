@@ -70,3 +70,14 @@ def test_parse_model_output_uses_question_text_for_name_cleanup():
     assert answer_value == "SCT 295/2025"
     assert source_ids == [1]
     assert answer_text == "SCT 295/2025 was issued first."
+
+
+def test_parse_free_text_strips_leading_context_boilerplate():
+    assert (
+        parse_answer("According to the context, the DIFCA administers the Employment Law.", "free_text")
+        == "the DIFCA administers the Employment Law."
+    )
+
+
+def test_parse_free_text_strips_the_answer_is_prefix():
+    assert parse_answer("The answer is USD 1,500.", "free_text") == "USD 1,500."

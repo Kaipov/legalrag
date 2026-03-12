@@ -1,4 +1,4 @@
-﻿"""
+"""
 Main RAG pipeline: question -> retrieval -> null check -> generation -> answer + grounding.
 
 Orchestrates all components into a single answer_question() function.
@@ -6,6 +6,7 @@ Orchestrates all components into a single answer_question() function.
 from __future__ import annotations
 
 import logging
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -53,6 +54,50 @@ def _get_tokenizer():
         except KeyError:
             _tokenizer = tiktoken.get_encoding("o200k_base")
     return _tokenizer
+
+
+_AUXILIARY_NULL_QUESTION_RE = re.compile(r"^(is|are|was|were|did|does|do|can|could|has|have|had)\s+(.+)$", re.IGNORECASE)
+
+
+def _free_text_null_answer(question_text: str) -> str:
+    normalized = re.sub(r"\s+", " ", str(question_text or "")).strip().rstrip(" ?")
+    if not normalized:
+        return NULL_FREE_TEXT_ANSWER
+
+    lower = normalized.lower()
+    if lower.startswith("is there any information about "):
+        detail = normalized[len("Is there any information about "):].strip()
+        if detail:
+            return f"The provided DIFC documents do not contain information about {detail}."
+
+    if lower.startswith("what was the plea bargain in "):
+        detail = normalized[len("What was the plea bargain in "):].strip()
+        if detail:
+            return f"The provided DIFC documents do not contain information about any plea bargain in {detail}."
+
+    if lower.startswith("what did the jury decide in "):
+        detail = normalized[len("What did the jury decide in "):].strip()
+        if detail:
+            return f"The provided DIFC documents do not contain information about any jury decision in {detail}."
+
+    if lower.startswith("were the miranda rights properly administered in "):
+        detail = normalized[len("Were the Miranda rights properly administered in "):].strip()
+        if detail:
+            return f"The provided DIFC documents do not contain information showing whether Miranda rights were properly administered in {detail}."
+
+    if lower.startswith("on what date was ") and lower.endswith(" enacted"):
+        detail = normalized[len("On what date was "):-len(" enacted")].strip()
+        if detail:
+            return f"The provided DIFC documents do not state the enactment date of {detail}."
+
+    auxiliary_match = _AUXILIARY_NULL_QUESTION_RE.match(normalized)
+    if auxiliary_match:
+        detail = auxiliary_match.group(2).strip()
+        if detail:
+            detail = detail[0].lower() + detail[1:] if len(detail) > 1 else detail.lower()
+            return f"The provided DIFC documents do not contain information showing whether {detail}."
+
+    return NULL_FREE_TEXT_ANSWER
 
 
 def _chunk_identity(chunk_with_score: tuple[dict, float]) -> str:
@@ -501,7 +546,7 @@ class RAGPipeline:
             logger.info(f"[{question_id[:8]}] NULL detected: {null_reason}")
             timer.mark_token()
             timing = timer.finish()
-            answer_value = NULL_FREE_TEXT_ANSWER if answer_type == "free_text" else None
+            answer_value = _free_text_null_answer(question_text) if answer_type == "free_text" else None
 
             return SubmissionAnswer(
                 question_id=question_id,
@@ -579,7 +624,7 @@ class RAGPipeline:
         )
 
         if is_llm_null and answer_type == "free_text":
-            answer_value = NULL_FREE_TEXT_ANSWER
+            answer_value = _free_text_null_answer(question_text)
 
         retrieval_mode = "compare_fallback" if compare_bias_disabled else "intent_bias"
         if active_intent is None or active_intent.kind == "generic":
