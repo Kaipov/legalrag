@@ -125,8 +125,7 @@
             {
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
-                10,
-                11
+                10
               ]
             }
           ]
@@ -152,7 +151,7 @@
             {
               "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
               "page_numbers": [
-                45,
+                6,
                 46
               ]
             }
@@ -179,8 +178,7 @@
             {
               "doc_id": "72ea171147bf30326fe6fd2e6798f607c7cef4bf9d43761dbccd2f1b6a356849",
               "page_numbers": [
-                5,
-                40
+                5
               ]
             }
           ]
@@ -270,14 +268,7 @@
             {
               "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
-                1,
                 2
-              ]
-            },
-            {
-              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
-              "page_numbers": [
-                3
               ]
             }
           ]
@@ -333,13 +324,19 @@
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
+              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
               "page_numbers": [
                 1
               ]
             },
             {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
+              "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
               "page_numbers": [
                 1
               ]
@@ -493,10 +490,33 @@
         "retrieval": {
           "retrieved_chunk_pages": [
             {
+              "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                1,
-                37
+                1
+              ]
+            },
+            {
+              "doc_id": "4e387152960c1029b3711cacb05b287b13c977bc61f2558059a62b7b427a62eb",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "536bbce854b9406cc22697e04fcdabd645e030c0e55b918252643b00e0b2b25f",
+              "page_numbers": [
+                1
               ]
             },
             {
@@ -504,11 +524,23 @@
               "page_numbers": [
                 1
               ]
+            },
+            {
+              "doc_id": "fbdd7f9dd299d83b1f398778da2e6765dfaaed62005667264734a1f76ec09071",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "ff746f7b583490a80ba104361c0a82a1ebbf7ed9097cd03dc49d744cb5057761",
+              "page_numbers": [
+                1
+              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 995,
+          "input_tokens": 6708,
           "output_tokens": 45
         },
         "model_name": "gpt-4.1-mini"
@@ -554,8 +586,7 @@
             {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             }
           ]
@@ -611,7 +642,19 @@
               ]
             },
             {
+              "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
+              "page_numbers": [
+                2
+              ]
+            },
+            {
               "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "839de9798f377492eee68f82b202d7cd3544be83d799f6226a02f3678c9bb914",
               "page_numbers": [
                 1
               ]
@@ -667,12 +710,6 @@
               "page_numbers": [
                 1,
                 2
-              ]
-            },
-            {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
               ]
             }
           ]
@@ -730,8 +767,7 @@
             {
               "doc_id": "fbdd7f9dd299d83b1f398778da2e6765dfaaed62005667264734a1f76ec09071",
               "page_numbers": [
-                3,
-                17
+                3
               ]
             }
           ]
@@ -757,8 +793,7 @@
             {
               "doc_id": "536bbce854b9406cc22697e04fcdabd645e030c0e55b918252643b00e0b2b25f",
               "page_numbers": [
-                18,
-                20
+                3
               ]
             }
           ]
@@ -784,8 +819,7 @@
             {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
-                2,
-                3
+                2
               ]
             }
           ]
@@ -863,7 +897,6 @@
             {
               "doc_id": "ff746f7b583490a80ba104361c0a82a1ebbf7ed9097cd03dc49d744cb5057761",
               "page_numbers": [
-                1,
                 3
               ]
             }
@@ -948,8 +981,7 @@
             {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                8,
-                11
+                8
               ]
             }
           ]
@@ -973,13 +1005,25 @@
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
+              "doc_id": "0471e83c1ea18086cfb6b3ff51da6f22b0efee337f10315b2593f782297ccb84",
               "page_numbers": [
                 1
               ]
             },
             {
               "doc_id": "62930da32fa3172edf2f2bbf3da268455bd99a7b5fab34d72358730d8cd5da30",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
                 1
               ]
@@ -1007,7 +1051,6 @@
             {
               "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
-                1,
                 7
               ]
             }
@@ -1182,7 +1225,6 @@
             {
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
-                6,
                 7
               ]
             }
@@ -1209,7 +1251,7 @@
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                2
+                1
               ]
             },
             {
@@ -1247,7 +1289,8 @@
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                1
+                1,
+                2
               ]
             }
           ]
@@ -1304,12 +1347,6 @@
                 1,
                 2
               ]
-            },
-            {
-              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
@@ -1323,7 +1360,7 @@
     {
       "question_id": "cdddeb6a063f29cbea5f10b3dccbd83aa16849e1f3124e223d141d1578efeb0a",
       "answer": [
-        "Fursa Consulting"
+        "FURSA CONSULTING"
       ],
       "telemetry": {
         "timing": {
@@ -1336,8 +1373,7 @@
             {
               "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             }
           ]
@@ -1637,8 +1673,7 @@
             {
               "doc_id": "fbdd7f9dd299d83b1f398778da2e6765dfaaed62005667264734a1f76ec09071",
               "page_numbers": [
-                7,
-                8
+                7
               ]
             }
           ]
@@ -1691,8 +1726,6 @@
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1,
-                2,
                 6
               ]
             }
@@ -1718,6 +1751,18 @@
           "retrieved_chunk_pages": [
             {
               "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "839de9798f377492eee68f82b202d7cd3544be83d799f6226a02f3678c9bb914",
               "page_numbers": [
                 1
               ]
@@ -1770,13 +1815,6 @@
             {
               "doc_id": "ff746f7b583490a80ba104361c0a82a1ebbf7ed9097cd03dc49d744cb5057761",
               "page_numbers": [
-                1,
-                3
-              ]
-            },
-            {
-              "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
-              "page_numbers": [
                 1
               ]
             }
@@ -1803,8 +1841,8 @@
             {
               "doc_id": "72ea171147bf30326fe6fd2e6798f607c7cef4bf9d43761dbccd2f1b6a356849",
               "page_numbers": [
-                40,
-                41
+                1,
+                40
               ]
             }
           ]
@@ -1830,14 +1868,7 @@
             {
               "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
-                1,
-                2
-              ]
-            },
-            {
-              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
-              "page_numbers": [
-                3
+                1
               ]
             }
           ]
@@ -1863,7 +1894,7 @@
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                2
+                1
               ]
             },
             {
@@ -1980,13 +2011,8 @@
               "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
               "page_numbers": [
                 1,
-                8
-              ]
-            },
-            {
-              "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
-              "page_numbers": [
-                1
+                2,
+                12
               ]
             }
           ]
@@ -2010,13 +2036,37 @@
         "retrieval": {
           "retrieved_chunk_pages": [
             {
+              "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
+              "page_numbers": [
+                2
+              ]
+            },
+            {
+              "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "839de9798f377492eee68f82b202d7cd3544be83d799f6226a02f3678c9bb914",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
               "doc_id": "0471e83c1ea18086cfb6b3ff51da6f22b0efee337f10315b2593f782297ccb84",
               "page_numbers": [
                 1
               ]
             },
             {
-              "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
+              "doc_id": "62930da32fa3172edf2f2bbf3da268455bd99a7b5fab34d72358730d8cd5da30",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
               "page_numbers": [
                 1
               ]
@@ -2044,8 +2094,6 @@
             {
               "doc_id": "bd2d222ee0a636a745434cfb457321cd658db5bb32b5f0a3f5643236cc1503d8",
               "page_numbers": [
-                11,
-                13,
                 14
               ]
             }
@@ -2186,6 +2234,18 @@
               "page_numbers": [
                 1
               ]
+            },
+            {
+              "doc_id": "62930da32fa3172edf2f2bbf3da268455bd99a7b5fab34d72358730d8cd5da30",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
+              "page_numbers": [
+                1
+              ]
             }
           ]
         },
@@ -2248,7 +2308,6 @@
             {
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
-                6,
                 7
               ]
             }
@@ -2435,13 +2494,25 @@
         "retrieval": {
           "retrieved_chunk_pages": [
             {
+              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
+              "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
+              "page_numbers": [
+                2
+              ]
+            },
+            {
               "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
               "page_numbers": [
                 1
               ]
             },
             {
-              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
+              "doc_id": "839de9798f377492eee68f82b202d7cd3544be83d799f6226a02f3678c9bb914",
               "page_numbers": [
                 1
               ]
@@ -2571,8 +2642,7 @@
             {
               "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             }
           ]
@@ -2656,13 +2726,13 @@
             {
               "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
               "page_numbers": [
-                1
+                2
               ]
             },
             {
               "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
-                1
+                2
               ]
             }
           ]
@@ -2694,7 +2764,7 @@
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                2
+                1
               ]
             }
           ]
@@ -2791,8 +2861,7 @@
             {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                6,
-                7
+                6
               ]
             }
           ]
@@ -2818,7 +2887,6 @@
             {
               "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
               "page_numbers": [
-                2,
                 4
               ]
             }
@@ -2845,8 +2913,7 @@
             {
               "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
               "page_numbers": [
-                4,
-                5
+                4
               ]
             }
           ]

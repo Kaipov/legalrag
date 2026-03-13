@@ -94,7 +94,7 @@ python -m scripts.compare_submissions
 python -m scripts.regression_report --strict
 ```
 
-`golden_submission.json` is the current public-set benchmark snapshot. It has already been validated on the warmup platform: `deterministic=1.000`, `grounding=0.941431`, `assistant=0.62`, `total_score=0.855002` on March 12, 2026.
+`golden_submission.json` is the current public-set benchmark snapshot. It has already been validated on the warmup platform: `deterministic=1.000`, `grounding=0.954191`, `assistant=0.68`, `telemetry=0.996`, `ttft_ms=753`, `ttft_multiplier=1.0326`, `total_score=0.887146` on March 13, 2026.
 
 Treat `golden_submission.json` as the mandatory pre-submit gate. The compare scripts default to `golden_submission.json` as baseline and `submission.json` as candidate, and a candidate should not be sent to the platform until this regression check has been reviewed.
 

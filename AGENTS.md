@@ -38,5 +38,5 @@ FinalScore = base_QA_score * grounding * completeness * TTFT_multiplier
 
 ## Benchmark Gate
 - `golden_submission.json` is the repository benchmark for the public set.
-- The warmup platform evaluated it at `deterministic=1.000` and `grounding=0.941431` on March 12, 2026.
+- The warmup platform evaluated it at `deterministic=1.000`, `grounding=0.954191`, and `total_score=0.887146` on March 13, 2026.
 - Because of that benchmark strength, no candidate submission should be sent to the platform until it has been compared against `golden_submission.json` and the regressions have been reviewed.
