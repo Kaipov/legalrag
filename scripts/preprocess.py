@@ -1,4 +1,4 @@
-"""
+﻿"""
 Offline preprocessing: extract text from PDFs, chunk, build indices.
 
 Usage:
@@ -62,7 +62,7 @@ def main():
             print(f"ERROR: {CHUNKS_JSONL} not found. Run --chunk first.")
             sys.exit(1)
         print(f"\n{'='*60}")
-        print(f"STEP 3: Building search indices (BM25 + FAISS)")
+        print(f"STEP 3: Building search indices (chunk + page BM25/FAISS)")
         print(f"{'='*60}")
         build_all_indices()
 
@@ -73,3 +73,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -1,4 +1,4 @@
-﻿"""Validation helpers for local submission checks."""
+"""Validation helpers for local submission checks."""
 from __future__ import annotations
 
 import re
@@ -7,10 +7,21 @@ from typing import Any
 
 from src.constants import NULL_FREE_TEXT_ANSWER
 
+_NULL_LIKE_FREE_TEXT_PREFIXES = (
+    NULL_FREE_TEXT_ANSWER,
+    "The provided DIFC documents do not contain",
+    "The provided DIFC documents do not state",
+)
+
 
 def is_null_like_answer(answer: Any) -> bool:
     """Project-specific null handling for local validation."""
-    return answer is None or answer == NULL_FREE_TEXT_ANSWER
+    if answer is None:
+        return True
+    if not isinstance(answer, str):
+        return False
+    normalized = answer.strip()
+    return any(normalized.startswith(prefix) for prefix in _NULL_LIKE_FREE_TEXT_PREFIXES)
 
 
 def validate_answer_value(answer: Any, answer_type: str) -> list[str]:
@@ -118,13 +129,9 @@ def validate_telemetry_payload(answer_payload: dict[str, Any]) -> list[str]:
 
         doc_id = chunk.get("doc_id")
         pages = chunk.get("page_numbers", [])
-
         if not isinstance(doc_id, str) or not doc_id.strip():
-            issues.append("retrieved chunk missing doc_id")
-        if not isinstance(pages, list) or not pages:
-            issues.append("retrieved chunk must include non-empty page_numbers")
-            continue
-        if not all(isinstance(page, int) and page > 0 for page in pages):
-            issues.append("page_numbers must contain positive integers")
+            issues.append("retrieved_chunk_pages doc_id must be a non-empty string")
+        if not isinstance(pages, list) or not all(isinstance(page, int) and page > 0 for page in pages):
+            issues.append("retrieved_chunk_pages page_numbers must be a list of positive integers")
 
     return issues

@@ -3,7 +3,7 @@ Step 2: Structure-aware chunking of extracted pages.
 
 Strategy:
   - Detect legal document structure via regex (Part, Chapter, Article, Section)
-  - Chunk at Article/Section level (natural legal boundaries)
+  - Chunk at natural legal boundaries (Article/Section headings or numbered statute headings)
   - Short docs (amendments, court orders): single chunk per document
   - Track page numbers for each chunk (1-based PDF pages)
 
@@ -17,44 +17,49 @@ import json
 import logging
 import re
 from collections import defaultdict
+from functools import lru_cache
 from pathlib import Path
 
 from tqdm import tqdm
 
 from src.config import PAGES_JSONL, CHUNKS_JSONL, MAX_CHUNK_TOKENS, MIN_CHUNK_TOKENS
+from src.embeddings import get_embedding_client
 
 logger = logging.getLogger(__name__)
+_MAX_APPROX_TO_SKIP_EXACT_MULTIPLIER = 4
 
 # --- Structure Detection Patterns ---
 
 # Matches: PART 1, PART I, PART IV, Part One, etc.
 RE_PART = re.compile(
-    r"^(?:PART|Part)\s+(?:[IVXLC]+|\d+|One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten)",
+    r"^\s*(?:PART|Part)\s+(?:[IVXLC]+|\d+|One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten)\b",
     re.MULTILINE,
 )
 
 # Matches: CHAPTER 1, Chapter 2, etc.
 RE_CHAPTER = re.compile(
-    r"^(?:CHAPTER|Chapter)\s+(?:\d+|[IVXLC]+)",
+    r"^\s*(?:CHAPTER|Chapter)\s+(?:\d+|[IVXLC]+)\b",
     re.MULTILINE,
 )
 
-# Matches: Article 1, ARTICLE 15, etc. (primary chunk boundary)
+# Matches: Article 1, ARTICLE 15., Article 15: Heading, etc.
 RE_ARTICLE = re.compile(
-    r"^(?:Article|ARTICLE)\s+(\d+[A-Z]?)",
-    re.MULTILINE,
+    r"^\s*(?:Article|ARTICLE)\s+(?:No\.\s*)?(?P<number>\d+[A-Z]?)(?:(?:\s*[\.:-]\s*|\s+)(?P<title>.*?))?\s*$"
 )
 
-# Matches: Section 1, SECTION 15, etc. (alternative chunk boundary)
+# Matches: Section 1, SECTION 15., Section 15: Heading, etc.
 RE_SECTION = re.compile(
-    r"^(?:Section|SECTION)\s+(\d+[A-Z]?)",
-    re.MULTILINE,
+    r"^\s*(?:Section|SECTION)\s+(?:No\.\s*)?(?P<number>\d+[A-Z]?)(?:(?:\s*[\.:-]\s*|\s+)(?P<title>.*?))?\s*$"
 )
 
 # Matches: Regulation 1, REGULATION 15, Rule 1, etc.
 RE_REGULATION = re.compile(
-    r"^(?:Regulation|REGULATION|Rule|RULE)\s+(\d+[A-Z]?)",
-    re.MULTILINE,
+    r"^\s*(?:Regulation|REGULATION|Rule|RULE)\s+(?:No\.\s*)?(?P<number>\d+[A-Z]?)(?:(?:\s*[\.:-]\s*|\s+)(?P<title>.*?))?\s*$"
+)
+
+# Matches: 13. Recognised Partnership / 39A. Dissolution by expiration or notice
+RE_NUMBERED_HEADING = re.compile(
+    r"^\s*(?P<number>\d+[A-Z]?)\.\s+(?P<title>.*?)\s*$"
 )
 
 # Combined boundary patterns (ordered by specificity)
@@ -63,11 +68,79 @@ BOUNDARY_PATTERNS = [
     ("section", RE_SECTION),
     ("regulation", RE_REGULATION),
 ]
+_CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
+_TOC_DOT_PATTERN = re.compile(r"\.{3,}")
+_INLINE_REFERENCE_TITLE_PREFIXES = (
+    "of ",
+    "or ",
+    "and ",
+    "shall ",
+    "must ",
+    "may ",
+    "is ",
+    "are ",
+    "was ",
+    "were ",
+    "has ",
+    "have ",
+    "had ",
+    "applies ",
+    "means ",
+    "includes ",
+    "include ",
+)
+_HEADING_LOWERCASE_ALLOWLIST = {
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "under",
+    "with",
+}
 
 
 def _approx_tokens(text: str) -> int:
-    """Rough token count estimation (words * 1.3)."""
+    """Fast heuristic used only to avoid unnecessary remote token-count calls."""
     return int(len(text.split()) * 1.3)
+
+
+@lru_cache(maxsize=50_000)
+def _count_tokens(text: str) -> int:
+    """Exact token count using the configured embedding model tokenizer."""
+    text = text.strip()
+    if not text:
+        return 0
+    return get_embedding_client().count_tokens(text)
+
+
+def _count_tokens_capped(text: str, max_tokens: int | None = None) -> int:
+    """
+    Use exact model tokenization near the budget boundary and fast-reject texts
+    that are obviously too large.
+    """
+    text = text.strip()
+    if not text:
+        return 0
+
+    approx_tokens = _approx_tokens(text)
+    if max_tokens is not None and approx_tokens > max_tokens * _MAX_APPROX_TO_SKIP_EXACT_MULTIPLIER:
+        return max_tokens + 1
+    return _count_tokens(text)
+
+
+def _fits_token_budget(text: str, max_tokens: int) -> bool:
+    return _count_tokens_capped(text, max_tokens) <= max_tokens
 
 
 def _detect_doc_title(pages_text: str) -> str:
@@ -89,12 +162,107 @@ def _detect_doc_title(pages_text: str) -> str:
     return title_candidates[0] if title_candidates else ""
 
 
-def _find_boundaries(text: str) -> list[tuple[int, str, str]]:
+def _is_statutory_document(doc_title: str, text: str) -> bool:
+    sample = "\n".join(part for part in (doc_title, text[:2000]) if part).upper()
+    if not sample:
+        return False
+    if _CASE_ID_RE.search(sample):
+        return False
+    if any(marker in sample for marker in ("COURT OF", "ORDER WITH REASONS", "CLAIM NO", "CASE NO")):
+        return False
+    if "DIFC LAW NO." in sample:
+        return True
+    return any(keyword in sample for keyword in (" LAW", "LAW ", "REGULATION", "RULES"))
+
+
+def _looks_like_heading_title(title: str) -> bool:
+    title = " ".join((title or "").split())
+    if not title:
+        return True
+    if len(title) > 160:
+        return False
+    if _TOC_DOT_PATTERN.search(title):
+        return False
+    if title.endswith((".", ";")):
+        return False
+    if re.search(r"\s\d+\s*$", title):
+        return False
+
+    words = [word for word in re.findall(r"[A-Za-z][A-Za-z'/-]*", title) if word]
+    if not words:
+        return False
+    if len(words) > 20:
+        return False
+
+    lowercase_disallowed = sum(
+        1
+        for word in words
+        if word[0].islower() and word.lower() not in _HEADING_LOWERCASE_ALLOWLIST
+    )
+    return lowercase_disallowed <= max(1, len(words) // 3)
+
+
+def _is_toc_line(line: str) -> bool:
+    stripped = (line or "").strip()
+    if not stripped:
+        return False
+    if _TOC_DOT_PATTERN.search(stripped):
+        return True
+    return bool(re.search(r"\s\d+\s*$", stripped) and "." in stripped)
+
+
+def _is_valid_prefixed_heading(match: re.Match[str]) -> bool:
+    title = " ".join((match.group("title") or "").split()).strip()
+    if not title:
+        return True
+    lowered = title.lower()
+    if lowered.startswith(_INLINE_REFERENCE_TITLE_PREFIXES):
+        return False
+    return _looks_like_heading_title(title)
+
+
+def _iter_lines_with_offsets(text: str) -> list[tuple[int, str]]:
+    lines: list[tuple[int, str]] = []
+    offset = 0
+    for raw_line in text.splitlines(keepends=True):
+        line = raw_line.rstrip("\r\n")
+        lines.append((offset, line))
+        offset += len(raw_line)
+    return lines
+
+
+def _find_boundaries(text: str, *, doc_title: str = "") -> list[tuple[int, str, str]]:
     """Find structural boundaries as (char_position, boundary_type, label)."""
     boundaries = []
-    for btype, pattern in BOUNDARY_PATTERNS:
-        for match in pattern.finditer(text):
-            boundaries.append((match.start(), btype, match.group(0).strip()))
+    detect_numbered_headings = _is_statutory_document(doc_title, text)
+
+    for line_start, line in _iter_lines_with_offsets(text):
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        indent = len(line) - len(line.lstrip())
+        boundary_pos = line_start + indent
+
+        for btype, pattern in BOUNDARY_PATTERNS:
+            match = pattern.match(line)
+            if not match or not _is_valid_prefixed_heading(match):
+                continue
+            boundaries.append((boundary_pos, btype, stripped))
+            break
+        else:
+            if not detect_numbered_headings or _is_toc_line(line):
+                continue
+
+            match = RE_NUMBERED_HEADING.match(line)
+            if not match:
+                continue
+
+            title = match.group("title") or ""
+            if not _looks_like_heading_title(title):
+                continue
+            boundaries.append((boundary_pos, "article", stripped))
+
     boundaries.sort(key=lambda item: item[0])
     return boundaries
 
@@ -110,17 +278,88 @@ def _build_section_path(current_part: str, current_chapter: str, boundary_label:
     return " > ".join(parts)
 
 
+def _split_by_characters(text: str, max_tokens: int) -> list[str]:
+    """Last-resort splitter for long strings without usable whitespace boundaries."""
+    text = text.strip()
+    if not text:
+        return []
+
+    chunks: list[str] = []
+    start = 0
+    while start < len(text):
+        lo = start + 1
+        hi = len(text)
+        best_end = start
+
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            candidate = text[start:mid].strip()
+            if candidate and _fits_token_budget(candidate, max_tokens):
+                best_end = mid
+                lo = mid + 1
+            else:
+                hi = mid - 1
+
+        if best_end <= start:
+            raise ValueError("Could not split text into chunks within the token budget")
+
+        chunk = text[start:best_end].strip()
+        if chunk:
+            chunks.append(chunk)
+        start = best_end
+        while start < len(text) and text[start].isspace():
+            start += 1
+
+    return chunks
+
+
+def _split_units_to_fit(
+    units: list[str],
+    joiner: str,
+    max_tokens: int,
+    fallback_splitter,
+) -> list[str]:
+    """Pack the largest possible exact-token subspans using binary search."""
+    units = [unit.strip() for unit in units if unit and unit.strip()]
+    if not units:
+        return []
+
+    chunks: list[str] = []
+    start = 0
+    while start < len(units):
+        lo = start + 1
+        hi = len(units)
+        best_end = start
+
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            candidate = joiner.join(units[start:mid]).strip()
+            if candidate and _fits_token_budget(candidate, max_tokens):
+                best_end = mid
+                lo = mid + 1
+            else:
+                hi = mid - 1
+
+        if best_end > start:
+            chunks.append(joiner.join(units[start:best_end]).strip())
+            start = best_end
+            continue
+
+        split_parts = fallback_splitter(units[start], max_tokens)
+        if not split_parts:
+            raise ValueError("Fallback splitter returned no text parts")
+        chunks.extend(split_parts)
+        start += 1
+
+    return [chunk for chunk in chunks if chunk]
+
+
 def _split_by_words(text: str, max_tokens: int) -> list[str]:
-    """Last-resort splitter for text with no usable higher-level structure."""
+    """Split text by exact embedding-token budget using word boundaries."""
     words = text.split()
     if not words:
         return []
-
-    max_words = max(1, int(max_tokens / 1.3))
-    return [
-        " ".join(words[idx: idx + max_words]).strip()
-        for idx in range(0, len(words), max_words)
-    ]
+    return _split_units_to_fit(words, " ", max_tokens, _split_by_characters)
 
 
 def _split_by_lines(text: str, max_tokens: int) -> list[str]:
@@ -128,33 +367,7 @@ def _split_by_lines(text: str, max_tokens: int) -> list[str]:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     if len(lines) <= 1:
         return _split_by_words(text, max_tokens)
-
-    chunks: list[str] = []
-    current: list[str] = []
-    current_tokens = 0
-
-    for line in lines:
-        line_tokens = _approx_tokens(line)
-        if line_tokens > max_tokens:
-            if current:
-                chunks.append("\n".join(current).strip())
-                current = []
-                current_tokens = 0
-            chunks.extend(_split_by_words(line, max_tokens))
-            continue
-
-        if current and current_tokens + line_tokens > max_tokens:
-            chunks.append("\n".join(current).strip())
-            current = [line]
-            current_tokens = line_tokens
-        else:
-            current.append(line)
-            current_tokens += line_tokens
-
-    if current:
-        chunks.append("\n".join(current).strip())
-
-    return [chunk for chunk in chunks if chunk]
+    return _split_units_to_fit(lines, "\n", max_tokens, _split_by_words)
 
 
 def _split_by_paragraphs(text: str, max_tokens: int) -> list[str]:
@@ -162,33 +375,7 @@ def _split_by_paragraphs(text: str, max_tokens: int) -> list[str]:
     paragraphs = [para.strip() for para in re.split(r"\n\s*\n", text) if para.strip()]
     if len(paragraphs) <= 1:
         return _split_by_lines(text, max_tokens)
-
-    chunks: list[str] = []
-    current: list[str] = []
-    current_tokens = 0
-
-    for para in paragraphs:
-        para_tokens = _approx_tokens(para)
-        if para_tokens > max_tokens:
-            if current:
-                chunks.append("\n\n".join(current).strip())
-                current = []
-                current_tokens = 0
-            chunks.extend(_split_by_lines(para, max_tokens))
-            continue
-
-        if current and current_tokens + para_tokens > max_tokens:
-            chunks.append("\n\n".join(current).strip())
-            current = [para]
-            current_tokens = para_tokens
-        else:
-            current.append(para)
-            current_tokens += para_tokens
-
-    if current:
-        chunks.append("\n\n".join(current).strip())
-
-    return [chunk for chunk in chunks if chunk]
+    return _split_units_to_fit(paragraphs, "\n\n", max_tokens, _split_by_lines)
 
 
 def _split_text_to_fit(text: str, max_tokens: int) -> list[str]:
@@ -196,7 +383,7 @@ def _split_text_to_fit(text: str, max_tokens: int) -> list[str]:
     text = text.strip()
     if not text:
         return []
-    if _approx_tokens(text) <= max_tokens:
+    if _fits_token_budget(text, max_tokens):
         return [text]
     return _split_by_paragraphs(text, max_tokens)
 
@@ -263,7 +450,7 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
         page_char_offsets.append((start, end, page["page_num"]))
 
     doc_title = _detect_doc_title(full_text)
-    total_tokens = _approx_tokens(full_text)
+    total_tokens = _count_tokens_capped(full_text, MAX_CHUNK_TOKENS)
 
     if total_tokens < MAX_CHUNK_TOKENS:
         all_page_nums = [page["page_num"] for page in pages]
@@ -276,7 +463,7 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
             "text": full_text.strip(),
         }]
 
-    boundaries = _find_boundaries(full_text)
+    boundaries = _find_boundaries(full_text, doc_title=doc_title)
     current_part = ""
     current_chapter = ""
 
@@ -288,7 +475,7 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
 
     if boundaries[0][0] > 100:
         pre_text = full_text[:boundaries[0][0]].strip()
-        if _approx_tokens(pre_text) >= MIN_CHUNK_TOKENS:
+        if _count_tokens_capped(pre_text, MIN_CHUNK_TOKENS) >= MIN_CHUNK_TOKENS:
             pre_pages = _get_pages_for_span(0, boundaries[0][0], page_char_offsets)
             pre_parts = _split_text_to_fit(pre_text, MAX_CHUNK_TOKENS)
             pre_part_pages = _assign_pages_to_split_parts(
@@ -325,7 +512,7 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
             continue
 
         section_path = _build_section_path(current_part, current_chapter, label)
-        segment_tokens = _approx_tokens(segment_text)
+        segment_tokens = _count_tokens_capped(segment_text, MAX_CHUNK_TOKENS)
         segment_pages = _get_pages_for_span(pos, end_pos, page_char_offsets)
 
         if segment_tokens > MAX_CHUNK_TOKENS:
@@ -353,9 +540,15 @@ def chunk_document(doc_id: str, pages: list[dict]) -> list[dict]:
                 })
                 chunk_idx += 1
         elif segment_tokens < MIN_CHUNK_TOKENS:
-            if chunks and _approx_tokens(chunks[-1]["text"]) + segment_tokens <= MAX_CHUNK_TOKENS:
+            merged_text = None
+            if chunks:
+                candidate_text = chunks[-1]["text"] + "\n\n" + segment_text
+                if _count_tokens_capped(candidate_text, MAX_CHUNK_TOKENS) <= MAX_CHUNK_TOKENS:
+                    merged_text = candidate_text
+
+            if merged_text is not None:
                 prev = chunks[-1]
-                prev["text"] += "\n\n" + segment_text
+                prev["text"] = merged_text
                 prev["page_numbers"] = sorted(set(prev["page_numbers"] + segment_pages))
                 prev["section_path"] += f" + {label}"
             else:
@@ -393,7 +586,7 @@ def _chunk_by_pages(doc_id: str, pages: list[dict], doc_title: str) -> list[dict
     for page in sorted(pages, key=lambda item: item["page_num"]):
         page_num = page["page_num"]
         for segment in _split_text_to_fit(page["text"], MAX_CHUNK_TOKENS):
-            segment_tokens = _approx_tokens(segment)
+            segment_tokens = _count_tokens(segment)
             if current_parts and current_tokens + segment_tokens > MAX_CHUNK_TOKENS:
                 chunks.append({
                     "chunk_id": f"{doc_id}_{chunk_idx:03d}",
@@ -466,7 +659,7 @@ def chunk_all_documents(
             page = json.loads(line)
             docs[page["doc_id"]].append(page)
 
-    logger.info(f"Chunking {len(docs)} documents...")
+    logger.info("Chunking %s documents with MAX_CHUNK_TOKENS=%s...", len(docs), MAX_CHUNK_TOKENS)
 
     total_chunks = 0
     with open(output_path, "w", encoding="utf-8") as handle:
@@ -476,11 +669,10 @@ def chunk_all_documents(
                 handle.write(json.dumps(chunk, ensure_ascii=False) + "\n")
                 total_chunks += 1
 
-    logger.info(f"Created {total_chunks} chunks from {len(docs)} documents. Saved to {output_path}")
+    logger.info("Created %s chunks from %s documents. Saved to %s", total_chunks, len(docs), output_path)
     return output_path
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     chunk_all_documents()
-

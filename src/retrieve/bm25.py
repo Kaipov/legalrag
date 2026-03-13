@@ -1,13 +1,14 @@
-"""
+﻿"""
 BM25 keyword search over pre-built index.
 """
 from __future__ import annotations
 
-import pickle
 import logging
+import pickle
 from pathlib import Path
 
 from src.config import BM25_INDEX
+from src.retrieve.lexical import tokenize_legal_text
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +31,9 @@ class BM25Searcher:
         Search BM25 index.
         Returns list of (chunk_id, score) sorted by score descending.
         """
-        import re
-        # Tokenize query same as index
-        stopwords = {
-            "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-            "have", "has", "had", "do", "does", "did", "will", "would", "could",
-            "should", "may", "might", "shall", "can", "of", "in", "to", "for",
-            "with", "on", "at", "by", "from", "as", "into", "through", "during",
-            "and", "or", "but", "not", "no", "nor", "if", "then", "than",
-            "that", "this", "these", "those", "it", "its",
-        }
-        tokens = [t for t in re.findall(r"[a-z0-9]+", query.lower()) if len(t) > 1 and t not in stopwords]
+        tokens = tokenize_legal_text(query)
+        if not tokens:
+            return []
 
         scores = self.bm25.get_scores(tokens)
 
@@ -54,3 +47,4 @@ class BM25Searcher:
                 results.append((self.chunk_ids[idx], score))
 
         return results
+

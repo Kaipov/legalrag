@@ -28,6 +28,18 @@ _MDY_DATE_RE = re.compile(
     r"\s+(\d{1,2}),?\s+(\d{4})(?:\D+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?",
     re.IGNORECASE,
 )
+_FREE_TEXT_LEADING_BOILERPLATE_RE = re.compile(
+    r"^(?:"
+    r"according to the (?:provided )?context|"
+    r"according to the provided documents|"
+    r"based on the (?:provided )?(?:documents|context)|"
+    r"the context (?:states|shows|indicates)(?: that)?|"
+    r"the provided (?:documents|difc documents) (?:state|show|indicate)(?: that)?|"
+    r"the documents (?:state|show|indicate)(?: that)?|"
+    r"the answer is"
+    r")\s*[:,]?\s*",
+    re.IGNORECASE,
+)
 _MONTHS = {
     "january": 1,
     "february": 2,
@@ -368,8 +380,13 @@ def _parse_names(text: str) -> list[str]:
 
 
 def _parse_free_text(text: str) -> str:
-    """Parse free-text answer. Truncate to 280 chars."""
-    result = text.strip()
+    """Parse free-text answer. Normalize style and truncate to 280 chars."""
+    result = _normalize_space(text)
+    while result:
+        cleaned = _FREE_TEXT_LEADING_BOILERPLATE_RE.sub("", result, count=1).strip()
+        if cleaned == result:
+            break
+        result = cleaned
     if len(result) > 280:
         result = result[:277]
         last_space = result.rfind(" ")

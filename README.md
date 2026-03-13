@@ -5,9 +5,10 @@ Baseline RAG pipeline for the ARLC legal challenge over DIFC documents.
 ## What is implemented
 
 - PDF text extraction with `pdfplumber` and optional PaddleOCR fallback
-- Structure-aware chunking for legal documents
+- Structure-aware chunking for legal documents with a 512-token budget measured by the embedding model tokenizer
 - Hybrid retrieval: BM25 + FAISS + reciprocal rank fusion
-- Cross-encoder reranking with `bge-reranker-v2-m3`
+- Gemini Embedding 2 Preview dense retrieval via API
+- Optional cross-encoder reranking with `bge-reranker-v2-m3` (disabled by default)
 - GPT-4o answer generation with answer-type-specific prompts
 - Null detection, grounding extraction, and submission telemetry
 - Local validation for answer format and telemetry completeness
@@ -39,12 +40,17 @@ Copy-Item .env.example .env
 
 - `EVAL_API_KEY` for downloading questions/documents and submitting
 - `OPENAI_API_KEY` or `OPENROUTER_API_KEY` for generation
+- `GEMINI_API_KEY` for embedding-token counting, chunking, indexing, and semantic retrieval
 
 Optional overrides:
 
 - `EVAL_BASE_URL`
 - `OPENAI_API_BASE`
 - `OPENROUTER_API_BASE`
+- `EMBEDDING_API_BASE`
+- `EMBEDDING_MODEL`
+- `EMBEDDING_BATCH_SIZE`
+- `MAX_CHUNK_TOKENS`
 - `GENERATION_MODEL`
 - `SUBMISSION_PATH`
 - `CODE_ARCHIVE_PATH`
@@ -85,9 +91,18 @@ python -m scripts.evaluate --submission submission.json --strict
 ```powershell
 python -m scripts.compare_answers
 python -m scripts.compare_submissions
+python -m scripts.regression_report --strict
 ```
 
-`golden_submission.json` is the current v3-aligned public-set reference snapshot. The compare scripts default to `golden_submission.json` as baseline and `submission.json` as candidate.
+`golden_submission.json` is the current public-set benchmark snapshot. It has already been validated on the warmup platform: `deterministic=1.000`, `grounding=0.954191`, `assistant=0.68`, `telemetry=0.996`, `ttft_ms=753`, `ttft_multiplier=1.0326`, `total_score=0.887146` on March 13, 2026.
+
+Treat `golden_submission.json` as the mandatory pre-submit gate. The compare scripts default to `golden_submission.json` as baseline and `submission.json` as candidate, and a candidate should not be sent to the platform until this regression check has been reviewed.
+
+Pre-submit rule:
+- run `python -m scripts.compare_answers`
+- run `python -m scripts.compare_submissions`
+- run `python -m scripts.regression_report --strict`
+- review any deterministic regressions, grounding regressions, and free-text drift against `golden_submission.json` before submitting
 
 6. Run lightweight tests:
 
@@ -98,5 +113,6 @@ python -m pytest
 ## Notes
 
 - `index/` and `data/` are intentionally gitignored.
+- After changing embedding model or chunk budget, rebuild `chunks.jsonl`, `bm25.pkl`, `faiss.index`, and `faiss_ids.json`.
 - The local evaluator does not score answer correctness because public gold answers are not available.
 - The validation step is focused on submission shape, answer types, and telemetry quality.

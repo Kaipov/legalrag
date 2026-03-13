@@ -19,6 +19,7 @@ from src.config import (
     SEMANTIC_TOP_K,
 )
 from src.retrieve.bm25 import BM25Searcher
+from src.retrieve.grounding_policy import GroundingIntent, score_chunk_for_intent
 from src.retrieve.rerank import CrossEncoderReranker
 from src.retrieve.semantic import SemanticSearcher
 
@@ -43,10 +44,19 @@ class HybridRetriever:
         self.enable_reranker = ENABLE_RERANKER if enable_reranker is None else enable_reranker
 
         self.chunks_by_id: dict[str, dict] = {}
+        self.doc_max_page_by_id: dict[str, int] = {}
         with open(chunks_path, "r", encoding="utf-8") as handle:
             for line in handle:
                 chunk = json.loads(line)
                 self.chunks_by_id[chunk["chunk_id"]] = chunk
+                doc_id = str(chunk.get("doc_id") or "").strip()
+                if doc_id:
+                    max_page = max(
+                        (int(page) for page in chunk.get("page_numbers", []) if isinstance(page, int)),
+                        default=0,
+                    )
+                    if max_page > 0:
+                        self.doc_max_page_by_id[doc_id] = max(max_page, self.doc_max_page_by_id.get(doc_id, 0))
 
         logger.info(f"Loaded {len(self.chunks_by_id)} chunks")
 
@@ -63,6 +73,7 @@ class HybridRetriever:
         self,
         query: str,
         rerank_top_k: int | None = None,
+        intent: GroundingIntent | None = None,
     ) -> list[tuple[dict, float]]:
         """
         Full retrieval pipeline for a query.
@@ -72,6 +83,7 @@ class HybridRetriever:
         """
         rerank_top_k = rerank_top_k or RERANK_TOP_K
         candidates = self._get_rrf_candidates(query)
+        candidates = self._apply_intent_bias(candidates, intent)
 
         if not candidates:
             logger.warning(f"No candidates found for query: {query[:80]}...")
@@ -108,6 +120,24 @@ class HybridRetriever:
                 candidates.append((chunk, float(rrf_score)))
 
         return candidates
+
+    def _apply_intent_bias(
+        self,
+        candidates: list[tuple[dict, float]],
+        intent: GroundingIntent | None,
+    ) -> list[tuple[dict, float]]:
+        if intent is None or intent.kind == "generic":
+            return candidates
+
+        ranked = []
+        for index, (chunk, score) in enumerate(candidates):
+            doc_id = str(chunk.get("doc_id") or "").strip()
+            doc_max_page = self.doc_max_page_by_id.get(doc_id)
+            intent_bias = score_chunk_for_intent(chunk, intent, doc_max_page)
+            ranked.append((intent_bias, score, index, chunk, score))
+
+        ranked.sort(key=lambda item: (-item[0], -item[1], item[2]))
+        return [(chunk, score) for _bias, _base_score, _index, chunk, score in ranked]
 
     def _rrf_fusion(
         self,
