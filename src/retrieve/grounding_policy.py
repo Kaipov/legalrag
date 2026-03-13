@@ -1,21 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import re
 from typing import Any
 
-_COMPARE_MARKERS = (
-    "both case",
-    "both cases",
-    "across all documents",
-    "across case",
-    "common to both",
-    "in both cases",
-    "appeared in both",
-    "involve any of the same",
-)
-_PARTY_MARKERS = ("party", "parties", "claimant", "defendant", "main party", "applicant", "respondent")
-_CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
+from src.retrieve.grounding_utils import extract_question_anchors
 
 
 @dataclass(frozen=True)
@@ -29,6 +17,9 @@ class GroundingIntent:
     grounding_chunk_top_k: int | None = None
     max_pages_per_chunk: int | None = None
     max_pages_per_doc: int | None = None
+    article_refs: tuple[str, ...] = ()
+    law_number: str | None = None
+    quoted_sections: tuple[str, ...] = ()
 
     @property
     def is_page_local(self) -> bool:
@@ -40,28 +31,24 @@ class GroundingIntent:
 
 
 
-def _is_compare_question(text: str) -> bool:
-    return any(marker in text for marker in _COMPARE_MARKERS)
-
-
-
-def _extract_case_ids(question_text: str) -> tuple[str, ...]:
-    seen: set[str] = set()
-    case_ids: list[str] = []
-    for match in _CASE_ID_RE.finditer(question_text or ""):
-        case_id = " ".join(match.group(0).upper().split())
-        if case_id in seen:
-            continue
-        seen.add(case_id)
-        case_ids.append(case_id)
-    return tuple(case_ids)
-
-
-
 def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIntent:
     text = (question_text or "").lower()
     answer_type = str(answer_type or "").lower()
-    case_ids = _extract_case_ids(question_text)
+    anchors = extract_question_anchors(question_text)
+    case_ids = anchors.case_ids
+
+    compare_markers = (
+        "both case",
+        "both cases",
+        "across all documents",
+        "across case",
+        "common to both",
+        "in both cases",
+        "appeared in both",
+        "involve any of the same",
+    )
+    party_markers = ("party", "parties", "claimant", "defendant", "main party", "applicant", "respondent")
+    is_compare_question = any(marker in text for marker in compare_markers)
 
     if any(marker in text for marker in ("title page", "cover page", "header/caption", "header", "caption")):
         return GroundingIntent(
@@ -74,6 +61,26 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
             max_pages_per_doc=1,
+            quoted_sections=anchors.quoted_sections,
+        )
+
+    if anchors.article_refs and (anchors.law_number or len(anchors.law_title_mentions) == 1):
+        keyphrases = list(anchors.article_refs[:2])
+        if anchors.law_number:
+            keyphrases.append(anchors.law_number)
+        elif anchors.law_title_mentions:
+            keyphrases.append(anchors.law_title_mentions[0])
+        return GroundingIntent(
+            kind="article_ref",
+            page_focus="any",
+            keyphrases=tuple(keyphrases),
+            case_ids=case_ids,
+            grounding_chunk_top_k=2,
+            max_pages_per_chunk=2,
+            max_pages_per_doc=2,
+            article_refs=anchors.article_refs,
+            law_number=anchors.law_number,
+            quoted_sections=anchors.quoted_sections,
         )
 
     if any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
@@ -87,6 +94,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
             max_pages_per_doc=1,
+            quoted_sections=anchors.quoted_sections,
         )
 
     if any(marker in text for marker in ("last page", "conclusion", "it is hereby ordered that")):
@@ -100,9 +108,10 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
             max_pages_per_doc=2,
+            quoted_sections=anchors.quoted_sections,
         )
 
-    if "judge" in text and _is_compare_question(text):
+    if "judge" in text and is_compare_question:
         return GroundingIntent(
             kind="judge_compare",
             page_focus="first",
@@ -113,9 +122,10 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             grounding_chunk_top_k=3,
             max_pages_per_chunk=2,
             max_pages_per_doc=1,
+            quoted_sections=anchors.quoted_sections,
         )
 
-    if answer_type in {"boolean", "name", "names"} and any(marker in text for marker in _PARTY_MARKERS) and _is_compare_question(text):
+    if answer_type in {"boolean", "name", "names"} and any(marker in text for marker in party_markers) and is_compare_question:
         return GroundingIntent(
             kind="party_compare",
             page_focus="first",
@@ -126,9 +136,10 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             grounding_chunk_top_k=3,
             max_pages_per_chunk=2,
             max_pages_per_doc=1,
+            quoted_sections=anchors.quoted_sections,
         )
 
-    return GroundingIntent(kind="generic", case_ids=case_ids, max_pages_per_doc=2)
+    return GroundingIntent(kind="generic", case_ids=case_ids, max_pages_per_doc=2, quoted_sections=anchors.quoted_sections)
 
 
 

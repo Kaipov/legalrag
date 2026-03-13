@@ -460,6 +460,18 @@ def _run_generation_pass(
         intent=intent,
         disable_unique_doc_preference=disable_unique_doc_preference,
     )
+    cited_page_keys: set[tuple[str, int]] = set()
+    for source_id in cited_source_ids:
+        chunk_index = source_id - 1
+        if chunk_index < 0 or chunk_index >= len(generation_chunks):
+            continue
+        cited_chunk = generation_chunks[chunk_index][0]
+        doc_id = str(cited_chunk.get("doc_id") or "").strip()
+        if not doc_id:
+            continue
+        for page_num in cited_chunk.get("page_numbers", []):
+            if isinstance(page_num, int) and page_num > 0:
+                cited_page_keys.add((doc_id, page_num))
     grounding_refs = collect_grounding_pages(
         grounding_chunks,
         score_threshold=grounding_threshold,
@@ -468,6 +480,8 @@ def _run_generation_pass(
         answer_text=answer_text,
         intent=intent,
         allowed_doc_ids=_generation_doc_ids(generation_chunks),
+        answer_type=answer_type,
+        cited_page_keys=cited_page_keys,
     )
     retrieval_refs = [
         RetrievalRef(doc_id=ref["doc_id"], page_numbers=ref["page_numbers"])

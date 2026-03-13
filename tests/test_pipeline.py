@@ -100,6 +100,58 @@ def test_select_grounding_chunks_supplements_page_local_citations() -> None:
     assert selected == [chunks[1], chunks[0]]
 
 
+def test_answer_question_passes_answer_type_into_collect_grounding_pages(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return [({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [11], "text": "Article 16(1)"}, 0.9)]
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    def fake_collect_grounding_pages(*args, **kwargs):
+        captured["answer_type"] = kwargs.get("answer_type")
+        captured["intent_kind"] = getattr(kwargs.get("intent"), "kind", None)
+        return [{"doc_id": "doc-a", "page_numbers": [11]}]
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
+    monkeypatch.setattr(
+        pipeline_mod,
+        "detect_grounding_intent",
+        lambda question, answer_type: GroundingIntent(kind="article_ref", article_refs=("Article 16(1)",)),
+    )
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
+    monkeypatch.setattr(
+        pipeline_mod,
+        "build_prompt",
+        lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}],
+    )
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: Confirmation Statement"]))
+    monkeypatch.setattr(
+        pipeline_mod,
+        "parse_model_output",
+        lambda response_text, answer_type, question_text=None: ("Confirmation Statement", [1], "Confirmation Statement"),
+    )
+    monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-article-answer-type",
+            "question": "According to Article 16(1) of the Operating Law 2018, what document must be delivered each year?",
+            "answer_type": "name",
+        }
+    )
+
+    assert captured["answer_type"] == "name"
+    assert captured["intent_kind"] == "article_ref"
+    assert result.telemetry.retrieval[0].page_numbers == [11]
+
+
 def test_answer_question_retries_compare_null_without_intent(monkeypatch) -> None:
     compare_intent = GroundingIntent(kind="judge_compare", prefer_unique_docs=True)
     retrieval_calls: list[str] = []

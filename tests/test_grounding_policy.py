@@ -22,6 +22,26 @@ def test_detect_grounding_intent_for_last_page() -> None:
     assert intent.page_focus == "last"
 
 
+def test_detect_grounding_intent_for_article_ref_law_question() -> None:
+    intent = detect_grounding_intent(
+        "According to Article 9(9)(a) of the Operating Law 2018, how many months does a Licence typically have effect from its issue date by the Registrar?",
+        "number",
+    )
+
+    assert intent.kind == "article_ref"
+    assert intent.article_refs == ("Article 9(9)(a)",)
+
+
+def test_detect_grounding_intent_for_article_ref_ignores_generic_law_phrases() -> None:
+    intent = detect_grounding_intent(
+        "Under Article 8(1) of the Operating Law 2018, what happens to a licence under this Law if it was granted or continued under a Prescribed Law?",
+        "boolean",
+    )
+
+    assert intent.kind == "article_ref"
+    assert intent.article_refs == ("Article 8(1)",)
+
+
 def test_score_chunk_for_intent_prefers_first_page_title_chunks() -> None:
     title_chunk = {
         "doc_id": "doc-a",
