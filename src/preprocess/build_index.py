@@ -31,6 +31,7 @@ from src.config import (
 )
 from src.embeddings import GeminiApiError, get_embedding_client
 from src.preprocess.chunk import _detect_doc_title
+from src.preprocess.page_metadata import build_page_metadata_indices
 from src.retrieve.lexical import build_bm25_document_tokens
 
 logger = logging.getLogger(__name__)
@@ -369,7 +370,7 @@ def build_all_indices(
     chunks_path: Path | str | None = None,
     pages_path: Path | str | None = None,
 ) -> None:
-    """Build chunk and page BM25 + FAISS indices."""
+    """Build chunk/page search indices and metadata sidecars."""
     chunks_path = chunks_path or CHUNKS_JSONL
     pages_path = pages_path or PAGES_JSONL
 
@@ -377,10 +378,12 @@ def build_all_indices(
     build_faiss_index(chunks_path)
     build_page_bm25_index(pages_path)
     build_page_faiss_index(pages_path)
+    build_page_metadata_indices(pages_path)
 
-    logger.info("All chunk and page indices built successfully!")
+    logger.info("All chunk/page search indices and metadata sidecars built successfully!")
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     build_all_indices()
+

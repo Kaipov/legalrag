@@ -1,4 +1,4 @@
-﻿from src.retrieve import grounding as grounding_mod
+from src.retrieve import grounding as grounding_mod
 from src.retrieve.grounding_policy import GroundingIntent
 
 
@@ -99,6 +99,37 @@ def test_collect_grounding_pages_prefers_last_pages_for_last_page_intent():
 
 
 
+def test_collect_grounding_pages_keeps_two_pages_for_last_page_outcome_when_needed():
+    reranked_chunks = [
+        ({"doc_id": "doc-a", "page_numbers": [5, 6, 7], "text": "ordered that application refused no order as to costs"}, 0.8)
+    ]
+    page_texts_by_doc = {
+        "doc-a": {
+            4: "analysis",
+            5: "intro to conclusion",
+            6: "it is hereby ordered that the application is refused",
+            7: "the applicant shall bear its own costs of the application",
+        }
+    }
+    intent = GroundingIntent(
+        kind="last_page",
+        page_focus="last",
+        keyphrases=("it is hereby ordered that", "costs"),
+        max_pages_per_chunk=2,
+        max_pages_per_doc=2,
+    )
+
+    assert grounding_mod.collect_grounding_pages(
+        reranked_chunks,
+        question_text="According to the 'IT IS HEREBY ORDERED THAT' section, what was the outcome of the application and costs order?",
+        answer_text="The application was refused and the Applicant had to bear its own costs.",
+        page_texts_by_doc=page_texts_by_doc,
+        intent=intent,
+        answer_type="free_text",
+    ) == [{"doc_id": "doc-a", "page_numbers": [6, 7]}]
+
+
+
 def test_collect_grounding_pages_adds_page_retrieval_hits_with_doc_restriction(monkeypatch):
     reranked_chunks = [
         ({"doc_id": "doc-a", "page_numbers": [2], "text": "alpha clause"}, 0.8)
@@ -130,6 +161,7 @@ def test_collect_grounding_pages_adds_page_retrieval_hits_with_doc_restriction(m
         page_texts_by_doc=page_texts_by_doc,
         allowed_doc_ids={"doc-a"},
     ) == [{"doc_id": "doc-a", "page_numbers": [1, 2]}]
+
 
 
 def test_collect_grounding_pages_caps_generic_results_to_two_pages_per_doc(monkeypatch):
@@ -191,5 +223,48 @@ def test_collect_grounding_pages_caps_page_local_results_to_one_page_per_doc(mon
         page_texts_by_doc=page_texts_by_doc,
         intent=intent,
         allowed_doc_ids={"doc-a"},
+        answer_type="name",
     ) == [{"doc_id": "doc-a", "page_numbers": [1]}]
 
+
+
+def test_collect_grounding_pages_prunes_compare_results_to_case_coverage(monkeypatch):
+    reranked_chunks = [
+        ({"doc_id": "doc-a", "page_numbers": [1], "text": "Justice Alice Example case CA 005/2025"}, 0.9),
+        ({"doc_id": "doc-b", "page_numbers": [1], "text": "Justice Alice Example case TCD 001/2024"}, 0.88),
+        ({"doc_id": "doc-c", "page_numbers": [1], "text": "Justice Alice Example unrelated case"}, 0.87),
+    ]
+    page_texts_by_doc = {
+        "doc-a": {1: "Before: Justice Alice Example CA 005/2025"},
+        "doc-b": {1: "Before: Justice Alice Example TCD 001/2024"},
+        "doc-c": {1: "Before: Justice Alice Example unrelated case"},
+    }
+    intent = GroundingIntent(
+        kind="judge_compare",
+        page_focus="first",
+        keyphrases=("before", "justice", "judge"),
+        case_ids=("CA 005/2025", "TCD 001/2024"),
+        max_pages_per_chunk=2,
+        max_pages_per_doc=1,
+    )
+
+    class FakePageRetriever:
+        def search(self, query: str, *, top_k: int = 6, allowed_doc_ids: set[str] | None = None):
+            return [
+                ({"doc_id": "doc-c", "page_num": 1}, 0.95),
+            ]
+
+    monkeypatch.setattr(grounding_mod, "_get_page_retriever", lambda: FakePageRetriever())
+
+    assert grounding_mod.collect_grounding_pages(
+        reranked_chunks,
+        question_text="Based on all documents in case CA 005/2025 and case TCD 001/2024, did any judge appear in both cases?",
+        answer_text="True",
+        page_texts_by_doc=page_texts_by_doc,
+        intent=intent,
+        allowed_doc_ids={"doc-a", "doc-b", "doc-c"},
+        answer_type="boolean",
+    ) == [
+        {"doc_id": "doc-a", "page_numbers": [1]},
+        {"doc_id": "doc-b", "page_numbers": [1]},
+    ]

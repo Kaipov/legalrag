@@ -1,0 +1,74 @@
+from src.retrieve.question_plan import build_question_plan
+
+
+
+def test_build_question_plan_detects_date_of_issue_compare() -> None:
+    plan = build_question_plan(
+        "Which case has an earlier Date of Issue: CA 004/2025 or SCT 295/2025?",
+        "name",
+    )
+
+    assert plan.mode == "date_of_issue_compare"
+    assert plan.page_hint == "page_2"
+    assert plan.target_field == "issue_date"
+    assert plan.case_ids == ("CA 004/2025", "SCT 295/2025")
+
+
+
+def test_build_question_plan_detects_single_case_date_lookup() -> None:
+    plan = build_question_plan(
+        "What is the Date of Issue of the document in case CFI 057/2025?",
+        "date",
+    )
+
+    assert plan.mode == "page_local_lookup"
+    assert plan.page_hint == "page_2"
+    assert plan.target_field == "issue_date"
+
+
+
+def test_build_question_plan_detects_page_local_claim_number_lookup() -> None:
+    plan = build_question_plan(
+        "According to page 2 of the judgment, from which specific claim number did the appeal in CA 009/2024 originate?",
+        "name",
+    )
+
+    assert plan.mode == "page_local_lookup"
+    assert plan.page_hint == "page_2"
+    assert plan.target_field == "claim_number"
+    assert plan.case_ids == ("CA 009/2024",)
+
+
+
+def test_build_question_plan_detects_judge_compare() -> None:
+    plan = build_question_plan(
+        "Considering all documents across case CA 005/2025 and case TCD 001/2024, was there any judge who participated in both cases?",
+        "boolean",
+    )
+
+    assert plan.mode == "judge_compare"
+    assert plan.compare_op == "set_overlap"
+    assert plan.target_field == "judge"
+
+
+
+def test_build_question_plan_detects_last_page_outcome() -> None:
+    plan = build_question_plan(
+        "According to the 'IT IS HEREBY ORDERED THAT' section of case SCT 454/2024, what was the outcome of the application for permission to appeal?",
+        "free_text",
+    )
+
+    assert plan.mode == "last_page_outcome"
+    assert plan.page_hint == "last"
+    assert plan.is_deterministic_candidate is True
+
+
+
+def test_build_question_plan_flags_absence_risk() -> None:
+    plan = build_question_plan(
+        "Were the Miranda rights properly administered in case ENF 269/2023?",
+        "free_text",
+    )
+
+    assert plan.mode == "absence_check"
+    assert plan.abstention_risk is True

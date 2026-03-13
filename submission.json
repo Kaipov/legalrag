@@ -6,9 +6,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 2904,
-          "tpot_ms": 18,
-          "total_time_ms": 3653
+          "ttft_ms": 2574,
+          "tpot_ms": 40,
+          "total_time_ms": 3304
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -33,37 +33,25 @@
       "answer": "2026-02-02",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1139,
-          "tpot_ms": 14,
-          "total_time_ms": 1734
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 19
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
-              "page_numbers": [
                 2
-              ]
-            },
-            {
-              "doc_id": "78ffe994cdc61ce6a2a6937c79fc52751bb5d2b4eaa4019f088fbccf70569c26",
-              "page_numbers": [
-                1
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1438,
-          "output_tokens": 15
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -71,9 +59,9 @@
       "answer": null,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1159,
-          "tpot_ms": 14,
-          "total_time_ms": 1313
+          "ttft_ms": 1034,
+          "tpot_ms": 63,
+          "total_time_ms": 1679
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -90,9 +78,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1151,
-          "tpot_ms": 13,
-          "total_time_ms": 1733
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -103,19 +91,7 @@
               ]
             },
             {
-              "doc_id": "3a574fc4f0baa5ec7ff0dcc822d7c55e4f9c493c24addc217c8df3d848c16fa5",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
               "page_numbers": [
                 1
               ]
@@ -123,20 +99,20 @@
           ]
         },
         "usage": {
-          "input_tokens": 1545,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
       "question_id": "bce4c288236518dfd08f6bac5a75c75ea79b1250347c4b998252fa9d7265a7c3",
-      "answer": "Partners are jointly and severally liable with the other Partners for all debts and obligations of the General Partnership incurred while they are Partners under Article 28(1).",
+      "answer": "Partners have joint and several liability with other Partners for all debts and obligations of the General Partnership incurred while they are Partners under Article 28(1).",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1216,
-          "tpot_ms": 14,
-          "total_time_ms": 2278
+          "ttft_ms": 993,
+          "tpot_ms": 13,
+          "total_time_ms": 1931
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -144,14 +120,14 @@
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
                 10,
-                15
+                11
               ]
             }
           ]
         },
         "usage": {
           "input_tokens": 1765,
-          "output_tokens": 40
+          "output_tokens": 38
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -161,9 +137,9 @@
       "answer": "The maximum fine for failing to provide a copy of an assignment of rights is USD 1,500 under Article 10(7) of the Foundations Law.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1046,
-          "tpot_ms": 10,
-          "total_time_ms": 1933
+          "ttft_ms": 1041,
+          "tpot_ms": 15,
+          "total_time_ms": 2074
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -188,9 +164,9 @@
       "answer": "The Board of Directors of the DIFCA is responsible for appointing and dismissing the Registrar, after consulting the President.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1978,
-          "tpot_ms": 11,
-          "total_time_ms": 2708
+          "ttft_ms": 1415,
+          "tpot_ms": 18,
+          "total_time_ms": 2516
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -215,9 +191,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1528,
-          "tpot_ms": 13,
-          "total_time_ms": 2170
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -232,80 +208,73 @@
               "page_numbers": [
                 1
               ]
+            }
+          ]
+        },
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        },
+        "model_name": "deterministic-resolver"
+      }
+    },
+    {
+      "question_id": "acd0ddc6715f2bccf5076dc47e6874a8ecb782dd10c0b162071f890ad96bef47",
+      "answer": "SCT 295/2025",
+      "telemetry": {
+        "timing": {
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
+        },
+        "retrieval": {
+          "retrieved_chunk_pages": [
+            {
+              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
+              "page_numbers": [
+                2
+              ]
             },
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1523,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
-      }
-    },
-    {
-      "question_id": "acd0ddc6715f2bccf5076dc47e6874a8ecb782dd10c0b162071f890ad96bef47",
-      "answer": null,
-      "telemetry": {
-        "timing": {
-          "ttft_ms": 1214,
-          "tpot_ms": 20,
-          "total_time_ms": 1413
-        },
-        "retrieval": {
-          "retrieved_chunk_pages": []
-        },
-        "usage": {
-          "input_tokens": 1828,
-          "output_tokens": 10
-        },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
       "question_id": "436c12cc4eb26087bd1540f5d47825712632e90b4d5b2bca6c52e3b26151f874",
-      "answer": "The Permission to Appeal Application in case CFI 057/2025 was considered by the Court of First Instance. The order was made pursuant to the Rules of the DIFC Courts but the result is not specified.",
+      "answer": "The Permission to Appeal Application in case CFI 057/2025 was considered, but the order does not specify the final result of the application.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1049,
-          "tpot_ms": 25,
-          "total_time_ms": 2832
+          "ttft_ms": 1378,
+          "tpot_ms": 17,
+          "total_time_ms": 2567
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             },
             {
               "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
-                1,
-                2
-              ]
-            },
-            {
-              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
-              "page_numbers": [
                 1
               ]
             },
             {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
+              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
                 1
               ]
@@ -314,7 +283,7 @@
         },
         "usage": {
           "input_tokens": 1860,
-          "output_tokens": 51
+          "output_tokens": 38
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -324,14 +293,14 @@
       "answer": "SCT 169/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1119,
-          "tpot_ms": 12,
-          "total_time_ms": 1837
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
+              "doc_id": "3a574fc4f0baa5ec7ff0dcc822d7c55e4f9c493c24addc217c8df3d848c16fa5",
               "page_numbers": [
                 2
               ]
@@ -341,20 +310,14 @@
               "page_numbers": [
                 2
               ]
-            },
-            {
-              "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
-              "page_numbers": [
-                2
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1867,
-          "output_tokens": 16
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -362,32 +325,20 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1009,
+          "ttft_ms": 1287,
           "tpot_ms": 13,
-          "total_time_ms": 1517
+          "total_time_ms": 1893
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
+              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
               "page_numbers": [
                 1
               ]
             },
             {
               "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
               "page_numbers": [
                 1
               ]
@@ -406,20 +357,14 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 944,
-          "tpot_ms": 12,
-          "total_time_ms": 1597
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
                 1
               ]
@@ -429,20 +374,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1535,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -450,18 +389,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1242,
-          "tpot_ms": 12,
-          "total_time_ms": 1883
+          "ttft_ms": 1077,
+          "tpot_ms": 14,
+          "total_time_ms": 1737
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
@@ -471,12 +404,11 @@
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             },
             {
-              "doc_id": "bd2d222ee0a636a745434cfb457321cd658db5bb32b5f0a3f5643236cc1503d8",
+              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
               "page_numbers": [
                 1
               ]
@@ -495,9 +427,9 @@
       "answer": null,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1093,
-          "tpot_ms": 8,
-          "total_time_ms": 1167
+          "ttft_ms": 1008,
+          "tpot_ms": 14,
+          "total_time_ms": 1152
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -514,9 +446,9 @@
       "answer": "CFI 010/2024",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1188,
-          "tpot_ms": 11,
-          "total_time_ms": 1688
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -527,24 +459,18 @@
               ]
             },
             {
-              "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
+              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "78ffe994cdc61ce6a2a6937c79fc52751bb5d2b4eaa4019f088fbccf70569c26",
-              "page_numbers": [
-                1
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1530,
-          "output_tokens": 17
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -552,23 +478,16 @@
       "answer": "DIFC Law No. 2 of 2022 amended the Common Reporting Standard Law, Employment Law, Limited Liability Partnership Law, and General Partnership Law.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1563,
-          "tpot_ms": 14,
-          "total_time_ms": 2646
+          "ttft_ms": 1282,
+          "tpot_ms": 12,
+          "total_time_ms": 2374
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                1,
-                37
+                1
               ]
             },
             {
@@ -580,8 +499,7 @@
             {
               "doc_id": "fbdd7f9dd299d83b1f398778da2e6765dfaaed62005667264734a1f76ec09071",
               "page_numbers": [
-                1,
-                15
+                1
               ]
             }
           ]
@@ -598,9 +516,9 @@
       "answer": 7,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1214,
-          "tpot_ms": 11,
-          "total_time_ms": 1772
+          "ttft_ms": 1196,
+          "tpot_ms": 13,
+          "total_time_ms": 1842
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -625,23 +543,22 @@
       "answer": "ONORA",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1109,
-          "tpot_ms": 10,
-          "total_time_ms": 1696
+          "ttft_ms": 1188,
+          "tpot_ms": 13,
+          "total_time_ms": 1825
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
-              "page_numbers": [
-                2,
-                3
-              ]
-            },
-            {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
                 1,
+                2
+              ]
+            },
+            {
+              "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
+              "page_numbers": [
                 2
               ]
             }
@@ -659,9 +576,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1343,
-          "tpot_ms": 21,
-          "total_time_ms": 2067
+          "ttft_ms": 1110,
+          "tpot_ms": 13,
+          "total_time_ms": 1791
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -686,18 +603,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1641,
-          "tpot_ms": 11,
-          "total_time_ms": 2228
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
@@ -705,13 +616,7 @@
               ]
             },
             {
-              "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "839de9798f377492eee68f82b202d7cd3544be83d799f6226a02f3678c9bb914",
+              "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
               "page_numbers": [
                 1
               ]
@@ -719,10 +624,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1630,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -730,9 +635,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1109,
-          "tpot_ms": 10,
-          "total_time_ms": 1558
+          "ttft_ms": 1209,
+          "tpot_ms": 12,
+          "total_time_ms": 1842
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -754,33 +659,25 @@
     },
     {
       "question_id": "ad7357a7eb955085f6438dfcaf44324de7fcf88da86c846242e173eacdeebfda",
-      "answer": "The application for permission to appeal in case SCT 169/2025 was refused. The order was made by H.E. Justice Roger Stewart KC on December 24, 2025.",
+      "answer": "The application for permission to appeal in case SCT 169/2025 was refused.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1172,
-          "tpot_ms": 13,
-          "total_time_ms": 2315
+          "ttft_ms": 1154,
+          "tpot_ms": 15,
+          "total_time_ms": 2054
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
+              "doc_id": "3a574fc4f0baa5ec7ff0dcc822d7c55e4f9c493c24addc217c8df3d848c16fa5",
               "page_numbers": [
                 1
               ]
             },
             {
-              "doc_id": "3a574fc4f0baa5ec7ff0dcc822d7c55e4f9c493c24addc217c8df3d848c16fa5",
-              "page_numbers": [
-                1,
-                2
-              ]
-            },
-            {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1,
-                6
+                1
               ]
             },
             {
@@ -793,7 +690,7 @@
         },
         "usage": {
           "input_tokens": 1847,
-          "output_tokens": 46
+          "output_tokens": 25
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -803,18 +700,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1142,
-          "tpot_ms": 10,
-          "total_time_ms": 1689
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
@@ -826,20 +717,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1602,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -847,9 +732,9 @@
       "answer": "The effective date for due diligence requirements for Pre-existing Accounts is 31 December 2016. The effective date for New Accounts is 1 January 2017.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1066,
+          "ttft_ms": 1346,
           "tpot_ms": 14,
-          "total_time_ms": 2146
+          "total_time_ms": 2384
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -871,12 +756,12 @@
     },
     {
       "question_id": "9f48d8eca6d10cf26f60226078f0d9cb32d3aa2fd25c90c312549cb6265ebd84",
-      "answer": "The Personal Property Law 2005 was made by the Ruler of Dubai. It is a DIFC Law as applicable in the DIFC jurisdiction.",
+      "answer": "The Personal Property Law 2005 was made by the Ruler of Dubai. It is classified as a DIFC Law made by the Ruler.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1040,
-          "tpot_ms": 11,
-          "total_time_ms": 2041
+          "ttft_ms": 1760,
+          "tpot_ms": 13,
+          "total_time_ms": 2828
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -901,9 +786,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 994,
-          "tpot_ms": 11,
-          "total_time_ms": 1640
+          "ttft_ms": 1428,
+          "tpot_ms": 12,
+          "total_time_ms": 2042
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -928,9 +813,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1377,
-          "tpot_ms": 17,
-          "total_time_ms": 1983
+          "ttft_ms": 1082,
+          "tpot_ms": 21,
+          "total_time_ms": 1781
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -952,29 +837,28 @@
     },
     {
       "question_id": "5046b4e3fa11a42090ae0cef08c4cd64a1c8761955eb711db396f7fb1634ea86",
-      "answer": "ENF 316/2023",
+      "answer": "ENF-316-2023/2",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1052,
-          "tpot_ms": 9,
-          "total_time_ms": 1690
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "bd2d222ee0a636a745434cfb457321cd658db5bb32b5f0a3f5643236cc1503d8",
               "page_numbers": [
-                1,
                 2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1106,
-          "output_tokens": 15
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -982,9 +866,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1112,
-          "tpot_ms": 15,
-          "total_time_ms": 1588
+          "ttft_ms": 1143,
+          "tpot_ms": 13,
+          "total_time_ms": 1727
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1009,9 +893,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1032,
-          "tpot_ms": 11,
-          "total_time_ms": 1640
+          "ttft_ms": 1209,
+          "tpot_ms": 13,
+          "total_time_ms": 1765
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1036,18 +920,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1095,
-          "tpot_ms": 10,
-          "total_time_ms": 1795
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
@@ -1059,20 +937,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1532,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -1080,9 +952,9 @@
       "answer": "Article 16(1)(c) requires an Employer to keep records of the Employee's Remuneration, both gross and net where applicable, and the applicable Pay Period.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1059,
-          "tpot_ms": 9,
-          "total_time_ms": 1988
+          "ttft_ms": 1214,
+          "tpot_ms": 12,
+          "total_time_ms": 2220
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1107,32 +979,20 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1122,
-          "tpot_ms": 14,
-          "total_time_ms": 1883
+          "ttft_ms": 1777,
+          "tpot_ms": 15,
+          "total_time_ms": 2502
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "0471e83c1ea18086cfb6b3ff51da6f22b0efee337f10315b2593f782297ccb84",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
+              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
               "page_numbers": [
                 1
               ]
             },
             {
               "doc_id": "62930da32fa3172edf2f2bbf3da268455bd99a7b5fab34d72358730d8cd5da30",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
               "page_numbers": [
                 1
               ]
@@ -1148,21 +1008,28 @@
     },
     {
       "question_id": "fa672c84261a575ba49aba560b6a00c5d944ab9373b764c743d79821658e0052",
-      "answer": "The provided DIFC documents do not contain enough information to answer this question.",
+      "answer": "The No Costs Application is dismissed, There shall be no order as to costs for the No Costs Application, and the Claimant is to pay AED 70,000 in costs to the Defendant pursuant to the Judgment.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1284,
-          "tpot_ms": 21,
-          "total_time_ms": 1490
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
-          "retrieved_chunk_pages": []
+          "retrieved_chunk_pages": [
+            {
+              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
+              "page_numbers": [
+                1
+              ]
+            }
+          ]
         },
         "usage": {
-          "input_tokens": 2380,
-          "output_tokens": 10
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -1170,9 +1037,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1051,
-          "tpot_ms": 15,
-          "total_time_ms": 1621
+          "ttft_ms": 1261,
+          "tpot_ms": 16,
+          "total_time_ms": 1856
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1203,9 +1070,9 @@
       "answer": 15,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1314,
-          "tpot_ms": 11,
-          "total_time_ms": 1945
+          "ttft_ms": 1130,
+          "tpot_ms": 14,
+          "total_time_ms": 1726
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1230,9 +1097,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1183,
+          "ttft_ms": 1034,
           "tpot_ms": 13,
-          "total_time_ms": 1658
+          "total_time_ms": 1581
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1257,18 +1124,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1047,
-          "tpot_ms": 11,
-          "total_time_ms": 1690
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
@@ -1280,20 +1141,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1557,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -1301,18 +1156,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 922,
-          "tpot_ms": 15,
-          "total_time_ms": 1578
+          "ttft_ms": 1169,
+          "tpot_ms": 16,
+          "total_time_ms": 1667
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
@@ -1320,14 +1169,13 @@
               ]
             },
             {
-              "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
+              "doc_id": "78ffe994cdc61ce6a2a6937c79fc52751bb5d2b4eaa4019f088fbccf70569c26",
               "page_numbers": [
-                1,
-                3
+                1
               ]
             },
             {
-              "doc_id": "78ffe994cdc61ce6a2a6937c79fc52751bb5d2b4eaa4019f088fbccf70569c26",
+              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
               "page_numbers": [
                 1
               ]
@@ -1346,24 +1194,23 @@
       "answer": "Records under the Common Reporting Standard Law must be retained for six years after reporting. General Partnership records must be preserved for at least six years from creation.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1193,
-          "tpot_ms": 8,
-          "total_time_ms": 2025
+          "ttft_ms": 1083,
+          "tpot_ms": 17,
+          "total_time_ms": 2227
         },
         "retrieval": {
           "retrieved_chunk_pages": [
+            {
+              "doc_id": "fbdd7f9dd299d83b1f398778da2e6765dfaaed62005667264734a1f76ec09071",
+              "page_numbers": [
+                7
+              ]
+            },
             {
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
                 6,
                 7
-              ]
-            },
-            {
-              "doc_id": "fbdd7f9dd299d83b1f398778da2e6765dfaaed62005667264734a1f76ec09071",
-              "page_numbers": [
-                7,
-                15
               ]
             }
           ]
@@ -1380,37 +1227,31 @@
       "answer": "ENF 269/2023",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1117,
-          "tpot_ms": 20,
-          "total_time_ms": 2001
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "3a574fc4f0baa5ec7ff0dcc822d7c55e4f9c493c24addc217c8df3d848c16fa5",
+              "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
                 2
               ]
             },
             {
-              "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1675,
-          "output_tokens": 17
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -1418,18 +1259,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1148,
-          "tpot_ms": 10,
-          "total_time_ms": 1611
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
@@ -1441,20 +1276,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1629,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -1464,9 +1293,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1054,
-          "tpot_ms": 10,
-          "total_time_ms": 1592
+          "ttft_ms": 1020,
+          "tpot_ms": 15,
+          "total_time_ms": 1609
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1479,15 +1308,13 @@
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             },
             {
               "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             }
           ]
@@ -1501,20 +1328,25 @@
     },
     {
       "question_id": "b982f3b308042c0eb23dfe264a56ab53866fbea5d3981c4bfcf3ffb6de22054e",
-      "answer": "The application in case CFI 067/2025 was dismissed and the applicant was ordered to pay 80% of the respondent’s costs totaling USD 155,879.50.",
+      "answer": "The Defendant’s application seeking immediate judgment and/or strike out was dismissed. The Defendant was ordered to pay 80% of the Respondent’s costs amounting to USD 155,879.50.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1219,
-          "tpot_ms": 20,
-          "total_time_ms": 2568
+          "ttft_ms": 1949,
+          "tpot_ms": 13,
+          "total_time_ms": 3109
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
+              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
               "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
               "page_numbers": [
-                1,
-                3
+                7
               ]
             },
             {
@@ -1522,25 +1354,12 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
-              "page_numbers": [
-                1,
-                2
-              ]
             }
           ]
         },
         "usage": {
           "input_tokens": 1934,
-          "output_tokens": 45
+          "output_tokens": 48
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -1552,9 +1371,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1107,
-          "tpot_ms": 9,
-          "total_time_ms": 1677
+          "ttft_ms": 959,
+          "tpot_ms": 13,
+          "total_time_ms": 1644
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1568,8 +1387,7 @@
             {
               "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
               "page_numbers": [
-                1,
-                4
+                1
               ]
             }
           ]
@@ -1586,9 +1404,9 @@
       "answer": 30,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1168,
-          "tpot_ms": 17,
-          "total_time_ms": 1693
+          "ttft_ms": 1315,
+          "tpot_ms": 7,
+          "total_time_ms": 1906
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1613,9 +1431,9 @@
       "answer": 12,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1443,
-          "tpot_ms": 10,
-          "total_time_ms": 1998
+          "ttft_ms": 1032,
+          "tpot_ms": 16,
+          "total_time_ms": 1704
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1623,18 +1441,6 @@
               "doc_id": "72ea171147bf30326fe6fd2e6798f607c7cef4bf9d43761dbccd2f1b6a356849",
               "page_numbers": [
                 2
-              ]
-            },
-            {
-              "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
-              "page_numbers": [
-                7
-              ]
-            },
-            {
-              "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
-              "page_numbers": [
-                8
               ]
             }
           ]
@@ -1651,9 +1457,9 @@
       "answer": "SCT 169/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 2254,
-          "tpot_ms": 3,
-          "total_time_ms": 2768
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1668,20 +1474,14 @@
               "page_numbers": [
                 2
               ]
-            },
-            {
-              "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
-              "page_numbers": [
-                2
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1828,
-          "output_tokens": 16
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -1689,9 +1489,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1156,
-          "tpot_ms": 10,
-          "total_time_ms": 1764
+          "ttft_ms": 1131,
+          "tpot_ms": 15,
+          "total_time_ms": 1777
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1716,14 +1516,14 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1068,
-          "tpot_ms": 13,
-          "total_time_ms": 1714
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
+              "doc_id": "0471e83c1ea18086cfb6b3ff51da6f22b0efee337f10315b2593f782297ccb84",
               "page_numbers": [
                 1
               ]
@@ -1733,26 +1533,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1699,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -1760,9 +1548,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1282,
-          "tpot_ms": 19,
-          "total_time_ms": 1801
+          "ttft_ms": 1980,
+          "tpot_ms": 40,
+          "total_time_ms": 2787
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1787,9 +1575,9 @@
       "answer": 4,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1319,
-          "tpot_ms": 12,
-          "total_time_ms": 1891
+          "ttft_ms": 1258,
+          "tpot_ms": 19,
+          "total_time_ms": 1947
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1815,30 +1603,28 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1000,
-          "tpot_ms": 13,
-          "total_time_ms": 1747
+          "ttft_ms": 1221,
+          "tpot_ms": 16,
+          "total_time_ms": 1937
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
+              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
               "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             },
             {
               "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
-                1,
                 3
-              ]
-            },
-            {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
-              "page_numbers": [
-                1
               ]
             }
           ]
@@ -1855,9 +1641,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1200,
-          "tpot_ms": 17,
-          "total_time_ms": 1869
+          "ttft_ms": 1371,
+          "tpot_ms": 31,
+          "total_time_ms": 2165
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1882,9 +1668,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1161,
-          "tpot_ms": 22,
-          "total_time_ms": 1857
+          "ttft_ms": 1089,
+          "tpot_ms": 33,
+          "total_time_ms": 1831
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1898,8 +1684,7 @@
             {
               "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
               "page_numbers": [
-                13,
-                14
+                13
               ]
             }
           ]
@@ -1916,9 +1701,9 @@
       "answer": "A Reporting Financial Institution must provide an English translation of records obtained or created in a language other than English upon request to the Relevant Authority.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1175,
-          "tpot_ms": 11,
-          "total_time_ms": 2093
+          "ttft_ms": 1156,
+          "tpot_ms": 17,
+          "total_time_ms": 2256
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1943,9 +1728,9 @@
       "answer": "The DIFC Personal Property Law 2005 was enacted on the date specified in the Enactment Notice in respect of this Law. The exact date is not provided in the context.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1116,
-          "tpot_ms": 9,
-          "total_time_ms": 2023
+          "ttft_ms": 1088,
+          "tpot_ms": 11,
+          "total_time_ms": 2068
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1967,46 +1752,29 @@
     },
     {
       "question_id": "8167b0cfeb476ce373ca991b28b3b35f78a8c3c9a5e3d1b682fdbb0ed5604ef4",
-      "answer": "Each party shall bear its own costs of the Permission for Appeal Application, and no costs award was made in favor of the Defendant.",
+      "answer": "The Permission to Appeal Application is refused, and there was no order as to costs.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 2839,
-          "tpot_ms": 11,
-          "total_time_ms": 3731
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                11
-              ]
-            },
-            {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                6
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                3
+                1,
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 2287,
-          "output_tokens": 34
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2014,20 +1782,14 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1026,
-          "tpot_ms": 9,
-          "total_time_ms": 1629
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
+              "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
               "page_numbers": [
                 1
               ]
@@ -2037,20 +1799,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1565,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2058,9 +1814,9 @@
       "answer": "The provided DIFC documents do not contain information showing whether Miranda rights were properly administered in case ENF 269/2023.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 465,
+          "ttft_ms": 475,
           "tpot_ms": 0,
-          "total_time_ms": 465
+          "total_time_ms": 475
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2077,12 +1833,18 @@
       "answer": "The consolidated version of the Law on the Application of Civil and Commercial Laws in the DIFC was published in November 2024.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1185,
-          "tpot_ms": 10,
-          "total_time_ms": 2318
+          "ttft_ms": 1181,
+          "tpot_ms": 13,
+          "total_time_ms": 22842
         },
         "retrieval": {
           "retrieved_chunk_pages": [
+            {
+              "doc_id": "ff746f7b583490a80ba104361c0a82a1ebbf7ed9097cd03dc49d744cb5057761",
+              "page_numbers": [
+                3
+              ]
+            },
             {
               "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
               "page_numbers": [
@@ -2093,13 +1855,6 @@
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
                 1
-              ]
-            },
-            {
-              "doc_id": "ff746f7b583490a80ba104361c0a82a1ebbf7ed9097cd03dc49d744cb5057761",
-              "page_numbers": [
-                1,
-                3
               ]
             }
           ]
@@ -2116,24 +1871,23 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1056,
-          "tpot_ms": 12,
-          "total_time_ms": 1675
+          "ttft_ms": 1080,
+          "tpot_ms": 18,
+          "total_time_ms": 1779
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "4e387152960c1029b3711cacb05b287b13c977bc61f2558059a62b7b427a62eb",
-              "page_numbers": [
-                1,
-                51
-              ]
-            },
             {
               "doc_id": "72ea171147bf30326fe6fd2e6798f607c7cef4bf9d43761dbccd2f1b6a356849",
               "page_numbers": [
                 40,
                 41
+              ]
+            },
+            {
+              "doc_id": "4e387152960c1029b3711cacb05b287b13c977bc61f2558059a62b7b427a62eb",
+              "page_numbers": [
+                51
               ]
             }
           ]
@@ -2147,12 +1901,12 @@
     },
     {
       "question_id": "30167c4bda50157907608b180c50e4e49902b0cb6bd09b6461b6c7cb75961a1b",
-      "answer": "The court dismissed the Claimant’s Application for a Default Costs Certificate. The Claimant shall bear its own costs of the Application.",
+      "answer": "The court dismissed the Claimant’s Application for a Default Costs Certificate and ordered the Claimant to bear its own costs of the Application.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1120,
-          "tpot_ms": 12,
-          "total_time_ms": 1973
+          "ttft_ms": 1239,
+          "tpot_ms": 19,
+          "total_time_ms": 2352
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2166,7 +1920,6 @@
             {
               "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
-                2,
                 3
               ]
             }
@@ -2174,7 +1927,7 @@
         },
         "usage": {
           "input_tokens": 2067,
-          "output_tokens": 34
+          "output_tokens": 35
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -2184,26 +1937,20 @@
       "answer": "ENF 269/2023",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1231,
-          "tpot_ms": 11,
-          "total_time_ms": 1878
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                1
+                2
               ]
             },
             {
               "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
               "page_numbers": [
                 2
               ]
@@ -2211,10 +1958,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1520,
-          "output_tokens": 17
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2222,9 +1969,9 @@
       "answer": "Confirmation Statement",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1060,
-          "tpot_ms": 13,
-          "total_time_ms": 1689
+          "ttft_ms": 960,
+          "tpot_ms": 10,
+          "total_time_ms": 1535
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2249,9 +1996,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1121,
-          "tpot_ms": 10,
-          "total_time_ms": 1657
+          "ttft_ms": 1400,
+          "tpot_ms": 11,
+          "total_time_ms": 1937
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2276,20 +2023,14 @@
       "answer": "CA 004/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1141,
-          "tpot_ms": 15,
-          "total_time_ms": 1920
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "3a574fc4f0baa5ec7ff0dcc822d7c55e4f9c493c24addc217c8df3d848c16fa5",
               "page_numbers": [
                 2
               ]
@@ -2297,26 +2038,26 @@
             {
               "doc_id": "78ffe994cdc61ce6a2a6937c79fc52751bb5d2b4eaa4019f088fbccf70569c26",
               "page_numbers": [
-                1
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1644,
-          "output_tokens": 16
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
       "question_id": "52e9e31a6d7a80a597147115b3d38065da495a41e7c11e797d0a190c9a580bcf",
-      "answer": "The outcome of the application for permission to appeal in case SCT 295/2025 is not specified in the provided context.",
+      "answer": "The context does not specify the outcome of the order or application in case SCT 295/2025.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1065,
-          "tpot_ms": 11,
-          "total_time_ms": 1891
+          "ttft_ms": 1226,
+          "tpot_ms": 13,
+          "total_time_ms": 2125
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2329,22 +2070,20 @@
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1,
-                6
+                1
               ]
             },
             {
               "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             }
           ]
         },
         "usage": {
           "input_tokens": 1601,
-          "output_tokens": 33
+          "output_tokens": 29
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -2354,32 +2093,20 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1075,
-          "tpot_ms": 16,
-          "total_time_ms": 1721
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
+              "doc_id": "0471e83c1ea18086cfb6b3ff51da6f22b0efee337f10315b2593f782297ccb84",
               "page_numbers": [
                 1
               ]
             },
             {
-              "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "839de9798f377492eee68f82b202d7cd3544be83d799f6226a02f3678c9bb914",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
+              "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
               "page_numbers": [
                 1
               ]
@@ -2387,54 +2114,38 @@
           ]
         },
         "usage": {
-          "input_tokens": 1587,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
       "question_id": "eeffebf44c689e60729c466dd3fda5e7c2731c84220464c1808ef661452d1de0",
-      "answer": "The Court of Appeal allowed the appeal to the extent shown in the order and dismissed the appeal against the order relating to Mr Oron. The appellant is entitled to costs with a measure of discount.",
+      "answer": "That the Appeal must be allowed to the extent now ordered,, We are not so satisfied in relation to Mr Oron. We have weighed the Appellant’s submission that he is a person within the meaning of the term Officer in the rule, because he is a partner in Olindo under UAE law, with certain rights beyond those of an ordinary shareholder in other laws or other corporate structures. However, we have not been persuaded by any admissible evidence before us, that he may be in possession of information that is needed to enforce the judgment for costs; or that he has such a degree of control over Olindo, that he could obtain and provide any such information from it. He accordingly succeeds on the Appeal, in that we uphold the Judge’s Order staying (permanently as we construe its intent) of the Second Part 50 Order, insofar as it related to him, For all of the foregoing reasons, we have allowed the Appeal to the extent shown in our order above, restoring the Second Part 50 order in its amended form against Ms Onitaand dismissing the Appeal against the Order, insofar as it relates to Mr Oron, We have reached this conclusion by accepting the validity of the second ground of appeal. In those circumstances, the first ground is moot, and it is unnecessary for us to determine if there was a typographical and formatting error or a mistaken importation of a submission into a recital of a statutory provision and, in consequence, a misinterpretation of it. This Appeal succeeds on the ground that the Judge was wrong in his approach to and interpretation of the rule, and in his finding that Ms Onitawas not an Officer within its meaning. Costs, the Appellant has succeeded in the appeal to a substantial degree, in terms of establishing the principles it relied on, and establishing that the Judge was wrong in his approach and order in respect of Ms Onita. It has however failed in respect of the other target for questioning it had pursued. Consequently, the Appellant is in principle entitled to its costs with a measure of discount, the court has before it Statements of Costs from both parties, which vary enormously. The total number of hours spent by all lawyers for the Appellant is 77 and for the Respondents only 39 – slightly above half. Both parties instructed counsel but the Appellant instructed leading and junior counsel at a total cost of USD 76,000; whereas the Respondents instructed a junior counsel at a cost of only USD 5,000. The Appellant’s total bill of costs amounts to USD 121,082.50 and the Respondents to USD 38,000 – less than one third of the Appellant’s costs, This amounts to a substantial disparity, which can only be partly explained and justified by reference to the extensive research undertaken and the product thereof, deployed by the Appellant in its submissions before the court. In our view, there is evident disproportionality and unnecessary excess in the amounts of time spent and costs incurred by the Appellant’s legal team, having regard to the amount at stake, and Taking those reducing factors into account, the court considers that a fair, reasonable and proportionate award of costs for the Appellant in this appeal, is 50% of the amount it has claimed, namely the sum of USD 60,541.25.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1237,
-          "tpot_ms": 12,
-          "total_time_ms": 2321
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 2
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                3
-              ]
-            },
-            {
-              "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
-              "page_numbers": [
-                14
-              ]
-            },
-            {
-              "doc_id": "78ffe994cdc61ce6a2a6937c79fc52751bb5d2b4eaa4019f088fbccf70569c26",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
               "doc_id": "bd2d222ee0a636a745434cfb457321cd658db5bb32b5f0a3f5643236cc1503d8",
               "page_numbers": [
+                11,
+                13,
                 14
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 2240,
-          "output_tokens": 47
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2442,9 +2153,9 @@
       "answer": null,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1094,
-          "tpot_ms": 28,
-          "total_time_ms": 1369
+          "ttft_ms": 1310,
+          "tpot_ms": 11,
+          "total_time_ms": 1424
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2458,40 +2169,34 @@
     },
     {
       "question_id": "f564b1fd7332944fa826e3af69330b53e8fed018c370dde5b57a8e338d4ecd62",
-      "answer": "CFI 016/2025",
+      "answer": "CFI 057/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1099,
-          "tpot_ms": 10,
-          "total_time_ms": 1761
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
+              "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
                 2
               ]
             },
             {
-              "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
               "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
-                1
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1513,
-          "output_tokens": 17
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2499,9 +2204,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1046,
-          "tpot_ms": 13,
-          "total_time_ms": 1612
+          "ttft_ms": 1119,
+          "tpot_ms": 16,
+          "total_time_ms": 1790
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2526,9 +2231,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1177,
-          "tpot_ms": 10,
-          "total_time_ms": 1729
+          "ttft_ms": 1255,
+          "tpot_ms": 17,
+          "total_time_ms": 1920
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2551,13 +2256,13 @@
     {
       "question_id": "43f77ed8a37c7af9b3e52b0532c593c768f8f1159db9b9ca717a700d6b0a47f9",
       "answer": [
-        "Architeriors Interior Design (L.L.C)"
+        "ARCHITERIORS INTERIOR DESIGN (L.L.C)"
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1345,
-          "tpot_ms": 11,
-          "total_time_ms": 2285
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2566,26 +2271,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "62930da32fa3172edf2f2bbf3da268455bd99a7b5fab34d72358730d8cd5da30",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "c98c1475692bc22f4abab6a7a7d7969467c94e46a7e68919aaf127179ebf3f54",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1281,
-          "output_tokens": 42
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2593,18 +2286,12 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1365,
-          "tpot_ms": 12,
-          "total_time_ms": 1957
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
@@ -2616,20 +2303,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1531,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2637,24 +2318,23 @@
       "answer": "A DIFC-incorporated General Partnership must preserve its accounting records for at least six years. A DIFC-incorporated Limited Liability Partnership must also preserve its accounting records for at least six years.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1071,
-          "tpot_ms": 13,
-          "total_time_ms": 2246
+          "ttft_ms": 1892,
+          "tpot_ms": 24,
+          "total_time_ms": 3660
         },
         "retrieval": {
           "retrieved_chunk_pages": [
+            {
+              "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
+              "page_numbers": [
+                13
+              ]
+            },
             {
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
                 6,
                 7
-              ]
-            },
-            {
-              "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
-              "page_numbers": [
-                13,
-                18
               ]
             }
           ]
@@ -2671,9 +2351,9 @@
       "answer": "The provided DIFC documents do not contain information about any jury decision in case ENF 269/2023.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 450,
+          "ttft_ms": 414,
           "tpot_ms": 0,
-          "total_time_ms": 450
+          "total_time_ms": 414
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2690,9 +2370,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1273,
+          "ttft_ms": 1221,
           "tpot_ms": 13,
-          "total_time_ms": 1810
+          "total_time_ms": 1861
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2706,8 +2386,7 @@
             {
               "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
               "page_numbers": [
-                13,
-                18
+                13
               ]
             }
           ]
@@ -2724,18 +2403,12 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1158,
-          "tpot_ms": 11,
-          "total_time_ms": 1783
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
@@ -2747,20 +2420,14 @@
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1630,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2768,9 +2435,9 @@
       "answer": 30,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1043,
-          "tpot_ms": 9,
-          "total_time_ms": 1609
+          "ttft_ms": 1196,
+          "tpot_ms": 14,
+          "total_time_ms": 1770
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2792,44 +2459,19 @@
     },
     {
       "question_id": "d9d27c9cace6eafd11dbb349244e0443e16c8cc0efdf516514cc945135e1a597",
-      "answer": null,
+      "answer": "SCT 295/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1189,
-          "tpot_ms": 23,
-          "total_time_ms": 1407
-        },
-        "retrieval": {
-          "retrieved_chunk_pages": []
-        },
-        "usage": {
-          "input_tokens": 1701,
-          "output_tokens": 10
-        },
-        "model_name": "gpt-4.1-mini"
-      }
-    },
-    {
-      "question_id": "be35b591e2e2383879988055e11ebf31df0e145903e04b4e0c6fca1786ff634d",
-      "answer": "The ASI Order is discharged with immediate effect and the Defendant’s Set Aside Application is granted. The Claimant shall pay the Defendant its costs of the Set Aside Application on the standard basis.",
-      "telemetry": {
-        "timing": {
-          "ttft_ms": 1298,
-          "tpot_ms": 17,
-          "total_time_ms": 2576
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "0471e83c1ea18086cfb6b3ff51da6f22b0efee337f10315b2593f782297ccb84",
+              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
               "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
-              "page_numbers": [
-                1
+                2
               ]
             },
             {
@@ -2837,20 +2479,40 @@
               "page_numbers": [
                 2
               ]
-            },
+            }
+          ]
+        },
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0
+        },
+        "model_name": "deterministic-resolver"
+      }
+    },
+    {
+      "question_id": "be35b591e2e2383879988055e11ebf31df0e145903e04b4e0c6fca1786ff634d",
+      "answer": "The Defendant’s Set Aside Application is granted, and the Claimant shall pay the Defendant its costs of the Set Aside Application on the standard basis. The Defendant shall submit a Statement of Costs not exceeding three pages within 5 days of this Order.",
+      "telemetry": {
+        "timing": {
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
+        },
+        "retrieval": {
+          "retrieved_chunk_pages": [
             {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
+              "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
-                1
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 2076,
-          "output_tokens": 46
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2858,87 +2520,58 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1804,
-          "tpot_ms": 14,
-          "total_time_ms": 2441
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
+            {
+              "doc_id": "3f8a5ea0e051ba3af7a02da340c911fe0970ebece6c852c3e61a10c00cac6d6e",
+              "page_numbers": [
+                1
+              ]
+            },
             {
               "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
                 1
               ]
-            },
-            {
-              "doc_id": "839de9798f377492eee68f82b202d7cd3544be83d799f6226a02f3678c9bb914",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1525,
-          "output_tokens": 11
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
       "question_id": "c9f0dd67c60a88de9c2c38956f2ffd7b394eb4d7568c73d1869b4182480faf64",
-      "answer": "The Permission to Appeal Application is refused. The Defendant must pay the Claimant’s costs of the application to be assessed on the papers.",
+      "answer": "The request for an oral hearing was refused, the application was refused, reconsideration at a hearing was barred, and the Applicant had to bear its own costs.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1133,
-          "tpot_ms": 13,
-          "total_time_ms": 2101
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
-              "page_numbers": [
-                11
-              ]
-            },
-            {
-              "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
-              "page_numbers": [
-                2
-              ]
-            },
-            {
-              "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
-              "page_numbers": [
-                14
-              ]
-            },
-            {
               "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
               "page_numbers": [
-                4
+                1,
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 2559,
-          "output_tokens": 35
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2946,9 +2579,9 @@
       "answer": "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 431,
+          "ttft_ms": 433,
           "tpot_ms": 0,
-          "total_time_ms": 431
+          "total_time_ms": 433
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2962,21 +2595,28 @@
     },
     {
       "question_id": "b9e824da7bc69fa5b2f4e989a4d591d9c5196362cc985f70a9c29e6f710ea817",
-      "answer": "The provided DIFC documents do not contain enough information to answer this question.",
+      "answer": "The Application is dismissed. The Claim is to proceed to trial to be determined alongside the main issues, and Costs are awarded on the standard basis to be assessed by way of parties’ submissions, as follows: (a) The Claimant shall file its costs submissions, to be no longer than 3 pages, within 5 working days from issue of this Order. (b) The Defendants shall file their response within 5 working days thereafter.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1173,
-          "tpot_ms": 10,
-          "total_time_ms": 1275
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
-          "retrieved_chunk_pages": []
+          "retrieved_chunk_pages": [
+            {
+              "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
+              "page_numbers": [
+                2
+              ]
+            }
+          ]
         },
         "usage": {
-          "input_tokens": 2384,
-          "output_tokens": 10
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2984,9 +2624,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1067,
-          "tpot_ms": 11,
-          "total_time_ms": 1623
+          "ttft_ms": 1167,
+          "tpot_ms": 15,
+          "total_time_ms": 1618
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -3013,30 +2653,28 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1664,
-          "tpot_ms": 12,
-          "total_time_ms": 2303
+          "ttft_ms": 1033,
+          "tpot_ms": 17,
+          "total_time_ms": 1809
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
+              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
+              "page_numbers": [
+                1
+              ]
+            },
+            {
               "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             },
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
                 1
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1,
-                2
               ]
             }
           ]
@@ -3053,32 +2691,20 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1190,
-          "tpot_ms": 9,
-          "total_time_ms": 1782
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
+              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
                 1
               ]
             },
             {
-              "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
-              "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
+              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
                 1
               ]
@@ -3086,10 +2712,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1708,
-          "output_tokens": 8
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -3097,9 +2723,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1176,
-          "tpot_ms": 4,
-          "total_time_ms": 1658
+          "ttft_ms": 1093,
+          "tpot_ms": 9,
+          "total_time_ms": 1696
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -3124,24 +2750,23 @@
       "answer": "CFI 057/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1053,
-          "tpot_ms": 12,
-          "total_time_ms": 1695
+          "ttft_ms": 1120,
+          "tpot_ms": 22,
+          "total_time_ms": 2020
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
+              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
               "page_numbers": [
                 1,
                 2
               ]
             },
             {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
+              "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
-                1,
-                2
+                1
               ]
             }
           ]
@@ -3158,14 +2783,14 @@
       "answer": "ENF 269/2023",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1088,
-          "tpot_ms": 28,
-          "total_time_ms": 2014
+          "ttft_ms": 0,
+          "tpot_ms": 0,
+          "total_time_ms": 0
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
+              "doc_id": "3a574fc4f0baa5ec7ff0dcc822d7c55e4f9c493c24addc217c8df3d848c16fa5",
               "page_numbers": [
                 2
               ]
@@ -3173,22 +2798,16 @@
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                1
-              ]
-            },
-            {
-              "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
-              "page_numbers": [
                 2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1704,
-          "output_tokens": 17
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-4.1-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -3196,9 +2815,9 @@
       "answer": "The provided DIFC documents do not contain information about parole hearings in case CFI 057/2025.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 490,
+          "ttft_ms": 506,
           "tpot_ms": 0,
-          "total_time_ms": 490
+          "total_time_ms": 506
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -3215,18 +2834,12 @@
       "answer": 3,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1135,
-          "tpot_ms": 21,
-          "total_time_ms": 1842
+          "ttft_ms": 956,
+          "tpot_ms": 13,
+          "total_time_ms": 1620
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "536bbce854b9406cc22697e04fcdabd645e030c0e55b918252643b00e0b2b25f",
-              "page_numbers": [
-                2
-              ]
-            },
             {
               "doc_id": "ff746f7b583490a80ba104361c0a82a1ebbf7ed9097cd03dc49d744cb5057761",
               "page_numbers": [
@@ -3247,9 +2860,9 @@
       "answer": 3,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1097,
-          "tpot_ms": 10,
-          "total_time_ms": 1719
+          "ttft_ms": 1182,
+          "tpot_ms": 13,
+          "total_time_ms": 1755
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -3274,9 +2887,9 @@
       "answer": "The DIFCA is responsible for administering the Employment Law and any Regulations made under it.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1050,
-          "tpot_ms": 10,
-          "total_time_ms": 1760
+          "ttft_ms": 1151,
+          "tpot_ms": 16,
+          "total_time_ms": 2055
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -3301,9 +2914,9 @@
       "answer": "The Foundations Law is administered by the Registrar.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1077,
-          "tpot_ms": 10,
-          "total_time_ms": 1675
+          "ttft_ms": 1184,
+          "tpot_ms": 19,
+          "total_time_ms": 1933
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -3328,9 +2941,9 @@
       "answer": "Article 9(1) empowers the Board of Directors of the DIFCA to make Regulations to facilitate the administration of, or further the objects of, the Foundations Law.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1228,
-          "tpot_ms": 9,
-          "total_time_ms": 2120
+          "ttft_ms": 1829,
+          "tpot_ms": 14,
+          "total_time_ms": 2878
         },
         "retrieval": {
           "retrieved_chunk_pages": [

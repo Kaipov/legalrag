@@ -21,12 +21,14 @@ from src.generate.llm import stream_generate
 from src.generate.null_detect import detect_null
 from src.generate.parse import parse_model_output
 from src.generate.prompts import build_prompt
+from src.resolve.resolver import try_resolve_question
 from src.retrieve.grounding import collect_grounding_pages
 from src.retrieve.grounding_policy import GroundingIntent, detect_grounding_intent
+from src.retrieve.question_plan import build_question_plan
 from src.retrieve.hybrid import HybridRetriever
 
 from arlc.submission import SubmissionAnswer
-from arlc.telemetry import RetrievalRef, Telemetry, TelemetryTimer, TimingMetrics, UsageMetrics
+from arlc.telemetry import RetrievalRef, Telemetry, TelemetryTimer, TimingMetrics, UsageMetrics, normalize_retrieved_pages
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +100,36 @@ def _free_text_null_answer(question_text: str) -> str:
             return f"The provided DIFC documents do not contain information showing whether {detail}."
 
     return NULL_FREE_TEXT_ANSWER
+
+
+def _resolution_to_retrieval_refs(evidence_pages: list[Any]) -> list[RetrievalRef]:
+    raw_refs = []
+    for evidence_page in evidence_pages:
+        doc_id = str(getattr(evidence_page, "doc_id", "") or "").strip()
+        page_num = int(getattr(evidence_page, "page_num", 0) or 0)
+        if not doc_id or page_num <= 0:
+            continue
+        raw_refs.append({"doc_id": doc_id, "page_numbers": [page_num]})
+    return normalize_retrieved_pages(raw_refs)
+
+
+def _submission_from_resolution(question_id: str, resolution: Any, timer: TelemetryTimer) -> SubmissionAnswer:
+    timing = timer.finish()
+    retrieval_refs = _resolution_to_retrieval_refs(list(getattr(resolution, "evidence_pages", []) or []))
+    return SubmissionAnswer(
+        question_id=question_id,
+        answer=getattr(resolution, "answer"),
+        telemetry=Telemetry(
+            timing=TimingMetrics(
+                ttft_ms=timing.ttft_ms,
+                tpot_ms=timing.tpot_ms,
+                total_time_ms=timing.total_time_ms,
+            ),
+            retrieval=retrieval_refs,
+            usage=UsageMetrics(input_tokens=0, output_tokens=0),
+            model_name="deterministic-resolver",
+        ),
+    )
 
 
 def _chunk_identity(chunk_with_score: tuple[dict, float]) -> str:
@@ -499,10 +531,19 @@ class RAGPipeline:
         question_id = question_item["id"]
         question_text = question_item["question"]
         answer_type = question_item.get("answer_type", "free_text")
+        plan = build_question_plan(question_text, answer_type)
         active_intent = detect_grounding_intent(question_text, answer_type)
 
         tokenizer = _get_tokenizer()
         timer = TelemetryTimer()
+
+        resolution = try_resolve_question(question_item, plan)
+        if resolution is not None:
+            logger.info(
+                f"[{question_id[:8]}] resolved deterministically via {getattr(resolution, 'method', plan.mode)} "
+                f"pages={len(getattr(resolution, 'evidence_pages', []))} answer={str(getattr(resolution, 'answer', ''))[:50]}"
+            )
+            return _submission_from_resolution(question_id, resolution, timer)
 
         reranked_chunks = self.retriever.retrieve(question_text, intent=active_intent)
         generic_reranked_chunks: list[tuple[dict, float]] | None = None
@@ -645,3 +686,7 @@ class RAGPipeline:
             answer=answer_value,
             telemetry=telemetry,
         )
+
+
+
+

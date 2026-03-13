@@ -116,6 +116,7 @@ def test_answer_question_retries_compare_null_without_intent(monkeypatch) -> Non
             return text.split()
 
     monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
     monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: compare_intent)
     monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
     monkeypatch.setattr(
@@ -175,6 +176,7 @@ def test_answer_question_overrides_compare_null_when_generic_first_pages_cover_b
         return [{"role": "user", "content": "compare prompt"}]
 
     monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
     monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: compare_intent)
     monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
     monkeypatch.setattr(
@@ -228,6 +230,7 @@ def test_answer_question_retries_compare_when_grounding_is_empty(monkeypatch) ->
         return [{"doc_id": "doc-generic", "page_numbers": [1]}]
 
     monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
     monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: compare_intent)
     monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
     monkeypatch.setattr(
@@ -319,6 +322,7 @@ def test_answer_question_ttft_is_marked_before_grounding_collection(monkeypatch)
         return [{"doc_id": "doc-a", "page_numbers": [1]}]
 
     monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
     monkeypatch.setattr(pipeline_mod, "TelemetryTimer", lambda: fake_timer)
     monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
     monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
@@ -370,6 +374,7 @@ def test_answer_question_uses_question_specific_free_text_abstention(monkeypatch
             return pipeline_mod.TimingMetrics(ttft_ms=12, tpot_ms=0, total_time_ms=12)
 
     monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
     monkeypatch.setattr(pipeline_mod, "TelemetryTimer", lambda: FakeTimer())
     monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
     monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: None)
@@ -386,3 +391,5 @@ def test_answer_question_uses_question_specific_free_text_abstention(monkeypatch
 
     assert result.answer == "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025."
     assert result.telemetry.retrieval == []
+
+

@@ -49,6 +49,9 @@ FAISS_IDS = INDEX_DIR / "faiss_ids.json"
 PAGE_BM25_INDEX = INDEX_DIR / "page_bm25.pkl"
 PAGE_FAISS_INDEX = INDEX_DIR / "page_faiss.index"
 PAGE_FAISS_IDS = INDEX_DIR / "page_faiss_ids.json"
+PAGE_METADATA_JSONL = INDEX_DIR / "page_metadata.jsonl"
+CASE_METADATA_JSON = INDEX_DIR / "case_metadata.json"
+ARTICLE_PAGE_MAP_JSON = INDEX_DIR / "article_page_map.json"
 
 # --- API Keys ---
 OPENAI_API_KEY = _get("OPENAI_API_KEY")
@@ -139,3 +142,4 @@ def ensure_dirs():
     """Create required directories if they don't exist."""
     INDEX_DIR.mkdir(parents=True, exist_ok=True)
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Grounding: collect and filter page references from retrieved chunks.
 
 Grounding uses F-beta (beta=2.5): recall ~6x more important than precision.
@@ -166,7 +166,40 @@ def _max_pages_per_doc_limit(intent: GroundingIntent | None) -> int:
 
 
 
-def _select_top_pages_for_doc(
+def _is_structured_answer_type(answer_type: str) -> bool:
+    return str(answer_type or "").lower() in {"number", "date", "boolean", "name", "names"}
+
+
+
+def _max_docs_limit(intent: GroundingIntent | None, answer_type: str) -> int:
+    if intent is None or intent.kind == "generic":
+        return 2 if _is_structured_answer_type(answer_type) else 3
+    if intent.is_compare:
+        if intent.case_ids:
+            return max(2, min(3, len(intent.case_ids)))
+        return 2
+    if intent.kind == "last_page":
+        return max(1, min(2, len(intent.case_ids) or 1))
+    if intent.is_page_local:
+        return max(1, min(2, len(intent.case_ids) or 1))
+    return 2
+
+
+
+def _max_total_pages_limit(intent: GroundingIntent | None, answer_type: str, doc_count: int) -> int:
+    if intent is None or intent.kind == "generic":
+        return 2 if _is_structured_answer_type(answer_type) else 3
+    if intent.is_compare:
+        return max(2, min(3, doc_count))
+    if intent.kind == "last_page":
+        return 2
+    if intent.is_page_local:
+        return max(1, doc_count)
+    return max(1, min(2, doc_count))
+
+
+
+def _score_selected_pages_for_doc(
     doc_id: str,
     candidate_pages: list[int],
     chunk_terms: set[str],
@@ -174,11 +207,7 @@ def _select_top_pages_for_doc(
     answer_terms: set[str],
     page_texts_by_doc: dict[str, dict[int, str]],
     intent: GroundingIntent | None,
-) -> list[int]:
-    limit = _max_pages_per_doc_limit(intent)
-    if len(candidate_pages) <= limit:
-        return sorted(candidate_pages)
-
+) -> list[tuple[float, int, int, int, int]]:
     doc_pages = page_texts_by_doc.get(doc_id, {})
     doc_last_page = max(doc_pages.keys(), default=max(candidate_pages))
     scored_pages: list[tuple[float, int, int, int, int]] = []
@@ -193,10 +222,36 @@ def _select_top_pages_for_doc(
             intent,
         )
         scored_pages.append((score, chunk_overlap, query_overlap, answer_overlap, page_num))
-
     scored_pages.sort(key=lambda item: (-item[0], -item[1], -item[2], -item[3], item[4]))
+    return scored_pages
 
+
+
+def _select_top_pages_for_doc(
+    doc_id: str,
+    candidate_pages: list[int],
+    chunk_terms: set[str],
+    query_terms: set[str],
+    answer_terms: set[str],
+    page_texts_by_doc: dict[str, dict[int, str]],
+    intent: GroundingIntent | None,
+) -> list[int]:
+    limit = _max_pages_per_doc_limit(intent)
+    if len(candidate_pages) <= limit:
+        return sorted(candidate_pages)
+
+    scored_pages = _score_selected_pages_for_doc(
+        doc_id,
+        candidate_pages,
+        chunk_terms,
+        query_terms,
+        answer_terms,
+        page_texts_by_doc,
+        intent,
+    )
     if all(item[0] == 0 and item[1] == 0 and item[2] == 0 and item[3] == 0 for item in scored_pages):
+        doc_pages = page_texts_by_doc.get(doc_id, {})
+        doc_last_page = max(doc_pages.keys(), default=max(candidate_pages))
         ranked_pages = _rank_pages_by_intent(candidate_pages, doc_last_page, intent)
         return sorted(ranked_pages[:limit])
 
@@ -249,20 +304,15 @@ def _select_pages_for_chunk(
         return sorted(ranked_pages[:limit])
 
     chunk_terms = _tokenize(str(chunk.get("text") or ""))
-    scored_pages: list[tuple[float, int, int, int, int]] = []
-    for page_num in candidate_pages:
-        score, chunk_overlap, query_overlap, answer_overlap = _score_page(
-            doc_pages.get(page_num, ""),
-            query_terms,
-            answer_terms,
-            chunk_terms,
-            page_num,
-            doc_last_page,
-            intent,
-        )
-        scored_pages.append((score, chunk_overlap, query_overlap, answer_overlap, page_num))
-
-    scored_pages.sort(key=lambda item: (-item[0], -item[1], -item[2], -item[3], item[4]))
+    scored_pages = _score_selected_pages_for_doc(
+        doc_id,
+        candidate_pages,
+        chunk_terms,
+        query_terms,
+        answer_terms,
+        page_texts_by_doc,
+        intent,
+    )
 
     if all(item[0] == 0 and item[1] == 0 and item[2] == 0 and item[3] == 0 for item in scored_pages):
         ranked_pages = _rank_pages_by_intent(candidate_pages, doc_last_page, intent)
@@ -358,6 +408,110 @@ def _retrieve_additional_pages(
 
 
 
+def _finalize_grounding_results(
+    pages_by_doc: dict[str, set[int]],
+    doc_chunk_terms_by_doc: dict[str, set[str]],
+    query_terms: set[str],
+    answer_terms: set[str],
+    page_texts_by_doc: dict[str, dict[int, str]],
+    intent: GroundingIntent | None,
+    answer_type: str,
+) -> list[dict[str, Any]]:
+    doc_entries: list[dict[str, Any]] = []
+    for doc_id in sorted(pages_by_doc.keys()):
+        selected_pages = _select_top_pages_for_doc(
+            doc_id,
+            sorted(pages_by_doc[doc_id]),
+            doc_chunk_terms_by_doc.get(doc_id, set()),
+            query_terms,
+            answer_terms,
+            page_texts_by_doc,
+            intent,
+        )
+        if not selected_pages:
+            continue
+
+        scored_pages = _score_selected_pages_for_doc(
+            doc_id,
+            selected_pages,
+            doc_chunk_terms_by_doc.get(doc_id, set()),
+            query_terms,
+            answer_terms,
+            page_texts_by_doc,
+            intent,
+        )
+        best_score = scored_pages[0] if scored_pages else (0.0, 0, 0, 0, selected_pages[0])
+        doc_entries.append(
+            {
+                "doc_id": doc_id,
+                "pages": sorted(selected_pages),
+                "scored_pages": scored_pages,
+                "doc_score": best_score[0],
+                "chunk_overlap": best_score[1],
+                "query_overlap": best_score[2],
+                "answer_overlap": best_score[3],
+            }
+        )
+
+    if not doc_entries:
+        return []
+
+    doc_entries.sort(
+        key=lambda entry: (
+            -entry["doc_score"],
+            -entry["chunk_overlap"],
+            -entry["query_overlap"],
+            -entry["answer_overlap"],
+            entry["doc_id"],
+        )
+    )
+
+    kept_entries = doc_entries[: _max_docs_limit(intent, answer_type)]
+    if not kept_entries:
+        return []
+
+    total_page_limit = _max_total_pages_limit(intent, answer_type, len(kept_entries))
+    current_total = sum(len(entry["pages"]) for entry in kept_entries)
+    if current_total <= total_page_limit:
+        return [{"doc_id": entry["doc_id"], "page_numbers": entry["pages"]} for entry in kept_entries]
+
+    selected_by_doc: dict[str, list[int]] = {entry["doc_id"]: [] for entry in kept_entries}
+    remaining_candidates: list[tuple[float, int, int, int, str, int]] = []
+
+    if len(kept_entries) <= total_page_limit:
+        for entry in kept_entries:
+            if not entry["scored_pages"]:
+                continue
+            first_page = int(entry["scored_pages"][0][4])
+            selected_by_doc[entry["doc_id"]].append(first_page)
+            for score, chunk_overlap, query_overlap, answer_overlap, page_num in entry["scored_pages"][1:]:
+                remaining_candidates.append((score, chunk_overlap, query_overlap, answer_overlap, entry["doc_id"], int(page_num)))
+    else:
+        for entry in kept_entries:
+            for score, chunk_overlap, query_overlap, answer_overlap, page_num in entry["scored_pages"]:
+                remaining_candidates.append((score, chunk_overlap, query_overlap, answer_overlap, entry["doc_id"], int(page_num)))
+
+    remaining_candidates.sort(key=lambda item: (-item[0], -item[1], -item[2], -item[3], item[4], item[5]))
+    current_total = sum(len(pages) for pages in selected_by_doc.values())
+
+    for _score, _chunk_overlap, _query_overlap, _answer_overlap, doc_id, page_num in remaining_candidates:
+        if current_total >= total_page_limit:
+            break
+        if page_num in selected_by_doc[doc_id]:
+            continue
+        selected_by_doc[doc_id].append(page_num)
+        current_total += 1
+
+    result = []
+    for entry in kept_entries:
+        pages = sorted(selected_by_doc[entry["doc_id"]])
+        if not pages:
+            continue
+        result.append({"doc_id": entry["doc_id"], "page_numbers": pages})
+    return result
+
+
+
 def collect_grounding_pages(
     reranked_chunks: list[tuple[dict, float]],
     score_threshold: float = DEFAULT_SCORE_THRESHOLD,
@@ -367,6 +521,7 @@ def collect_grounding_pages(
     page_texts_by_doc: dict[str, dict[int, str]] | None = None,
     intent: GroundingIntent | None = None,
     allowed_doc_ids: set[str] | None = None,
+    answer_type: str = "",
 ) -> list[dict[str, Any]]:
     """
     Collect page references for grounding from the chunks used for generation.
@@ -380,6 +535,7 @@ def collect_grounding_pages(
         page_texts_by_doc: Optional injected page-text map for tests.
         intent: Detected grounding intent used for page-local selection priors.
         allowed_doc_ids: Optional doc restriction for page retrieval rescue.
+        answer_type: Answer type used to apply stricter minimal-proof caps.
 
     Returns:
         List of {"doc_id": str, "page_numbers": [int]} for submission.
@@ -434,25 +590,17 @@ def collect_grounding_pages(
         if doc_id in page_texts_by_doc and page_num not in page_texts_by_doc.get(doc_id, {}):
             continue
         pages_by_doc.setdefault(doc_id, set()).add(page_num)
+        doc_chunk_terms_by_doc.setdefault(doc_id, set())
 
-    result = []
-    for doc_id in sorted(pages_by_doc.keys()):
-        pages = _select_top_pages_for_doc(
-            doc_id,
-            sorted(pages_by_doc[doc_id]),
-            doc_chunk_terms_by_doc.get(doc_id, set()),
-            query_terms,
-            answer_terms,
-            page_texts_by_doc,
-            intent,
-        )
-        if pages:
-            result.append({
-                "doc_id": doc_id,
-                "page_numbers": pages,
-            })
-
-    return result
+    return _finalize_grounding_results(
+        pages_by_doc,
+        doc_chunk_terms_by_doc,
+        query_terms,
+        answer_terms,
+        page_texts_by_doc,
+        intent,
+        answer_type,
+    )
 
 
 
@@ -487,4 +635,3 @@ def compute_fbeta(
     beta_sq = beta ** 2
     f_beta = (1 + beta_sq) * precision * recall / (beta_sq * precision + recall)
     return f_beta
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass
 import re
@@ -39,8 +39,10 @@ class GroundingIntent:
         return self.kind in {"judge_compare", "party_compare"}
 
 
+
 def _is_compare_question(text: str) -> bool:
     return any(marker in text for marker in _COMPARE_MARKERS)
+
 
 
 def _extract_case_ids(question_text: str) -> tuple[str, ...]:
@@ -53,6 +55,7 @@ def _extract_case_ids(question_text: str) -> tuple[str, ...]:
         seen.add(case_id)
         case_ids.append(case_id)
     return tuple(case_ids)
+
 
 
 def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIntent:
@@ -96,7 +99,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             generation_top_k=3,
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
-            max_pages_per_doc=1,
+            max_pages_per_doc=2,
         )
 
     if "judge" in text and _is_compare_question(text):
@@ -128,6 +131,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
     return GroundingIntent(kind="generic", case_ids=case_ids, max_pages_per_doc=2)
 
 
+
 def _page_focus_bias(intent: GroundingIntent, pages: list[int], doc_max_page: int | None) -> float:
     if not pages or intent.page_focus == "any":
         return 0.0
@@ -153,6 +157,7 @@ def _page_focus_bias(intent: GroundingIntent, pages: list[int], doc_max_page: in
         if distance_from_end == 2:
             return 1.0
     return 0.0
+
 
 
 def score_chunk_for_intent(chunk: dict[str, Any], intent: GroundingIntent, doc_max_page: int | None = None) -> float:
@@ -185,5 +190,3 @@ def score_chunk_for_intent(chunk: dict[str, Any], intent: GroundingIntent, doc_m
     score += min(2, case_hits) * 0.8
 
     return score
-
-
