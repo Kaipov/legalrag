@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import json
 
-from src.resolve.compare import resolve_date_of_issue_compare, resolve_judge_compare, resolve_party_compare
+from src.resolve.compare import (
+    resolve_date_of_issue_compare,
+    resolve_judge_compare,
+    resolve_monetary_claim_compare,
+    resolve_party_compare,
+)
 from src.resolve.metadata_store import PageMetadataStore
 from src.resolve.outcome import resolve_last_page_outcome
 from src.resolve.page_local import resolve_page_local_lookup
@@ -42,6 +47,200 @@ def test_resolve_date_of_issue_compare_returns_earlier_case(tmp_path) -> None:
     assert resolution.answer == "CA 004/2025"
     assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2), ("doc-b", 2)]
 
+
+
+def test_resolve_date_of_issue_compare_prefers_date_of_issue_text_over_stale_metadata(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 2,
+                "case_ids": ["SCT 169/2025"],
+                "issue_date": "2025-10-24",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "Issued by: Delvin Sumo. Date of Issue: 24 December 2025. The Judgment was issued on 24 October 2025.",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 2,
+                "case_ids": ["SCT 295/2025"],
+                "issue_date": "2025-12-10",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "Issued by: Delvin Sumo. Date of Issue: 10 December 2025.",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="date_of_issue_compare",
+        answer_type="name",
+        case_ids=("SCT 169/2025", "SCT 295/2025"),
+        page_hint="page_2",
+        compare_op="min_date",
+        target_field="issue_date",
+    )
+
+    resolution = resolve_date_of_issue_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer == "SCT 295/2025"
+    assert resolution.facts["dates"] == {"SCT 169/2025": "2025-12-24", "SCT 295/2025": "2025-12-10"}
+
+
+def test_resolve_monetary_claim_compare_returns_higher_case(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 2,
+                "case_ids": ["SCT 169/2025"],
+                "issue_date": "2025-12-24",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [391123.45],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "The Claimant filed a Claim with the DIFC Courts' Small Claims Tribunal seeking payment from the Defendant for brokerage services in the amount of AED 391,123.45.",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 2,
+                "case_ids": ["SCT 295/2025"],
+                "issue_date": "2025-12-10",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [165000, 300162.86],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "The Claimant filed his Claim against the Defendant. The Claimant's outstanding Claim at the time of the Judgment was for four months of his basic salary at AED 165,000. A separate penalty request of AED 300,162.86 was also mentioned later.",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="monetary_claim_compare",
+        answer_type="name",
+        case_ids=("SCT 169/2025", "SCT 295/2025"),
+        page_hint="page_2",
+        compare_op="max_number",
+        target_field="money_value",
+    )
+
+    resolution = resolve_monetary_claim_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer == "SCT 169/2025"
+    assert resolution.facts["amounts"] == {"SCT 169/2025": 391123.45, "SCT 295/2025": 165000.0}
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2), ("doc-b", 2)]
+
+
+
+def test_resolve_page_local_lookup_returns_money_value(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 3,
+                "case_ids": ["CA 005/2025"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [999999999, 405351504],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "Example",
+                "text": (
+                    "A costs amount of AED 999,999,999 was mentioned elsewhere. "
+                    "The Claimant claims debt or damages of AED 405,351,504, exclusive of interest and costs."
+                ),
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="page_local_lookup",
+        answer_type="number",
+        case_ids=("CA 005/2025",),
+        page_hint="any",
+        target_field="money_value",
+    )
+
+    resolution = resolve_page_local_lookup(
+        plan,
+        store,
+        question_text="What was the claim value in AED referenced in the appeal judgment CA 005/2025?",
+    )
+
+    assert resolution is not None
+    assert resolution.answer == 405351504
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 3)]
+
+
+def test_resolve_page_local_lookup_skips_non_claim_money_values_from_other_doc(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 3,
+                "case_ids": ["CA 005/2025"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [550000],
+                "is_first_page": False,
+                "is_last_page": True,
+                "doc_title": "Short order",
+                "text": "assessed and fixed in the amount of AED 550,000, to be paid within 14 days.",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 3,
+                "case_ids": ["CA 005/2025"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [550000, 405351504],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "Appeal reasons",
+                "text": (
+                    "The Claimant shall pay the Defendant's costs assessed at AED 550,000. "
+                    "The Claimant claims debt or damages of AED 405,351,504, exclusive of interest and costs."
+                ),
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="page_local_lookup",
+        answer_type="number",
+        case_ids=("CA 005/2025",),
+        page_hint="any",
+        target_field="money_value",
+    )
+
+    resolution = resolve_page_local_lookup(
+        plan,
+        store,
+        question_text="What was the claim value in AED referenced in the appeal judgment CA 005/2025?",
+    )
+
+    assert resolution is not None
+    assert resolution.answer == 405351504
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-b", 3)]
 
 
 def test_resolve_page_local_lookup_returns_claim_number(tmp_path) -> None:
@@ -102,6 +301,58 @@ def test_resolve_title_page_parties_returns_entity_names_only(tmp_path) -> None:
 
     assert resolution is not None
     assert resolution.answer == ["ARCHITERIORS INTERIOR DESIGN (L.L.C)"]
+
+
+
+def test_resolve_title_page_law_number_without_case_id_uses_document_title_query(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "COMMON REPORTING",
+                "text": "COMMON REPORTING STANDARD LAW\nDIFC LAW NO. 2 OF 2018\nConsolidated Version",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "OPERATING",
+                "text": "OPERATING LAW\nDIFC LAW NO. 7 OF 2018\nConsolidated Version",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="title_page_metadata",
+        answer_type="number",
+        case_ids=(),
+        page_hint="first",
+        target_field="law_number",
+    )
+
+    resolution = resolve_page_local_lookup(
+        plan,
+        store,
+        question_text="According to the title page of the Common Reporting Standard Law, what is its official DIFC Law number?",
+    )
+
+    assert resolution is not None
+    assert resolution.answer == 2
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 1)]
 
 
 

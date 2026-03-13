@@ -89,21 +89,31 @@ class TelemetryTimer:
         """
         self._token_timestamps.append(time.perf_counter())
 
+    @staticmethod
+    def _duration_ms(elapsed_seconds: float) -> int:
+        """
+        Convert elapsed seconds to integer milliseconds, preserving sub-ms positive durations.
+        """
+        if elapsed_seconds <= 0:
+            return 0
+        elapsed_ms = int(elapsed_seconds * 1000)
+        return elapsed_ms if elapsed_ms > 0 else 1
+
     def finish(self) -> TimingMetrics:
         """
         Finish timing and return metrics
         """
         end_time = time.perf_counter()
-        total_time_ms = int((end_time - self._start_time) * 1000)
+        total_time_ms = self._duration_ms(end_time - self._start_time)
         if not self._token_timestamps:
             return TimingMetrics(ttft_ms=0, tpot_ms=0, total_time_ms=total_time_ms)
 
-        ttft_ms = int((self._token_timestamps[0] - self._start_time) * 1000)
+        ttft_ms = self._duration_ms(self._token_timestamps[0] - self._start_time)
         if len(self._token_timestamps) < 2:
             return TimingMetrics(ttft_ms=ttft_ms, tpot_ms=0, total_time_ms=total_time_ms)
 
         diffs_ms = [
-            (self._token_timestamps[index] - self._token_timestamps[index - 1]) * 1000
+            self._duration_ms(self._token_timestamps[index] - self._token_timestamps[index - 1])
             for index in range(1, len(self._token_timestamps))
         ]
         tpot_ms = int(sum(diffs_ms) / len(diffs_ms)) if diffs_ms else 0

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from functools import lru_cache
@@ -13,6 +13,7 @@ class PageMetadataStore:
         self.page_metadata_path = Path(page_metadata_path) if page_metadata_path else PAGE_METADATA_JSONL
         self.records: list[dict[str, Any]] = []
         self.records_by_case_id: dict[str, list[dict[str, Any]]] = {}
+        self.first_page_records: list[dict[str, Any]] = []
 
         with open(self.page_metadata_path, "r", encoding="utf-8") as handle:
             for line in handle:
@@ -23,6 +24,14 @@ class PageMetadataStore:
 
         for case_id, records in self.records_by_case_id.items():
             self.records_by_case_id[case_id] = sorted(records, key=lambda item: (int(item.get("page_num") or 0), str(item.get("doc_id") or "")))
+        self.first_page_records = sorted(
+            [
+                record
+                for record in self.records
+                if bool(record.get("is_first_page")) or int(record.get("page_num") or 0) == 1
+            ],
+            key=lambda item: (int(item.get("page_num") or 0), str(item.get("doc_id") or "")),
+        )
 
     def get_case_records(self, case_id: str, *, page_hint: str = "any") -> list[dict[str, Any]]:
         records = list(self.records_by_case_id.get(str(case_id), []))
@@ -38,6 +47,9 @@ class PageMetadataStore:
             last_records = [record for record in records if bool(record.get("is_last_page"))]
             return last_records or records[-1:]
         return records
+
+    def get_first_page_records(self) -> list[dict[str, Any]]:
+        return list(self.first_page_records)
 
 
 @lru_cache(maxsize=1)

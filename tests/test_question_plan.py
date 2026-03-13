@@ -40,6 +40,18 @@ def test_build_question_plan_detects_page_local_claim_number_lookup() -> None:
 
 
 
+def test_build_question_plan_detects_single_case_claim_value_lookup() -> None:
+    plan = build_question_plan(
+        "What was the claim value in AED referenced in the appeal judgment CA 005/2025?",
+        "number",
+    )
+
+    assert plan.mode == "page_local_lookup"
+    assert plan.page_hint == "any"
+    assert plan.target_field == "money_value"
+    assert plan.case_ids == ("CA 005/2025",)
+
+
 def test_build_question_plan_detects_judge_compare() -> None:
     plan = build_question_plan(
         "Considering all documents across case CA 005/2025 and case TCD 001/2024, was there any judge who participated in both cases?",
@@ -49,6 +61,20 @@ def test_build_question_plan_detects_judge_compare() -> None:
     assert plan.mode == "judge_compare"
     assert plan.compare_op == "set_overlap"
     assert plan.target_field == "judge"
+
+
+
+def test_build_question_plan_detects_monetary_claim_compare() -> None:
+    plan = build_question_plan(
+        "Identify the case with the higher monetary claim: SCT 169/2025 or SCT 295/2025?",
+        "name",
+    )
+
+    assert plan.mode == "monetary_claim_compare"
+    assert plan.page_hint == "page_2"
+    assert plan.compare_op == "max_number"
+    assert plan.target_field == "money_value"
+    assert plan.case_ids == ("SCT 169/2025", "SCT 295/2025")
 
 
 
@@ -72,3 +98,16 @@ def test_build_question_plan_flags_absence_risk() -> None:
 
     assert plan.mode == "absence_check"
     assert plan.abstention_risk is True
+
+
+
+def test_build_question_plan_detects_title_page_law_number_without_case_id() -> None:
+    plan = build_question_plan(
+        "According to the title page of the Common Reporting Standard Law, what is its official DIFC Law number?",
+        "number",
+    )
+
+    assert plan.mode == "title_page_metadata"
+    assert plan.page_hint == "first"
+    assert plan.target_field == "law_number"
+    assert plan.case_ids == ()

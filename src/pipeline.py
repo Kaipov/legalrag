@@ -19,7 +19,7 @@ from src.config import GENERATION_MODEL, GENERATION_TOP_K
 from src.constants import NULL_FREE_TEXT_ANSWER
 from src.generate.llm import stream_generate
 from src.generate.null_detect import detect_null
-from src.generate.parse import parse_model_output
+from src.generate.parse import parse_answer, parse_model_output
 from src.generate.prompts import build_prompt
 from src.resolve.resolver import try_resolve_question
 from src.retrieve.grounding import collect_grounding_pages
@@ -113,12 +113,20 @@ def _resolution_to_retrieval_refs(evidence_pages: list[Any]) -> list[RetrievalRe
     return normalize_retrieved_pages(raw_refs)
 
 
-def _submission_from_resolution(question_id: str, resolution: Any, timer: TelemetryTimer) -> SubmissionAnswer:
+def _submission_from_resolution(
+    question_id: str,
+    resolution: Any,
+    timer: TelemetryTimer,
+    *,
+    answer_type: str,
+    question_text: str,
+) -> SubmissionAnswer:
+    timer.mark_token()
     timing = timer.finish()
     retrieval_refs = _resolution_to_retrieval_refs(list(getattr(resolution, "evidence_pages", []) or []))
     return SubmissionAnswer(
         question_id=question_id,
-        answer=getattr(resolution, "answer"),
+        answer=_finalize_answer_value(getattr(resolution, "answer"), answer_type, question_text=question_text),
         telemetry=Telemetry(
             timing=TimingMetrics(
                 ttft_ms=timing.ttft_ms,
@@ -130,6 +138,15 @@ def _submission_from_resolution(question_id: str, resolution: Any, timer: Teleme
             model_name="deterministic-resolver",
         ),
     )
+
+
+def _finalize_answer_value(answer_value: Any, answer_type: str, *, question_text: str) -> Any:
+    normalized_answer_type = str(answer_type or "").lower()
+    if normalized_answer_type != "free_text" or answer_value is None:
+        return answer_value
+    if not isinstance(answer_value, str):
+        return answer_value
+    return parse_answer(answer_value, normalized_answer_type, question_text=question_text)
 
 
 def _chunk_identity(chunk_with_score: tuple[dict, float]) -> str:
@@ -543,7 +560,13 @@ class RAGPipeline:
                 f"[{question_id[:8]}] resolved deterministically via {getattr(resolution, 'method', plan.mode)} "
                 f"pages={len(getattr(resolution, 'evidence_pages', []))} answer={str(getattr(resolution, 'answer', ''))[:50]}"
             )
-            return _submission_from_resolution(question_id, resolution, timer)
+            return _submission_from_resolution(
+                question_id,
+                resolution,
+                timer,
+                answer_type=answer_type,
+                question_text=question_text,
+            )
 
         reranked_chunks = self.retriever.retrieve(question_text, intent=active_intent)
         generic_reranked_chunks: list[tuple[dict, float]] | None = None
@@ -588,6 +611,7 @@ class RAGPipeline:
             timer.mark_token()
             timing = timer.finish()
             answer_value = _free_text_null_answer(question_text) if answer_type == "free_text" else None
+            answer_value = _finalize_answer_value(answer_value, answer_type, question_text=question_text)
 
             return SubmissionAnswer(
                 question_id=question_id,
@@ -666,6 +690,7 @@ class RAGPipeline:
 
         if is_llm_null and answer_type == "free_text":
             answer_value = _free_text_null_answer(question_text)
+        answer_value = _finalize_answer_value(answer_value, answer_type, question_text=question_text)
 
         retrieval_mode = "compare_fallback" if compare_bias_disabled else "intent_bias"
         if active_intent is None or active_intent.kind == "generic":

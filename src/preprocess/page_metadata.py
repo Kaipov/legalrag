@@ -41,6 +41,7 @@ _MDY_DATE_RE = re.compile(
     r"\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})\b",
     re.IGNORECASE,
 )
+_DATE_OF_ISSUE_LABEL_RE = re.compile(r"date of issue\s*[:\-]?\s*", re.IGNORECASE)
 _DATE_CONTEXT_RE = re.compile(r"(?:date of issue|issued on|issued first|issue date)", re.IGNORECASE)
 _ORDER_SIGNAL_PATTERNS = (
     "dismissed",
@@ -110,11 +111,7 @@ def _iso_date_from_match(year: str, month: str, day: str) -> str:
 
 
 
-def extract_issue_date(text: str) -> str | None:
-    normalized = _normalize_space(text)
-    if not normalized:
-        return None
-
+def _collect_date_matches(normalized: str) -> list[tuple[int, str]]:
     matches: list[tuple[int, str]] = []
     for match in _ISO_DATE_RE.finditer(normalized):
         matches.append((match.start(), _iso_date_from_match(*match.groups())))
@@ -124,9 +121,23 @@ def extract_issue_date(text: str) -> str | None:
     for match in _MDY_DATE_RE.finditer(normalized):
         month_name, day, year = match.groups()
         matches.append((match.start(), _iso_date_from_match(year, str(_MONTHS[month_name.lower()]), day)))
+    return matches
 
+
+def extract_issue_date(text: str) -> str | None:
+    normalized = _normalize_space(text)
+    if not normalized:
+        return None
+
+    matches = _collect_date_matches(normalized)
     if not matches:
         return None
+
+    for label_match in _DATE_OF_ISSUE_LABEL_RE.finditer(normalized):
+        label_end = label_match.end()
+        explicit_matches = [item for item in matches if item[0] >= label_end and item[0] - label_end <= 80]
+        if explicit_matches:
+            return min(explicit_matches, key=lambda item: item[0])[1]
 
     contextual_positions = [match.start() for match in _DATE_CONTEXT_RE.finditer(normalized)]
     if contextual_positions:

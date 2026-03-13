@@ -49,6 +49,17 @@ def test_build_page_metadata_records_extracts_page_local_fields(tmp_path) -> Non
 
 
 
+def test_extract_issue_date_prefers_explicit_date_of_issue_label() -> None:
+    text = (
+        "IT IS HEREBY ORDERED THAT: "
+        "Issued by: Delvin Sumo SCT Judge and Assistant Registrar "
+        "Date of Issue: 24 December 2025 At: 9am "
+        "The Judgment of SCT Judge Hayley Norton was issued on 24 October 2025."
+    )
+
+    assert metadata_mod.extract_issue_date(text) == "2025-12-24"
+
+
 def test_build_case_metadata_groups_pages_by_case_id() -> None:
     page_records = [
         {

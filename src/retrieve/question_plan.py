@@ -16,6 +16,12 @@ _COMPARE_MARKERS = (
     "involve any of the same",
 )
 _PARTY_MARKERS = ("party", "parties", "claimant", "defendant", "main party", "applicant", "respondent")
+_MONETARY_COMPARE_MARKERS = (
+    "higher monetary claim",
+    "higher claim",
+    "higher amount",
+    "greater monetary claim",
+)
 _CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
 _ARTICLE_REF_RE = re.compile(r"\bArticle\s+\d+[A-Z]?(?:\(\d+[A-Z]?\)|\([a-z]\))*", re.IGNORECASE)
 
@@ -36,6 +42,7 @@ class QuestionPlan:
         return self.mode in {
             "date_of_issue_compare",
             "judge_compare",
+            "monetary_claim_compare",
             "party_compare",
             "page_local_lookup",
             "title_page_metadata",
@@ -83,6 +90,10 @@ def _is_compare_question(text: str) -> bool:
 def _infer_target_field(text: str) -> str | None:
     if any(marker in text for marker in ("claim number", "claim no", "claim no.", "claim number did the appeal originate")):
         return "claim_number"
+    if any(marker in text for marker in _MONETARY_COMPARE_MARKERS):
+        return "money_value"
+    if any(marker in text for marker in ("claim value", "claim amount", "value in aed")):
+        return "money_value"
     if any(marker in text for marker in ("date of issue", "issue date", "issued first", "issued earlier")):
         return "issue_date"
     if "judge" in text:
@@ -123,7 +134,9 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             target_field=target_field,
         )
 
-    if any(marker in text for marker in ("title page", "cover page", "header/caption", "header", "caption")) and case_ids:
+    if any(marker in text for marker in ("title page", "cover page", "header/caption", "header", "caption")) and (
+        case_ids or target_field == "law_number"
+    ):
         return QuestionPlan(
             mode="title_page_metadata",
             answer_type=normalized_answer_type,
@@ -131,6 +144,17 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             article_refs=article_refs,
             page_hint="first",
             target_field=target_field,
+        )
+
+    if len(case_ids) >= 2 and any(marker in text for marker in _MONETARY_COMPARE_MARKERS):
+        return QuestionPlan(
+            mode="monetary_claim_compare",
+            answer_type=normalized_answer_type,
+            case_ids=case_ids,
+            article_refs=article_refs,
+            page_hint="page_2",
+            compare_op="max_number",
+            target_field="money_value",
         )
 
     if len(case_ids) >= 2 and any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
@@ -152,6 +176,16 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             article_refs=article_refs,
             page_hint="page_2",
             target_field="issue_date",
+        )
+
+    if len(case_ids) == 1 and target_field == "money_value":
+        return QuestionPlan(
+            mode="page_local_lookup",
+            answer_type=normalized_answer_type,
+            case_ids=case_ids,
+            article_refs=article_refs,
+            page_hint="any",
+            target_field="money_value",
         )
 
     if "judge" in text and _is_compare_question(text):
