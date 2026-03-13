@@ -6,9 +6,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 3518,
-          "tpot_ms": 14,
-          "total_time_ms": 4448
+          "ttft_ms": 2987,
+          "tpot_ms": 9,
+          "total_time_ms": 3693
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -32,9 +32,9 @@
       "answer": "2026-02-02",
       "telemetry": {
         "timing": {
-          "ttft_ms": 33,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 33
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -113,12 +113,12 @@
     },
     {
       "question_id": "bce4c288236518dfd08f6bac5a75c75ea79b1250347c4b998252fa9d7265a7c3",
-      "answer": "Partners are jointly and severally liable with the other Partners for all debts and obligations of the General Partnership incurred while they are Partners under Article 28(1).",
+      "answer": "Partners are jointly and severally liable with other Partners for all debts and obligations of the General Partnership incurred while they are Partners.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1206,
+          "ttft_ms": 1224,
           "tpot_ms": 17,
-          "total_time_ms": 2543
+          "total_time_ms": 2244
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -133,7 +133,7 @@
         },
         "usage": {
           "input_tokens": 1765,
-          "output_tokens": 40
+          "output_tokens": 33
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -143,9 +143,9 @@
       "answer": "The maximum fine for failing to provide a copy of an assignment of rights is USD 1,500 under Article 10(7) of the Foundations Law.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1228,
-          "tpot_ms": 18,
-          "total_time_ms": 2424
+          "ttft_ms": 1143,
+          "tpot_ms": 14,
+          "total_time_ms": 2282
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -170,9 +170,9 @@
       "answer": "The Board of Directors of the DIFCA is responsible for appointing and dismissing the Registrar, after consulting the President.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1444,
-          "tpot_ms": 21,
-          "total_time_ms": 2466
+          "ttft_ms": 1301,
+          "tpot_ms": 18,
+          "total_time_ms": 2416
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -258,12 +258,12 @@
     },
     {
       "question_id": "436c12cc4eb26087bd1540f5d47825712632e90b4d5b2bca6c52e3b26151f874",
-      "answer": "The Permission to Appeal Application in case CFI 057/2025 was considered by the Court of First Instance. The order text does not specify the final ruling on the application.",
+      "answer": "The Permission to Appeal Application in case CFI 057/2025 was opposed by the Claimant, but the order does not specify the final ruling on the application.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1344,
-          "tpot_ms": 15,
-          "total_time_ms": 2550
+          "ttft_ms": 1573,
+          "tpot_ms": 29,
+          "total_time_ms": 3271
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -284,7 +284,7 @@
         },
         "usage": {
           "input_tokens": 1860,
-          "output_tokens": 44
+          "output_tokens": 42
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -326,9 +326,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1313,
-          "tpot_ms": 13,
-          "total_time_ms": 2005
+          "ttft_ms": 1178,
+          "tpot_ms": 14,
+          "total_time_ms": 1862
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -390,9 +390,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1124,
-          "tpot_ms": 18,
-          "total_time_ms": 1856
+          "ttft_ms": 1236,
+          "tpot_ms": 8,
+          "total_time_ms": 1868
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -486,9 +486,9 @@
       "answer": "DIFC Law No. 2 of 2022 amended the Common Reporting Standard Law, Employment Law, Limited Liability Partnership Law, and General Partnership Law.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 968,
-          "tpot_ms": 12,
-          "total_time_ms": 2064
+          "ttft_ms": 1096,
+          "tpot_ms": 11,
+          "total_time_ms": 2071
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -519,16 +519,16 @@
       "answer": 7,
       "telemetry": {
         "timing": {
-          "ttft_ms": 2769,
-          "tpot_ms": 11,
-          "total_time_ms": 3451
+          "ttft_ms": 1155,
+          "tpot_ms": 14,
+          "total_time_ms": 1899
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                8
+                7
               ]
             }
           ]
@@ -545,9 +545,9 @@
       "answer": "ONORA",
       "telemetry": {
         "timing": {
-          "ttft_ms": 895,
-          "tpot_ms": 14,
-          "total_time_ms": 1551
+          "ttft_ms": 1077,
+          "tpot_ms": 18,
+          "total_time_ms": 1749
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -572,9 +572,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 2022,
-          "tpot_ms": 9,
-          "total_time_ms": 2641
+          "ttft_ms": 1060,
+          "tpot_ms": 12,
+          "total_time_ms": 1772
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -630,9 +630,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1294,
-          "tpot_ms": 20,
-          "total_time_ms": 1970
+          "ttft_ms": 2351,
+          "tpot_ms": 18,
+          "total_time_ms": 3065
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -653,12 +653,12 @@
     },
     {
       "question_id": "ad7357a7eb955085f6438dfcaf44324de7fcf88da86c846242e173eacdeebfda",
-      "answer": "The application for permission to appeal in case SCT 169/2025 was refused.",
+      "answer": "The application for permission to appeal in case SCT 169/2025 was considered at a hearing on 15 December 2025. The context does not specify the final ruling on the application.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1214,
-          "tpot_ms": 16,
-          "total_time_ms": 2111
+          "ttft_ms": 1134,
+          "tpot_ms": 12,
+          "total_time_ms": 2192
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -670,7 +670,7 @@
               ]
             },
             {
-              "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
+              "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
               "page_numbers": [
                 1
               ]
@@ -679,7 +679,7 @@
         },
         "usage": {
           "input_tokens": 1847,
-          "output_tokens": 25
+          "output_tokens": 47
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -689,9 +689,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 3,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 3
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -721,9 +721,9 @@
       "answer": "The effective date for due diligence requirements for Pre-existing Accounts is 31 December 2016. The effective date for New Accounts is 1 January 2017.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1222,
-          "tpot_ms": 19,
-          "total_time_ms": 2453
+          "ttft_ms": 1540,
+          "tpot_ms": 14,
+          "total_time_ms": 2607
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -745,12 +745,12 @@
     },
     {
       "question_id": "9f48d8eca6d10cf26f60226078f0d9cb32d3aa2fd25c90c312549cb6265ebd84",
-      "answer": "The Personal Property Law 2005 was made by the Ruler of Dubai. It is a DIFC Law as applicable in the DIFC jurisdiction.",
+      "answer": "The Personal Property Law 2005 was made by the Ruler of Dubai. It is a DIFC Law as defined in Article 2.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1124,
-          "tpot_ms": 14,
-          "total_time_ms": 2100
+          "ttft_ms": 1189,
+          "tpot_ms": 10,
+          "total_time_ms": 2125
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -765,7 +765,7 @@
         },
         "usage": {
           "input_tokens": 1723,
-          "output_tokens": 40
+          "output_tokens": 39
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -775,9 +775,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1187,
-          "tpot_ms": 19,
-          "total_time_ms": 1868
+          "ttft_ms": 1180,
+          "tpot_ms": 17,
+          "total_time_ms": 1675
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -802,17 +802,16 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1357,
-          "tpot_ms": 14,
-          "total_time_ms": 1971
+          "ttft_ms": 1588,
+          "tpot_ms": 12,
+          "total_time_ms": 2287
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                8,
-                28
+                8
               ]
             }
           ]
@@ -855,9 +854,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 943,
+          "ttft_ms": 1128,
           "tpot_ms": 12,
-          "total_time_ms": 1576
+          "total_time_ms": 1690
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -882,17 +881,16 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1117,
-          "tpot_ms": 20,
-          "total_time_ms": 1844
+          "ttft_ms": 947,
+          "tpot_ms": 22,
+          "total_time_ms": 1703
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "4e387152960c1029b3711cacb05b287b13c977bc61f2558059a62b7b427a62eb",
               "page_numbers": [
-                6,
-                51
+                6
               ]
             }
           ]
@@ -941,9 +939,9 @@
       "answer": "Article 16(1)(c) requires an Employer to keep records of the Employee's Remuneration, both gross and net where applicable, and the applicable Pay Period.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1571,
-          "tpot_ms": 17,
-          "total_time_ms": 2824
+          "ttft_ms": 1313,
+          "tpot_ms": 12,
+          "total_time_ms": 2347
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -968,9 +966,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1050,
-          "tpot_ms": 11,
-          "total_time_ms": 1693
+          "ttft_ms": 1212,
+          "tpot_ms": 13,
+          "total_time_ms": 1889
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1009,7 +1007,8 @@
             {
               "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
               "page_numbers": [
-                1
+                1,
+                7
               ]
             }
           ]
@@ -1026,9 +1025,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1484,
-          "tpot_ms": 22,
-          "total_time_ms": 2238
+          "ttft_ms": 1137,
+          "tpot_ms": 13,
+          "total_time_ms": 1816
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1052,9 +1051,9 @@
       "answer": 15,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1263,
-          "tpot_ms": 27,
-          "total_time_ms": 2082
+          "ttft_ms": 1073,
+          "tpot_ms": 17,
+          "total_time_ms": 1827
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1078,17 +1077,16 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1466,
-          "tpot_ms": 37,
-          "total_time_ms": 2349
+          "ttft_ms": 1300,
+          "tpot_ms": 15,
+          "total_time_ms": 1967
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "4e387152960c1029b3711cacb05b287b13c977bc61f2558059a62b7b427a62eb",
               "page_numbers": [
-                15,
-                44
+                15
               ]
             }
           ]
@@ -1137,9 +1135,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1088,
-          "tpot_ms": 15,
-          "total_time_ms": 1693
+          "ttft_ms": 1448,
+          "tpot_ms": 10,
+          "total_time_ms": 2078
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1169,9 +1167,9 @@
       "answer": "Records under the Common Reporting Standard Law must be retained for six years after reporting. General Partnership records must be preserved for at least six years from creation.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1456,
-          "tpot_ms": 18,
-          "total_time_ms": 2659
+          "ttft_ms": 1451,
+          "tpot_ms": 17,
+          "total_time_ms": 2671
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1268,9 +1266,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1096,
-          "tpot_ms": 24,
-          "total_time_ms": 1843
+          "ttft_ms": 1293,
+          "tpot_ms": 16,
+          "total_time_ms": 1898
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1291,12 +1289,12 @@
     },
     {
       "question_id": "b982f3b308042c0eb23dfe264a56ab53866fbea5d3981c4bfcf3ffb6de22054e",
-      "answer": "The Defendant’s application seeking immediate judgment and/or strike out was dismissed, and the Defendant was ordered to pay 80% of the Respondent’s costs totaling USD 155,879.50.",
+      "answer": "The application by the Defendant was dismissed and the Defendant was ordered to pay 80% of the Respondent’s costs totaling USD 155,879.50.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1218,
-          "tpot_ms": 15,
-          "total_time_ms": 2489
+          "ttft_ms": 2226,
+          "tpot_ms": 36,
+          "total_time_ms": 4217
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1308,16 +1306,16 @@
               ]
             },
             {
-              "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
+              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
               "page_numbers": [
-                7
+                1
               ]
             }
           ]
         },
         "usage": {
           "input_tokens": 1934,
-          "output_tokens": 47
+          "output_tokens": 40
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -1329,9 +1327,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1138,
-          "tpot_ms": 18,
-          "total_time_ms": 1824
+          "ttft_ms": 1240,
+          "tpot_ms": 8,
+          "total_time_ms": 1863
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1356,9 +1354,9 @@
       "answer": 30,
       "telemetry": {
         "timing": {
-          "ttft_ms": 2611,
+          "ttft_ms": 1028,
           "tpot_ms": 11,
-          "total_time_ms": 3254
+          "total_time_ms": 1673
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1382,9 +1380,9 @@
       "answer": 12,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1195,
-          "tpot_ms": 21,
-          "total_time_ms": 1869
+          "ttft_ms": 1140,
+          "tpot_ms": 14,
+          "total_time_ms": 1856
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1440,16 +1438,16 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1099,
-          "tpot_ms": 13,
-          "total_time_ms": 1740
+          "ttft_ms": 1211,
+          "tpot_ms": 14,
+          "total_time_ms": 1873
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "fbdd7f9dd299d83b1f398778da2e6765dfaaed62005667264734a1f76ec09071",
               "page_numbers": [
-                9
+                10
               ]
             }
           ]
@@ -1498,17 +1496,16 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1260,
-          "tpot_ms": 12,
-          "total_time_ms": 1950
+          "ttft_ms": 1111,
+          "tpot_ms": 23,
+          "total_time_ms": 1925
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                4,
-                12
+                6
               ]
             }
           ]
@@ -1525,9 +1522,9 @@
       "answer": 4,
       "telemetry": {
         "timing": {
-          "ttft_ms": 2,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 2
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1553,9 +1550,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1150,
-          "tpot_ms": 28,
-          "total_time_ms": 2130
+          "ttft_ms": 1187,
+          "tpot_ms": 10,
+          "total_time_ms": 1833
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1579,16 +1576,16 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1082,
-          "tpot_ms": 15,
-          "total_time_ms": 1748
+          "ttft_ms": 1133,
+          "tpot_ms": 14,
+          "total_time_ms": 1861
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                17
+                14
               ]
             }
           ]
@@ -1605,9 +1602,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1024,
-          "tpot_ms": 14,
-          "total_time_ms": 1711
+          "ttft_ms": 1241,
+          "tpot_ms": 11,
+          "total_time_ms": 1898
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1631,9 +1628,9 @@
       "answer": "A Reporting Financial Institution must provide an English translation of records obtained or created in a language other than English upon request to the Relevant Authority.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1228,
-          "tpot_ms": 15,
-          "total_time_ms": 2277
+          "ttft_ms": 1730,
+          "tpot_ms": 23,
+          "total_time_ms": 3033
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1658,9 +1655,9 @@
       "answer": "The DIFC Personal Property Law 2005 was enacted on the date specified in the Enactment Notice in respect of this Law. The exact date is not provided in the context.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1076,
-          "tpot_ms": 10,
-          "total_time_ms": 1997
+          "ttft_ms": 1178,
+          "tpot_ms": 19,
+          "total_time_ms": 2567
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1695,7 +1692,8 @@
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
                 1,
-                2
+                2,
+                6
               ]
             }
           ]
@@ -1744,9 +1742,9 @@
       "answer": "The provided DIFC documents do not contain information showing whether Miranda rights were properly administered in case ENF 269/2023.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 422,
+          "ttft_ms": 450,
           "tpot_ms": 0,
-          "total_time_ms": 422
+          "total_time_ms": 450
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -1763,9 +1761,9 @@
       "answer": "The consolidated version of the Law on the Application of Civil and Commercial Laws in the DIFC was published in November 2024.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1182,
-          "tpot_ms": 15,
-          "total_time_ms": 2041
+          "ttft_ms": 1132,
+          "tpot_ms": 20,
+          "total_time_ms": 2364
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1796,9 +1794,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 982,
-          "tpot_ms": 17,
-          "total_time_ms": 1651
+          "ttft_ms": 1157,
+          "tpot_ms": 13,
+          "total_time_ms": 1755
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1813,7 +1811,7 @@
         },
         "usage": {
           "input_tokens": 1282,
-          "output_tokens": 13
+          "output_tokens": 11
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -1823,9 +1821,9 @@
       "answer": "The court dismissed the Claimant’s Application for a Default Costs Certificate. The Claimant shall bear its own costs of the Application.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1140,
-          "tpot_ms": 11,
-          "total_time_ms": 3180
+          "ttft_ms": 1176,
+          "tpot_ms": 15,
+          "total_time_ms": 2770
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1856,9 +1854,9 @@
       "answer": "ENF 269/2023",
       "telemetry": {
         "timing": {
-          "ttft_ms": 5,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 5
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1888,9 +1886,9 @@
       "answer": "Confirmation Statement",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1142,
-          "tpot_ms": 18,
-          "total_time_ms": 1877
+          "ttft_ms": 1150,
+          "tpot_ms": 20,
+          "total_time_ms": 1927
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1914,9 +1912,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1406,
-          "tpot_ms": 12,
-          "total_time_ms": 2067
+          "ttft_ms": 1073,
+          "tpot_ms": 13,
+          "total_time_ms": 1794
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1940,9 +1938,9 @@
       "answer": "CA 004/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 3,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 3
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1969,33 +1967,33 @@
     },
     {
       "question_id": "52e9e31a6d7a80a597147115b3d38065da495a41e7c11e797d0a190c9a580bcf",
-      "answer": "The outcome of the application for permission to appeal in SCT 295/2025 is not specified in the provided context.",
+      "answer": "The context does not specify the outcome of the order or application in case SCT 295/2025.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1118,
-          "tpot_ms": 11,
-          "total_time_ms": 1929
+          "ttft_ms": 1126,
+          "tpot_ms": 18,
+          "total_time_ms": 2110
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
               "page_numbers": [
-                1
+                1,
+                8
               ]
             },
             {
               "doc_id": "6306079a16b1dec85690f75c715cdbd78b0685a3e19ee30250d481bc32f2e29a",
               "page_numbers": [
-                1,
-                6
+                1
               ]
             }
           ]
         },
         "usage": {
           "input_tokens": 1601,
-          "output_tokens": 32
+          "output_tokens": 29
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -2037,9 +2035,9 @@
       "answer": "That the Appeal must be allowed to the extent now ordered,, We are not so satisfied in relation to Mr Oron. We have weighed the Appellant’s submission that he is a person within the meaning of the term Officer in the rule, because he is a partner in Olindo under UAE law, with...",
       "telemetry": {
         "timing": {
-          "ttft_ms": 2,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 2
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2123,9 +2121,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1291,
-          "tpot_ms": 18,
-          "total_time_ms": 2667
+          "ttft_ms": 1028,
+          "tpot_ms": 16,
+          "total_time_ms": 1773
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2146,20 +2144,19 @@
     },
     {
       "question_id": "b13500141f04c86f328b49c56ba01c7bc13bce5afee9646860912718291a5c1a",
-      "answer": false,
+      "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1499,
+          "ttft_ms": 1230,
           "tpot_ms": 13,
-          "total_time_ms": 3293
+          "total_time_ms": 1887
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "72ea171147bf30326fe6fd2e6798f607c7cef4bf9d43761dbccd2f1b6a356849",
               "page_numbers": [
-                6,
-                31
+                6
               ]
             }
           ]
@@ -2233,12 +2230,12 @@
     },
     {
       "question_id": "1097af38db84c4d507357bfbdcbbcc1de60a0ccb10752bad8091a75b8f53eb5c",
-      "answer": "Both a DIFC-incorporated General Partnership and a Limited Liability Partnership must preserve their accounting records for at least six years from the date they were created. This period may be extended if prescribed in the Regulations.",
+      "answer": "A DIFC-incorporated General Partnership must preserve its accounting records for at least six years. A DIFC-incorporated Limited Liability Partnership must also preserve its accounting records for at least six years.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1158,
-          "tpot_ms": 15,
-          "total_time_ms": 2504
+          "ttft_ms": 1522,
+          "tpot_ms": 24,
+          "total_time_ms": 3283
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2259,7 +2256,7 @@
         },
         "usage": {
           "input_tokens": 1869,
-          "output_tokens": 54
+          "output_tokens": 52
         },
         "model_name": "gpt-4.1-mini"
       }
@@ -2269,9 +2266,9 @@
       "answer": "The provided DIFC documents do not contain information about any jury decision in case ENF 269/2023.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 437,
+          "ttft_ms": 463,
           "tpot_ms": 0,
-          "total_time_ms": 437
+          "total_time_ms": 463
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2288,16 +2285,16 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1029,
-          "tpot_ms": 13,
-          "total_time_ms": 1625
+          "ttft_ms": 1126,
+          "tpot_ms": 14,
+          "total_time_ms": 1621
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
-                7
+                6
               ]
             }
           ]
@@ -2346,9 +2343,9 @@
       "answer": 30,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1195,
-          "tpot_ms": 22,
-          "total_time_ms": 1970
+          "ttft_ms": 1284,
+          "tpot_ms": 11,
+          "total_time_ms": 1976
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2372,9 +2369,9 @@
       "answer": "SCT 295/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 4,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 4
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2413,7 +2410,8 @@
             {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
-                2
+                2,
+                4
               ]
             }
           ]
@@ -2472,7 +2470,8 @@
               "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
               "page_numbers": [
                 1,
-                2
+                2,
+                4
               ]
             }
           ]
@@ -2517,7 +2516,8 @@
             {
               "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
               "page_numbers": [
-                2
+                2,
+                11
               ]
             }
           ]
@@ -2534,9 +2534,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1139,
-          "tpot_ms": 14,
-          "total_time_ms": 1738
+          "ttft_ms": 1068,
+          "tpot_ms": 15,
+          "total_time_ms": 1761
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2562,9 +2562,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1170,
-          "tpot_ms": 13,
-          "total_time_ms": 1834
+          "ttft_ms": 1221,
+          "tpot_ms": 12,
+          "total_time_ms": 1898
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2621,9 +2621,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1223,
-          "tpot_ms": 13,
-          "total_time_ms": 1801
+          "ttft_ms": 1213,
+          "tpot_ms": 12,
+          "total_time_ms": 1939
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2647,9 +2647,9 @@
       "answer": "CFI 057/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 933,
-          "tpot_ms": 5,
-          "total_time_ms": 1516
+          "ttft_ms": 1498,
+          "tpot_ms": 13,
+          "total_time_ms": 2168
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2711,9 +2711,9 @@
       "answer": "The provided DIFC documents do not contain information about parole hearings in case CFI 057/2025.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 438,
+          "ttft_ms": 507,
           "tpot_ms": 0,
-          "total_time_ms": 438
+          "total_time_ms": 507
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2730,9 +2730,9 @@
       "answer": 3,
       "telemetry": {
         "timing": {
-          "ttft_ms": 3,
+          "ttft_ms": 1,
           "tpot_ms": 0,
-          "total_time_ms": 3
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2756,17 +2756,16 @@
       "answer": 3,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1262,
-          "tpot_ms": 15,
-          "total_time_ms": 1898
+          "ttft_ms": 1252,
+          "tpot_ms": 12,
+          "total_time_ms": 1968
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "72ea171147bf30326fe6fd2e6798f607c7cef4bf9d43761dbccd2f1b6a356849",
               "page_numbers": [
-                15,
-                23
+                15
               ]
             }
           ]
@@ -2783,9 +2782,9 @@
       "answer": "The DIFCA is responsible for administering the Employment Law and any Regulations made under it.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1229,
-          "tpot_ms": 19,
-          "total_time_ms": 2131
+          "ttft_ms": 1133,
+          "tpot_ms": 9,
+          "total_time_ms": 1872
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2810,9 +2809,9 @@
       "answer": "The Foundations Law is administered by the Registrar.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1205,
-          "tpot_ms": 13,
-          "total_time_ms": 1740
+          "ttft_ms": 1092,
+          "tpot_ms": 11,
+          "total_time_ms": 1765
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2837,9 +2836,9 @@
       "answer": "Article 9(1) empowers the Board of Directors of the DIFCA to make Regulations to facilitate the administration of, or further the objects of, the Foundations Law.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1032,
-          "tpot_ms": 14,
-          "total_time_ms": 2190
+          "ttft_ms": 1169,
+          "tpot_ms": 13,
+          "total_time_ms": 2271
         },
         "retrieval": {
           "retrieved_chunk_pages": [

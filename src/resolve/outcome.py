@@ -70,6 +70,14 @@ def _is_outcome_clause(clause: str) -> bool:
     return any(keyword in lowered for keyword in _OUTCOME_KEYWORDS)
 
 
+def _has_terminal_outcome_support(record: dict) -> bool:
+    order_signals = {str(value).strip().lower() for value in list(record.get("order_signals") or []) if str(value).strip()}
+    if order_signals:
+        return True
+    text = str(record.get("text") or "")
+    return any(_is_outcome_clause(clause) for clause in _split_outcome_candidates(text))
+
+
 
 def _extract_order_section_clauses(records: list[dict]) -> list[tuple[str, EvidencePage]]:
     collected: list[tuple[str, EvidencePage]] = []
@@ -123,6 +131,35 @@ def _extract_fallback_outcome_clauses(records: list[dict]) -> list[tuple[str, Ev
     return collected
 
 
+def _select_terminal_outcome_evidence(
+    records: list[dict],
+    existing_pages: list[EvidencePage],
+) -> EvidencePage | None:
+    if not records or not existing_pages:
+        return None
+
+    max_existing_page = max(page.page_num for page in existing_pages)
+    terminal_record = None
+    for record in reversed(records):
+        page_num = int(record.get("page_num") or 0)
+        if page_num <= max_existing_page:
+            continue
+        if not _has_terminal_outcome_support(record):
+            continue
+        terminal_record = record
+        if bool(record.get("is_last_page")):
+            break
+
+    if terminal_record is None:
+        return None
+
+    doc_id = str(terminal_record.get("doc_id") or "").strip()
+    page_num = int(terminal_record.get("page_num") or 0)
+    if not doc_id or page_num <= 0:
+        return None
+    return EvidencePage(doc_id=doc_id, page_num=page_num)
+
+
 
 def resolve_last_page_outcome(plan: QuestionPlan, store: PageMetadataStore, *, question_text: str) -> Resolution | None:
     if plan.answer_type != "free_text" or not plan.case_ids:
@@ -149,6 +186,13 @@ def resolve_last_page_outcome(plan: QuestionPlan, store: PageMetadataStore, *, q
             continue
         seen_pages.add(page_key)
         evidence_pages.append(evidence)
+
+    terminal_evidence = _select_terminal_outcome_evidence(records, evidence_pages)
+    if terminal_evidence is not None:
+        terminal_key = (terminal_evidence.doc_id, terminal_evidence.page_num)
+        if terminal_key not in seen_pages:
+            seen_pages.add(terminal_key)
+            evidence_pages.append(terminal_evidence)
 
     if not answer or not evidence_pages:
         return None

@@ -1,5 +1,7 @@
 from src import pipeline as pipeline_mod
+from src.resolve.models import EvidencePage
 from src.retrieve.grounding_policy import GroundingIntent
+from src.retrieve.question_plan import QuestionPlan
 
 
 def test_generation_top_k_for_structured_types_is_narrower() -> None:
@@ -137,6 +139,7 @@ def test_answer_question_passes_answer_type_into_collect_grounding_pages(monkeyp
         lambda response_text, answer_type, question_text=None: ("Confirmation Statement", [1], "Confirmation Statement"),
     )
     monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+    monkeypatch.setattr(pipeline_mod, "select_article_evidence_pages", lambda *args, **kwargs: [])
 
     pipeline = pipeline_mod.RAGPipeline()
     result = pipeline.answer_question(
@@ -150,6 +153,67 @@ def test_answer_question_passes_answer_type_into_collect_grounding_pages(monkeyp
     assert captured["answer_type"] == "name"
     assert captured["intent_kind"] == "article_ref"
     assert result.telemetry.retrieval[0].page_numbers == [11]
+
+
+def test_answer_question_overrides_article_grounding_with_structural_evidence(monkeypatch) -> None:
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return [({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [6, 31], "text": "Article 7(3)(j)"}, 0.9)]
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(
+        pipeline_mod,
+        "build_question_plan",
+        lambda question, answer_type: QuestionPlan(
+            mode="article_lookup",
+            answer_type=answer_type,
+            article_refs=("Article 7(3)(j)",),
+        ),
+    )
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
+    monkeypatch.setattr(
+        pipeline_mod,
+        "detect_grounding_intent",
+        lambda question, answer_type: GroundingIntent(kind="article_ref", article_refs=("Article 7(3)(j)",)),
+    )
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
+    monkeypatch.setattr(
+        pipeline_mod,
+        "build_prompt",
+        lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}],
+    )
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: true"]))
+    monkeypatch.setattr(
+        pipeline_mod,
+        "parse_model_output",
+        lambda response_text, answer_type, question_text=None: (True, [1], "true"),
+    )
+    monkeypatch.setattr(
+        pipeline_mod,
+        "collect_grounding_pages",
+        lambda *args, **kwargs: [{"doc_id": "doc-a", "page_numbers": [6, 31]}],
+    )
+    monkeypatch.setattr(
+        pipeline_mod,
+        "select_article_evidence_pages",
+        lambda question_text, answer_type, answer_text="": [EvidencePage(doc_id="doc-a", page_num=6)],
+    )
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-article-override",
+            "question": "According to Article 7(3)(j) of the Operating Law 2018, can the Registrar delegate its functions?",
+            "answer_type": "boolean",
+        }
+    )
+
+    assert [(ref.doc_id, ref.page_numbers) for ref in result.telemetry.retrieval] == [("doc-a", [6])]
 
 
 def test_answer_question_retries_compare_null_without_intent(monkeypatch) -> None:

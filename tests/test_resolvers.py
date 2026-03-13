@@ -8,7 +8,9 @@ from src.resolve.compare import (
     resolve_monetary_claim_compare,
     resolve_party_compare,
 )
+from src.resolve.article import select_article_evidence_pages
 from src.resolve.metadata_store import PageMetadataStore
+from src.resolve.models import EvidencePage
 from src.resolve.outcome import resolve_last_page_outcome
 from src.resolve.page_local import resolve_page_local_lookup
 from src.retrieve.question_plan import QuestionPlan
@@ -420,6 +422,159 @@ def test_resolve_last_page_outcome_returns_order_clauses_across_pages(tmp_path) 
     assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 1), ("doc-a", 2)]
 
 
+def test_resolve_last_page_outcome_adds_terminal_page_when_final_outcome_is_restated(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["ARB 034/2025"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "order_signals": [],
+                "text": "Opening page.",
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 2,
+                "case_ids": ["ARB 034/2025"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "order_signals": ["dismissed", "granted", "costs"],
+                "text": (
+                    "IT IS HEREBY ORDERED THAT:\n"
+                    "1. The ASI Order is discharged with immediate effect.\n"
+                    "2. The Defendant's Set Aside Application is granted.\n"
+                    "3. The Claimant shall pay the Defendant its costs.\n"
+                    "Issued by:\nRegistrar"
+                ),
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 3,
+                "case_ids": ["ARB 034/2025"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "order_signals": [],
+                "text": "Discussion of the background only.",
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 4,
+                "case_ids": ["ARB 034/2025"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": True,
+                "order_signals": ["dismissed", "granted"],
+                "text": (
+                    "20. The appropriate course is therefore to refuse final anti-suit relief and to discharge the ASI Order.\n"
+                    "21. For the reasons set out above, the ASI Order is dismissed. The Defendant's Set Aside Application is granted."
+                ),
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="last_page_outcome",
+        answer_type="free_text",
+        case_ids=("ARB 034/2025",),
+        page_hint="last",
+        target_field="outcome",
+    )
+
+    resolution = resolve_last_page_outcome(
+        plan,
+        store,
+        question_text="According to the 'IT IS HEREBY ORDERED THAT' section of arbitration case ARB 034/2025, what did the court decide?",
+    )
+
+    assert resolution is not None
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2), ("doc-a", 4)]
+
+
+def test_resolve_last_page_outcome_does_not_add_terminal_page_without_outcome_support(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["CFI 001/2026"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "order_signals": [],
+                "text": "Opening page.",
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 2,
+                "case_ids": ["CFI 001/2026"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "order_signals": ["dismissed", "costs"],
+                "text": (
+                    "IT IS HEREBY ORDERED THAT:\n"
+                    "1. The Application is dismissed.\n"
+                    "2. Costs are awarded to the Respondent.\n"
+                    "Issued by:\nRegistrar"
+                ),
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 3,
+                "case_ids": ["CFI 001/2026"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": True,
+                "order_signals": [],
+                "text": "Additional factual background with no operative order language.",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="last_page_outcome",
+        answer_type="free_text",
+        case_ids=("CFI 001/2026",),
+        page_hint="last",
+        target_field="outcome",
+    )
+
+    resolution = resolve_last_page_outcome(
+        plan,
+        store,
+        question_text="According to the 'IT IS HEREBY ORDERED THAT' section, what was the outcome?",
+    )
+
+    assert resolution is not None
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2)]
+
+
 
 def test_resolve_judge_compare_returns_boolean_overlap(tmp_path) -> None:
     store = _write_metadata(
@@ -466,3 +621,397 @@ def test_resolve_party_compare_ignores_role_prefix_during_overlap(tmp_path) -> N
 
     assert resolution is not None
     assert resolution.answer is True
+
+
+def test_select_article_evidence_pages_prefers_exact_definition_page(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": "OPERATING LAW\nDIFC Law No. 7 of 2018",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 6,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": "Article 7(3)(j)\nThe Registrar may delegate its functions...",
+                "article_refs": ["Article 7(3)(j)"],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 31,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": "Under Article 7(3)(j), administrative matters are discussed elsewhere.",
+                "article_refs": ["Article 7(3)(j)"],
+            },
+        ],
+    )
+
+    evidence_pages = select_article_evidence_pages(
+        "According to Article 7(3)(j) of the Operating Law 2018, can the Registrar delegate its functions?",
+        "boolean",
+        answer_text="true",
+        store=store,
+    )
+
+    assert evidence_pages == [EvidencePage(doc_id="doc-a", page_num=6)]
+
+
+def test_select_article_evidence_pages_requires_unique_law_match(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": "OPERATING LAW\nDIFC Law No. 7 of 2018",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "EMPLOYMENT LAW",
+                "text": "EMPLOYMENT LAW\nDIFC Law No. 4 of 2019",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 10,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": "Article 10\nOperating Law clause.",
+                "article_refs": ["Article 10"],
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 10,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "EMPLOYMENT LAW",
+                "text": "Article 10\nEmployment Law clause.",
+                "article_refs": ["Article 10"],
+            },
+        ],
+    )
+
+    evidence_pages = select_article_evidence_pages(
+        "According to Article 10, what happens next?",
+        "name",
+        answer_text="Example",
+        store=store,
+    )
+
+    assert evidence_pages == []
+
+
+def test_select_article_evidence_pages_avoids_contents_page_for_structured_lookup(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "EMPLOYMENT LAW",
+                "text": "EMPLOYMENT LAW\nDIFC Law No. 4 of 2019",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 2,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "EMPLOYMENT LAW",
+                "text": "CONTENTS\n23. Ramadan ........................................ 14",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 14,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "EMPLOYMENT LAW",
+                "text": (
+                    "PART 4: WORKING TIME AND LEAVE\n"
+                    "23. Ramadan\n"
+                    "During the holy month of Ramadan, a Muslim Employee shall not be required to work in excess of six (6) hours each day."
+                ),
+                "article_refs": [],
+            },
+        ],
+    )
+
+    evidence_pages = select_article_evidence_pages(
+        "If a Muslim Employee works during the holy month of Ramadan, what is the maximum number of hours they can be required to work each day according to Article 23 of the Employment Law 2019?",
+        "number",
+        answer_text="6",
+        store=store,
+    )
+
+    assert evidence_pages == [EvidencePage(doc_id="doc-a", page_num=14)]
+
+
+def test_select_article_evidence_pages_prefers_later_clause_page_when_query_overlap_is_stronger(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "GENERAL PARTNERSHIP LAW",
+                "text": "GENERAL PARTNERSHIP LAW\nDIFC Law No. 11 of 2004",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 5,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "GENERAL PARTNERSHIP LAW",
+                "text": (
+                    "13. Recognised Partnership\n"
+                    "(4) An application for registration shall set out the address for service of the Recognised Partnership."
+                ),
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 8,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "GENERAL PARTNERSHIP LAW",
+                "text": (
+                    "(4) Within six (6) months after the end of the financial year, the accounts for that year shall be prepared and approved by the Partners."
+                ),
+                "article_refs": [],
+            },
+        ],
+    )
+
+    evidence_pages = select_article_evidence_pages(
+        "According to Article 19(4) of the General Partnership Law 2004, how many months after the end of the financial year must the accounts for that year be prepared and approved by the Partners?",
+        "number",
+        answer_text="6",
+        store=store,
+    )
+
+    assert evidence_pages == [EvidencePage(doc_id="doc-a", page_num=8)]
+
+
+def test_select_article_evidence_pages_prefers_target_clause_window_over_unrelated_same_clause_number(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": "OPERATING LAW\nDIFC Law No. 7 of 2018",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 7,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": (
+                    "(7) Subject to Article 7(8), neither the Registrar nor any delegate can be held liable.\n"
+                    "(8) Article 7(7) does not apply if the act or omission is shown to have been in bad faith."
+                ),
+                "article_refs": ["Article 7(8)", "Article 7(7)"],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 33,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": (
+                    "(8) The Board shall submit approved financial statements to the President.\n"
+                    "Liability\n"
+                    "(2) Neither the Registrar nor the DIFCA can be held liable.\n"
+                    "(3) Article 58(2) does not apply if the act or omission is shown to have been in bad faith."
+                ),
+                "article_refs": ["Article 58(2)"],
+            },
+        ],
+    )
+
+    evidence_pages = select_article_evidence_pages(
+        "Under the Operating Law 2018, can the Registrar be held liable for acts or omissions in performing their functions if the act or omission is shown to have been in bad faith, according to Article 7(8)?",
+        "boolean",
+        answer_text="true",
+        store=store,
+    )
+
+    assert evidence_pages == [EvidencePage(doc_id="doc-a", page_num=7)]
+
+
+def test_select_article_evidence_pages_prefers_clause_window_over_cross_referenced_next_article(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": "OPERATING LAW\nDIFC Law No. 7 of 2018",
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 9,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": (
+                    "Names\n"
+                    "(2) A Registered Person shall not use a misleading or deceptive name.\n"
+                    "(3) A Registered Person shall, within thirty (30) days, change its name if it becomes misleading, deceptive or conflicting.\n"
+                    "(4) A Registered Person is deemed to be aware of those circumstances."
+                ),
+                "article_refs": [],
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 10,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "OPERATING LAW",
+                "text": (
+                    "(2) A Registered Person shall file a notification of change of name within thirty (30) days.\n"
+                    "(3) Where a Registered Person has complied with the requirement under Article 11(1), the Registrar shall issue a certificate.\n"
+                    "(1) Without prejudice to the requirements in Article 10, the Registrar may direct a Registered Person to change its name."
+                ),
+                "article_refs": ["Article 10", "Article 11(1)", "Article 12(1)"],
+            },
+        ],
+    )
+
+    evidence_pages = select_article_evidence_pages(
+        "Under Article 10(3) of the Operating Law 2018, how many days does a Registered Person have to change its name if it becomes misleading, deceptive, or conflicting?",
+        "number",
+        answer_text="30",
+        store=store,
+    )
+
+    assert evidence_pages == [EvidencePage(doc_id="doc-a", page_num=9)]

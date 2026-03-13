@@ -21,6 +21,7 @@ from src.generate.llm import stream_generate
 from src.generate.null_detect import detect_null
 from src.generate.parse import parse_answer, parse_model_output
 from src.generate.prompts import build_prompt
+from src.resolve.article import select_article_evidence_pages
 from src.resolve.resolver import try_resolve_question
 from src.retrieve.grounding import collect_grounding_pages
 from src.retrieve.grounding_policy import GroundingIntent, detect_grounding_intent
@@ -46,6 +47,7 @@ _GROUNDING_FALLBACK_TOP_K_BY_TYPE = {
     "names": 2,
 }
 _COMPARE_NULL_RELAXED_TYPES = {"boolean", "name", "names"}
+_STRUCTURED_ANSWER_TYPES = {"number", "date", "boolean", "name", "names"}
 
 
 def _get_tokenizer():
@@ -147,6 +149,30 @@ def _finalize_answer_value(answer_value: Any, answer_type: str, *, question_text
     if not isinstance(answer_value, str):
         return answer_value
     return parse_answer(answer_value, normalized_answer_type, question_text=question_text)
+
+
+def _override_structural_grounding_refs(
+    plan: Any,
+    *,
+    question_text: str,
+    answer_type: str,
+    answer_text: str,
+    is_llm_null: bool,
+    retrieval_refs: list[RetrievalRef],
+) -> list[RetrievalRef]:
+    if is_llm_null or str(answer_type or "").lower() not in _STRUCTURED_ANSWER_TYPES:
+        return retrieval_refs
+    if getattr(plan, "mode", "") != "article_lookup":
+        return retrieval_refs
+
+    evidence_pages = select_article_evidence_pages(
+        question_text,
+        answer_type,
+        answer_text=answer_text,
+    )
+    if not evidence_pages:
+        return retrieval_refs
+    return _resolution_to_retrieval_refs(evidence_pages)
 
 
 def _chunk_identity(chunk_with_score: tuple[dict, float]) -> str:
@@ -687,6 +713,18 @@ class RAGPipeline:
         retrieval_refs = list(attempt["retrieval_refs"])
         cited_source_ids = list(attempt["cited_source_ids"])
 
+        if is_llm_null and answer_type == "free_text":
+            answer_value = _free_text_null_answer(question_text)
+        answer_value = _finalize_answer_value(answer_value, answer_type, question_text=question_text)
+        retrieval_refs = _override_structural_grounding_refs(
+            plan,
+            question_text=question_text,
+            answer_type=answer_type,
+            answer_text=answer_text,
+            is_llm_null=is_llm_null,
+            retrieval_refs=retrieval_refs,
+        )
+
         timing = timer.finish()
         telemetry = Telemetry(
             timing=TimingMetrics(
@@ -701,10 +739,6 @@ class RAGPipeline:
             ),
             model_name=GENERATION_MODEL,
         )
-
-        if is_llm_null and answer_type == "free_text":
-            answer_value = _free_text_null_answer(question_text)
-        answer_value = _finalize_answer_value(answer_value, answer_type, question_text=question_text)
 
         retrieval_mode = "compare_fallback" if compare_bias_disabled else "intent_bias"
         if active_intent is None or active_intent.kind == "generic":

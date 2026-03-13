@@ -40,6 +40,18 @@ def test_build_question_plan_detects_page_local_claim_number_lookup() -> None:
 
 
 
+def test_build_question_plan_detects_first_page_party_lookup() -> None:
+    plan = build_question_plan(
+        "From the first page of case CFI 010/2024, who were the claimants?",
+        "names",
+    )
+
+    assert plan.mode == "page_local_lookup"
+    assert plan.page_hint == "first"
+    assert plan.target_field == "party"
+    assert plan.case_ids == ("CFI 010/2024",)
+
+
 def test_build_question_plan_detects_single_case_claim_value_lookup() -> None:
     plan = build_question_plan(
         "What was the claim value in AED referenced in the appeal judgment CA 005/2025?",

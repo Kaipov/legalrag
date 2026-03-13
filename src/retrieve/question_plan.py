@@ -16,6 +16,7 @@ _COMPARE_MARKERS = (
     "involve any of the same",
 )
 _PARTY_MARKERS = ("party", "parties", "claimant", "defendant", "main party", "applicant", "respondent")
+_FIRST_PAGE_MARKERS = ("first page", "page 1")
 _MONETARY_COMPARE_MARKERS = (
     "higher monetary claim",
     "higher claim",
@@ -131,6 +132,21 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             case_ids=case_ids,
             article_refs=article_refs,
             page_hint="page_2",
+            target_field=target_field,
+        )
+
+    if len(case_ids) == 1 and any(marker in text for marker in _FIRST_PAGE_MARKERS) and target_field in {
+        "claim_number",
+        "judge",
+        "party",
+        "law_number",
+    }:
+        return QuestionPlan(
+            mode="page_local_lookup",
+            answer_type=normalized_answer_type,
+            case_ids=case_ids,
+            article_refs=article_refs,
+            page_hint="first",
             target_field=target_field,
         )
 
