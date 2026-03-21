@@ -34,11 +34,7 @@ def test_hybrid_retriever_skips_reranker_when_disabled(tmp_path, monkeypatch) ->
 
     monkeypatch.setattr(hybrid_mod, "BM25Searcher", lambda: _FakeBM25Searcher())
     monkeypatch.setattr(hybrid_mod, "SemanticSearcher", lambda: _FakeSemanticSearcher())
-
-    def _unexpected_reranker():
-        raise AssertionError("reranker should not be initialized when disabled")
-
-    monkeypatch.setattr(hybrid_mod, "CrossEncoderReranker", _unexpected_reranker)
+    monkeypatch.setattr(hybrid_mod, "build_reranker", lambda: (_ for _ in ()).throw(AssertionError("should not build")))
 
     retriever = hybrid_mod.HybridRetriever(chunks_path=chunks_path, enable_reranker=False)
     results = retriever.retrieve("test query", rerank_top_k=2)
@@ -53,7 +49,7 @@ def test_hybrid_retriever_applies_intent_bias_without_reranker(tmp_path, monkeyp
 
     monkeypatch.setattr(hybrid_mod, "BM25Searcher", lambda: _FakeBM25Searcher())
     monkeypatch.setattr(hybrid_mod, "SemanticSearcher", lambda: _FakeSemanticSearcher())
-    monkeypatch.setattr(hybrid_mod, "CrossEncoderReranker", lambda: None)
+    monkeypatch.setattr(hybrid_mod, "build_reranker", lambda: None)
 
     retriever = hybrid_mod.HybridRetriever(chunks_path=chunks_path, enable_reranker=False)
     intent = GroundingIntent(kind="title_page", page_focus="first", keyphrases=("caption",))
@@ -78,10 +74,60 @@ def test_hybrid_retriever_uses_reranker_when_enabled(tmp_path, monkeypatch) -> N
             return [(chunks[-1], 0.9)]
 
     fake_reranker = _FakeReranker()
-    monkeypatch.setattr(hybrid_mod, "CrossEncoderReranker", lambda: fake_reranker)
+    monkeypatch.setattr(hybrid_mod, "build_reranker", lambda: fake_reranker)
 
-    retriever = hybrid_mod.HybridRetriever(chunks_path=chunks_path, enable_reranker=True)
-    results = retriever.retrieve("test query", rerank_top_k=1)
+    retriever = hybrid_mod.HybridRetriever(
+        chunks_path=chunks_path,
+        enable_reranker=True,
+        reranker_enabled_intents=("all",),
+    )
+    results = retriever.retrieve("test query", rerank_top_k=1, intent=GroundingIntent(kind="generic"))
 
     assert fake_reranker.calls == [("test query", ["b", "a", "c"], 1)]
     assert results == [({"chunk_id": "c", "doc_id": "doc-c", "page_numbers": [4], "section_path": "C", "doc_title": "C", "text": "gamma"}, 0.9)]
+
+
+def test_hybrid_retriever_skips_reranker_for_disallowed_intent(tmp_path, monkeypatch) -> None:
+    chunks_path = tmp_path / "chunks.jsonl"
+    _write_chunks(chunks_path)
+
+    monkeypatch.setattr(hybrid_mod, "BM25Searcher", lambda: _FakeBM25Searcher())
+    monkeypatch.setattr(hybrid_mod, "SemanticSearcher", lambda: _FakeSemanticSearcher())
+
+    class _FakeReranker:
+        def rerank(self, query: str, chunks: list[dict], top_k: int = 10):
+            raise AssertionError("reranker should not be used for disallowed intents")
+
+    monkeypatch.setattr(hybrid_mod, "build_reranker", lambda: _FakeReranker())
+
+    retriever = hybrid_mod.HybridRetriever(
+        chunks_path=chunks_path,
+        enable_reranker=True,
+        reranker_enabled_intents=("article_ref",),
+    )
+    results = retriever.retrieve("test query", rerank_top_k=2, intent=GroundingIntent(kind="generic"))
+
+    assert [chunk["chunk_id"] for chunk, _score in results] == ["b", "a"]
+
+
+def test_hybrid_retriever_falls_back_when_reranker_errors(tmp_path, monkeypatch) -> None:
+    chunks_path = tmp_path / "chunks.jsonl"
+    _write_chunks(chunks_path)
+
+    monkeypatch.setattr(hybrid_mod, "BM25Searcher", lambda: _FakeBM25Searcher())
+    monkeypatch.setattr(hybrid_mod, "SemanticSearcher", lambda: _FakeSemanticSearcher())
+
+    class _BrokenReranker:
+        def rerank(self, query: str, chunks: list[dict], top_k: int = 10):
+            raise RuntimeError("voyage timeout")
+
+    monkeypatch.setattr(hybrid_mod, "build_reranker", lambda: _BrokenReranker())
+
+    retriever = hybrid_mod.HybridRetriever(
+        chunks_path=chunks_path,
+        enable_reranker=True,
+        reranker_enabled_intents=("article_ref",),
+    )
+    results = retriever.retrieve("test query", rerank_top_k=2, intent=GroundingIntent(kind="article_ref"))
+
+    assert [chunk["chunk_id"] for chunk, _score in results] == ["b", "a"]

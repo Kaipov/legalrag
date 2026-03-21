@@ -31,6 +31,8 @@ from src.config import (
     GENERATION_TOP_K,
     MAX_CHUNK_TOKENS,
     PROJECT_ROOT,
+    RERANKER_ENABLED_INTENTS,
+    RERANKER_PROVIDER,
     ensure_dirs,
 )
 from src.pipeline import RAGPipeline
@@ -98,7 +100,11 @@ def build_architecture_summary() -> str:
         "embedding-aware chunks"
     )
     if ENABLE_RERANKER:
-        retrieval_summary += ", bge-reranker-v2-m3 cross-encoder rerank"
+        enabled_intents = ",".join(RERANKER_ENABLED_INTENTS) or "none"
+        if RERANKER_PROVIDER == "voyage":
+            retrieval_summary += f", Voyage rerank-2.5 API rerank ({enabled_intents})"
+        else:
+            retrieval_summary += f", bge-reranker-v2-m3 cross-encoder rerank ({enabled_intents})"
     else:
         retrieval_summary += ", reranker disabled"
 

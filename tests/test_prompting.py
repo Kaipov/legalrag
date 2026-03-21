@@ -95,8 +95,16 @@ def test_build_architecture_summary_reflects_reranker_setting(monkeypatch) -> No
     assert "adaptive top-k chunks" in summary_without_reranker
 
     monkeypatch.setattr(run_mod, "ENABLE_RERANKER", True)
-    summary_with_reranker = run_mod.build_architecture_summary()
-    assert "cross-encoder rerank" in summary_with_reranker
+    monkeypatch.setattr(run_mod, "RERANKER_PROVIDER", "local")
+    monkeypatch.setattr(run_mod, "RERANKER_ENABLED_INTENTS", ("all",))
+    summary_with_local_reranker = run_mod.build_architecture_summary()
+    assert "cross-encoder rerank" in summary_with_local_reranker
+
+    monkeypatch.setattr(run_mod, "RERANKER_PROVIDER", "voyage")
+    monkeypatch.setattr(run_mod, "RERANKER_ENABLED_INTENTS", ("article_ref",))
+    summary_with_voyage_reranker = run_mod.build_architecture_summary()
+    assert "Voyage rerank-2.5 API rerank" in summary_with_voyage_reranker
+    assert "(article_ref)" in summary_with_voyage_reranker
 
 def test_build_prompt_adds_outcome_question_rule() -> None:
     chunks = [
