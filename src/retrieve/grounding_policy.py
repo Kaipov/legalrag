@@ -106,7 +106,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             max_total_pages = max_docs
         return GroundingIntent(
             kind="title_page",
-            page_focus="first",
+            page_focus="front",
             keyphrases=("claimant", "defendant", "applicant", "respondent", "claim no", "case no", "title", "caption"),
             case_ids=case_ids,
             prefer_unique_docs=True,
@@ -141,7 +141,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
     if any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
         return GroundingIntent(
             kind="date_of_issue",
-            page_focus="first",
+            page_focus="front",
             keyphrases=("date of issue", "issued on", "issued", "date"),
             case_ids=case_ids,
             prefer_unique_docs=True,
@@ -208,6 +208,17 @@ def _page_focus_bias(intent: GroundingIntent, pages: list[int], doc_max_page: in
 
     first_page = min(pages)
     last_page = max(pages)
+    if intent.page_focus == "front":
+        if first_page <= 1:
+            return 3.5
+        if first_page == 2:
+            return 3.0
+        if first_page == 3:
+            return 2.0
+        if first_page == 4:
+            return 1.0
+        return 0.0
+
     if intent.page_focus == "first":
         if first_page <= 1:
             return 3.5

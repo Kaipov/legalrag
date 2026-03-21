@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from src.generate.verbalize import verbalize_field_answer
+from src.resolve.issue_date import select_best_issue_date_record
 from src.resolve.metadata_store import PageMetadataStore
 from src.resolve.models import EvidencePage, Resolution
 from src.retrieve.lexical import tokenize_legal_text
@@ -279,6 +280,23 @@ def resolve_page_local_lookup(plan: QuestionPlan, store: PageMetadataStore, ques
         return title_page_coverage_resolution
 
     case_id = plan.case_ids[0]
+    if plan.target_field == "issue_date":
+        selected_record = select_best_issue_date_record(store.get_case_records(case_id, page_hint=plan.page_hint))
+        if selected_record is None:
+            return None
+        value, record = selected_record
+        evidence = EvidencePage(doc_id=str(record.get("doc_id") or ""), page_num=int(record.get("page_num") or 0))
+        answer = _shape_answer(value, plan, question_text)
+        if answer is None:
+            return None
+        return Resolution(
+            answer=answer,
+            evidence_pages=[evidence],
+            confidence=0.99,
+            method=plan.mode,
+            facts={"case_id": case_id, "target_field": plan.target_field, "value": value},
+        )
+
     for record in store.get_case_records(case_id, page_hint=plan.page_hint):
         value = _extract_value(record, plan, question_text=question_text)
         if value is None:

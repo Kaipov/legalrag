@@ -97,6 +97,65 @@ def test_resolve_date_of_issue_compare_prefers_date_of_issue_text_over_stale_met
     assert resolution.facts["dates"] == {"SCT 169/2025": "2025-12-24", "SCT 295/2025": "2025-12-10"}
 
 
+def test_resolve_date_of_issue_compare_prefers_first_page_issue_date_when_later_front_pages_only_contain_event_dates(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-enf",
+                "page_num": 1,
+                "case_ids": ["ENF 269/2023"],
+                "issue_date": "2023-09-27",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "text": "ENF 269/2023 ORDER WITH REASONS OF H.E. CHIEF JUSTICE WAYNE MARTIN",
+            },
+            {
+                "doc_id": "doc-enf",
+                "page_num": 2,
+                "case_ids": ["ENF 269/2023"],
+                "issue_date": "2024-10-14",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "UPON the application dated 14 October 2024 under Rule 50.2 of the RDC",
+            },
+            {
+                "doc_id": "doc-sct",
+                "page_num": 2,
+                "case_ids": ["SCT 295/2025"],
+                "issue_date": "2025-12-10",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "Issued by: Delvin Sumo Date of Issue: 10 December 2025",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="date_of_issue_compare",
+        answer_type="name",
+        case_ids=("ENF 269/2023", "SCT 295/2025"),
+        page_hint="front",
+        compare_op="min_date",
+        target_field="issue_date",
+    )
+
+    resolution = resolve_date_of_issue_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer == "ENF 269/2023"
+    assert resolution.facts["dates"] == {"ENF 269/2023": "2023-09-27", "SCT 295/2025": "2025-12-10"}
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-enf", 1), ("doc-sct", 2)]
+
+
 def test_resolve_monetary_claim_compare_returns_higher_case(tmp_path) -> None:
     store = _write_metadata(
         tmp_path,
@@ -264,6 +323,57 @@ def test_resolve_page_local_lookup_returns_claim_number(tmp_path) -> None:
 
     assert resolution is not None
     assert resolution.answer == "ENF-316-2023/2"
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2)]
+
+
+def test_resolve_page_local_lookup_prefers_explicit_date_of_issue_page_over_first_page_metadata(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["CFI 057/2025"],
+                "issue_date": "2026-02-02",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "Example",
+                "text": "CFI 057/2025 ORDERS FEBRUARY 02, 2026",
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 2,
+                "case_ids": ["CFI 057/2025"],
+                "issue_date": "2026-02-02",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "doc_title": "Example",
+                "text": "Issued by: Michael Black KC Date of Issue: 2 February 2026 At: 4pm",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="page_local_lookup",
+        answer_type="date",
+        case_ids=("CFI 057/2025",),
+        page_hint="front",
+        target_field="issue_date",
+    )
+
+    resolution = resolve_page_local_lookup(
+        plan,
+        store,
+        question_text="What is the Date of Issue of the document in case CFI 057/2025?",
+    )
+
+    assert resolution is not None
+    assert resolution.answer == "2026-02-02"
     assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2)]
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from scripts import retrieval_bottleneck_report as bottleneck_mod
 
 
@@ -66,3 +68,62 @@ def test_bottleneck_report_parser_defaults() -> None:
     assert args.gold == str(bottleneck_mod.DEFAULT_GOLD_PATH)
     assert args.questions == str(bottleneck_mod.DEFAULT_QUESTIONS_PATH)
     assert args.details_limit == bottleneck_mod.DEFAULT_DETAILS_LIMIT
+    assert args.enable_reranker is None
+
+
+def test_build_bottleneck_report_passes_enable_reranker(monkeypatch) -> None:
+    monkeypatch.setattr(
+        bottleneck_mod,
+        "load_questions",
+        lambda _path=None: [{"id": "q-1", "question": "What is Article 1?", "answer_type": "number"}],
+    )
+    monkeypatch.setattr(
+        bottleneck_mod,
+        "load_json",
+        lambda _path: {
+            "answers": [
+                {
+                    "question_id": "q-1",
+                    "telemetry": {
+                        "retrieval": {
+                            "retrieved_chunk_pages": [{"doc_id": "doc-a", "page_numbers": [1]}],
+                        }
+                    },
+                }
+            ]
+        },
+    )
+
+    captured: dict[str, object] = {}
+
+    class _FakeRetriever:
+        def __init__(self, chunks_path: Path, enable_reranker: bool) -> None:
+            captured["chunks_path"] = chunks_path
+            captured["enable_reranker"] = enable_reranker
+
+        def _get_rrf_candidates(self, _query: str):
+            return [({"doc_id": "doc-a", "page_numbers": [1]}, 1.0)]
+
+        def _apply_intent_bias(self, candidates, _intent):
+            return list(candidates)
+
+        def retrieve(self, _query: str, intent=None):
+            return [({"doc_id": "doc-a", "page_numbers": [1]}, 1.0)]
+
+    monkeypatch.setattr(bottleneck_mod, "HybridRetriever", _FakeRetriever)
+    monkeypatch.setattr(bottleneck_mod, "_generation_top_k_for", lambda _answer_type, intent=None: 1)
+    monkeypatch.setattr(
+        bottleneck_mod,
+        "_select_generation_chunks",
+        lambda chunks, _top_k, intent=None, question_text=None, answer_type="free_text", plan=None, disable_unique_doc_preference=False: list(chunks),
+    )
+
+    summary = bottleneck_mod.build_bottleneck_report(
+        gold_path=Path("unused-gold.json"),
+        questions_path=Path("unused-questions.json"),
+        enable_reranker=True,
+    )
+
+    assert captured["chunks_path"] == bottleneck_mod.CHUNKS_JSONL
+    assert captured["enable_reranker"] is True
+    assert summary["reranker_enabled"] is True

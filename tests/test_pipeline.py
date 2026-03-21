@@ -64,6 +64,93 @@ def test_select_generation_chunks_prefers_chunks_from_case_matched_doc_for_singl
     assert selected == [chunks[0], chunks[2]]
 
 
+def test_select_generation_chunks_generic_compare_prefers_page_two_case_coverage() -> None:
+    chunks = [
+        ({"chunk_id": "doc-a-body", "doc_id": "doc-a", "page_numbers": [4], "text": "SCT 169/2025 procedural history"}, 0.99),
+        ({"chunk_id": "doc-a-page2", "doc_id": "doc-a", "page_numbers": [2], "text": "SCT 169/2025 claim amount AED 391,123.45"}, 0.96),
+        ({"chunk_id": "doc-b-title", "doc_id": "doc-b", "page_numbers": [1], "text": "SCT 295/2025 title page"}, 0.95),
+        ({"chunk_id": "doc-b-page2", "doc_id": "doc-b", "page_numbers": [2], "text": "SCT 295/2025 seeking payment in the amount of AED 250,000"}, 0.94),
+    ]
+    intent = GroundingIntent(kind="generic", case_ids=("SCT 169/2025", "SCT 295/2025"))
+    plan = QuestionPlan(
+        mode="monetary_claim_compare",
+        answer_type="name",
+        case_ids=("SCT 169/2025", "SCT 295/2025"),
+        page_hint="page_2",
+        compare_op="max_number",
+        target_field="money_value",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="Identify the case with the higher monetary claim: SCT 169/2025 or SCT 295/2025?",
+        answer_type="name",
+        plan=plan,
+    )
+
+    assert selected == [chunks[1], chunks[3]]
+
+
+def test_select_generation_chunks_generic_single_case_prefers_money_signal_chunk() -> None:
+    chunks = [
+        ({"chunk_id": "title", "doc_id": "doc-a", "page_numbers": [1], "text": "CA 005/2025 title page"}, 0.99),
+        ({"chunk_id": "costs-order", "doc_id": "doc-a", "page_numbers": [3], "text": "assessed and fixed in the amount of AED 550,000"}, 0.98),
+        (
+            {
+                "chunk_id": "claim-value",
+                "doc_id": "doc-a",
+                "page_numbers": [3],
+                "text": "Background. The Claimant alleges underpayment and references a claim amount of AED 550,000 in the appeal judgment.",
+            },
+            0.95,
+        ),
+    ]
+    intent = GroundingIntent(kind="generic", case_ids=("CA 005/2025",))
+    plan = QuestionPlan(
+        mode="page_local_lookup",
+        answer_type="number",
+        case_ids=("CA 005/2025",),
+        page_hint="any",
+        target_field="money_value",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="What was the claim value in AED referenced in the appeal judgment CA 005/2025?",
+        answer_type="number",
+        plan=plan,
+    )
+
+    assert selected == [chunks[2], chunks[1]]
+
+
+def test_select_generation_chunks_generic_penalizes_front_matter_for_admin_question() -> None:
+    chunks = [
+        ({"chunk_id": "definitions", "doc_id": "doc-a", "page_numbers": [42], "text": "FOUNDATIONS LAW Term Definition Council means the council established to administer a Foundation's property."}, 0.99),
+        ({"chunk_id": "title", "doc_id": "doc-a", "page_numbers": [1], "text": "FOUNDATIONS LAW DIFC Law No. 3 of 2018"}, 0.98),
+        ({"chunk_id": "contents", "doc_id": "doc-a", "page_numbers": [2], "text": "FOUNDATIONS LAW CONTENTS PART 1: GENERAL"}, 0.97),
+        ({"chunk_id": "admin", "doc_id": "doc-a", "page_numbers": [4], "text": "8. Administration of this Law. This Law is administered by the Registrar."}, 0.96),
+    ]
+    intent = GroundingIntent(kind="generic")
+    plan = QuestionPlan(mode="generic", answer_type="free_text")
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="Who administers the Foundations Law?",
+        answer_type="free_text",
+        plan=plan,
+    )
+
+    assert selected[0] == chunks[3]
+    assert chunks[0] not in selected
+
+
 def test_should_override_compare_null_when_generic_first_pages_cover_both_cases() -> None:
     chunks = [
         ({"chunk_id": "a", "doc_id": "doc-a", "page_numbers": [1], "text": "ARB 034/2025 title page"}, 0.9),

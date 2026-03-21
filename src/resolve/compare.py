@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from src.preprocess.page_metadata import extract_issue_date
+from src.resolve.issue_date import select_best_issue_date_record
 from src.resolve.metadata_store import PageMetadataStore
 from src.resolve.models import EvidencePage, Resolution
 from src.retrieve.question_plan import QuestionPlan
@@ -86,28 +86,15 @@ def _extract_claim_amount(record: dict) -> float | None:
     return fallback_values[0] if len(fallback_values) == 1 else max(fallback_values)
 
 
-def _extract_record_issue_date(record: dict) -> str | None:
-    text_issue_date = extract_issue_date(str(record.get("text") or ""))
-    if text_issue_date:
-        return text_issue_date
-
-    stored_issue_date = str(record.get("issue_date") or "").strip()
-    return stored_issue_date or None
-
-
 def resolve_date_of_issue_compare(plan: QuestionPlan, store: PageMetadataStore) -> Resolution | None:
     if len(plan.case_ids) < 2:
         return None
 
     resolved_dates: list[tuple[str, str, EvidencePage]] = []
     for case_id in plan.case_ids[:2]:
-        selected_record = None
-        for record in store.get_case_records(case_id, page_hint=plan.page_hint):
-            issue_date = _extract_record_issue_date(record)
-            if not issue_date:
-                continue
-            selected_record = (issue_date, record)
-            break
+        selected_record = select_best_issue_date_record(
+            store.get_case_records(case_id, page_hint=plan.page_hint)
+        )
         if selected_record is None:
             return None
         issue_date, record = selected_record

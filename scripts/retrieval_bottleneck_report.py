@@ -22,10 +22,11 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.config import CHUNKS_JSONL, DATA_DIR, PROJECT_ROOT
+from src.config import CHUNKS_JSONL, DATA_DIR, ENABLE_RERANKER, PROJECT_ROOT
 from src.pipeline import _generation_top_k_for, _select_generation_chunks
 from src.retrieve.grounding_policy import detect_grounding_intent
 from src.retrieve.hybrid import HybridRetriever
+from src.retrieve.question_plan import build_question_plan
 
 DEFAULT_GOLD_PATH = PROJECT_ROOT / "golden_submission.json"
 DEFAULT_QUESTIONS_PATH = DATA_DIR / "questions.json"
@@ -226,6 +227,7 @@ def build_bottleneck_report(
     *,
     gold_path: Path,
     questions_path: Path,
+    enable_reranker: bool = ENABLE_RERANKER,
     details_limit: int = DEFAULT_DETAILS_LIMIT,
     limit: int | None = None,
 ) -> dict[str, Any]:
@@ -246,13 +248,14 @@ def build_bottleneck_report(
     if limit is not None:
         evidence_questions = evidence_questions[: max(0, limit)]
 
-    retriever = HybridRetriever(chunks_path=CHUNKS_JSONL, enable_reranker=False)
+    retriever = HybridRetriever(chunks_path=CHUNKS_JSONL, enable_reranker=enable_reranker)
     rows: list[dict[str, Any]] = []
 
     for question, gold_page_refs in evidence_questions:
         query = question.get("question", "")
         answer_type = question.get("answer_type", "free_text")
         intent = detect_grounding_intent(query, answer_type)
+        plan = build_question_plan(query, answer_type)
 
         rrf_candidates = retriever._get_rrf_candidates(query)
         intent_ranked = retriever._apply_intent_bias(rrf_candidates, intent)
@@ -262,6 +265,9 @@ def build_bottleneck_report(
             retriever_output,
             generation_top_k,
             intent=intent,
+            question_text=query,
+            answer_type=answer_type,
+            plan=plan,
             disable_unique_doc_preference=False,
         )
 
@@ -295,6 +301,7 @@ def build_bottleneck_report(
         "gold_path": str(gold_path),
         "questions_path": str(questions_path),
         "question_count": len(rows),
+        "reranker_enabled": bool(enable_reranker),
         "stage_summaries": stage_summaries,
         "transition_summaries": transition_summaries,
         "transition_losses": transition_losses,
@@ -306,6 +313,7 @@ def print_bottleneck_report(summary: dict[str, Any], details_limit: int = DEFAUL
     print(f"Weak gold:      {summary['gold_path']}")
     print(f"Questions:      {summary['questions_path']}")
     print(f"Evidence items: {summary['question_count']}")
+    print(f"Reranker:       {'on' if summary.get('reranker_enabled') else 'off'}")
 
     for stage_name in STAGE_ORDER:
         stage_summary = summary["stage_summaries"][stage_name]
@@ -374,6 +382,20 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Optional cap on how many evidence-bearing questions to score",
     )
+    reranker_group = parser.add_mutually_exclusive_group()
+    reranker_group.add_argument(
+        "--enable-reranker",
+        dest="enable_reranker",
+        action="store_true",
+        default=None,
+        help="Force-enable the configured reranker for retriever_output and generation_chunks",
+    )
+    reranker_group.add_argument(
+        "--disable-reranker",
+        dest="enable_reranker",
+        action="store_false",
+        help="Force-disable the reranker, regardless of config",
+    )
     return parser
 
 
@@ -391,6 +413,7 @@ def main(argv: list[str] | None = None) -> None:
     summary = build_bottleneck_report(
         gold_path=gold_path,
         questions_path=questions_path,
+        enable_reranker=ENABLE_RERANKER if args.enable_reranker is None else bool(args.enable_reranker),
         details_limit=max(1, args.details_limit),
         limit=args.limit,
     )

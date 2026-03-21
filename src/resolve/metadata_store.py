@@ -37,6 +37,9 @@ class PageMetadataStore:
         records = list(self.records_by_case_id.get(str(case_id), []))
         if not records:
             return []
+        if page_hint == "front":
+            front_records = [record for record in records if int(record.get("page_num") or 0) <= 4]
+            return front_records or records[:4]
         if page_hint == "first":
             first_records = [record for record in records if bool(record.get("is_first_page")) or int(record.get("page_num") or 0) == 1]
             return first_records or [record for record in records if int(record.get("page_num") or 0) <= 2]

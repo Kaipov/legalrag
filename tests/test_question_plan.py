@@ -9,7 +9,7 @@ def test_build_question_plan_detects_date_of_issue_compare() -> None:
     )
 
     assert plan.mode == "date_of_issue_compare"
-    assert plan.page_hint == "page_2"
+    assert plan.page_hint == "front"
     assert plan.target_field == "issue_date"
     assert plan.case_ids == ("CA 004/2025", "SCT 295/2025")
 
@@ -22,7 +22,7 @@ def test_build_question_plan_detects_single_case_date_lookup() -> None:
     )
 
     assert plan.mode == "page_local_lookup"
-    assert plan.page_hint == "page_2"
+    assert plan.page_hint == "front"
     assert plan.target_field == "issue_date"
 
 

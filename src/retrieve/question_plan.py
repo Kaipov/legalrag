@@ -210,7 +210,7 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             answer_type=normalized_answer_type,
             case_ids=case_ids,
             article_refs=article_refs,
-            page_hint="page_2",
+            page_hint="front",
             compare_op="min_date",
             target_field="issue_date",
         )
@@ -221,7 +221,7 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             answer_type=normalized_answer_type,
             case_ids=case_ids,
             article_refs=article_refs,
-            page_hint="page_2",
+            page_hint="front",
             target_field="issue_date",
         )
 

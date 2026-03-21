@@ -8,7 +8,7 @@ def test_detect_grounding_intent_for_date_of_issue() -> None:
     )
 
     assert intent.kind == "date_of_issue"
-    assert intent.page_focus == "first"
+    assert intent.page_focus == "front"
     assert intent.prefer_unique_docs is True
 
 
