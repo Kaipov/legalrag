@@ -12,6 +12,17 @@ def test_detect_grounding_intent_for_date_of_issue() -> None:
     assert intent.prefer_unique_docs is True
 
 
+def test_detect_grounding_intent_for_issued_earlier_question() -> None:
+    intent = detect_grounding_intent(
+        "Which case was issued earlier by the Court of First Instance: CFI 057/2025 or CFI 067/2025?",
+        "name",
+    )
+
+    assert intent.kind == "date_of_issue"
+    assert intent.page_focus == "front"
+    assert intent.prefer_unique_docs is True
+
+
 def test_detect_grounding_intent_for_last_page() -> None:
     intent = detect_grounding_intent(
         "According to the 'IT IS HEREBY ORDERED THAT' section on the last page, what was the outcome?",

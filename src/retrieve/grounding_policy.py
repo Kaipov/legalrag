@@ -65,6 +65,15 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             "case files",
         )
     )
+    date_issue_markers = (
+        "date of issue",
+        "issue date",
+        "issued first",
+        "issued earlier",
+        "issued later",
+        "earlier issue date",
+        "later issue date",
+    )
 
     if any(marker in text for marker in title_page_markers):
         if len(case_ids) >= 2 and is_compare_question:
@@ -138,7 +147,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             quoted_sections=anchors.quoted_sections,
         )
 
-    if any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
+    if any(marker in text for marker in date_issue_markers):
         return GroundingIntent(
             kind="date_of_issue",
             page_focus="front",

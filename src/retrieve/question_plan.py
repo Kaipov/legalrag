@@ -23,6 +23,15 @@ _MONETARY_COMPARE_MARKERS = (
     "higher amount",
     "greater monetary claim",
 )
+_DATE_ISSUE_MARKERS = (
+    "date of issue",
+    "issue date",
+    "issued first",
+    "issued earlier",
+    "issued later",
+    "earlier issue date",
+    "later issue date",
+)
 _CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
 _ARTICLE_REF_RE = re.compile(r"\bArticle\s+\d+[A-Z]?(?:\(\d+[A-Z]?\)|\([a-z]\))*", re.IGNORECASE)
 
@@ -103,7 +112,7 @@ def _infer_target_field(text: str) -> str | None:
         return "money_value"
     if any(marker in text for marker in ("claim value", "claim amount", "value in aed")):
         return "money_value"
-    if any(marker in text for marker in ("date of issue", "issue date", "issued first", "issued earlier")):
+    if any(marker in text for marker in _DATE_ISSUE_MARKERS):
         return "issue_date"
     if "judge" in text:
         return "judge"
@@ -204,7 +213,7 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             target_field="money_value",
         )
 
-    if len(case_ids) >= 2 and any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
+    if len(case_ids) >= 2 and any(marker in text for marker in _DATE_ISSUE_MARKERS):
         return QuestionPlan(
             mode="date_of_issue_compare",
             answer_type=normalized_answer_type,
@@ -215,7 +224,7 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             target_field="issue_date",
         )
 
-    if len(case_ids) == 1 and any(marker in text for marker in ("date of issue", "issue date")):
+    if len(case_ids) == 1 and any(marker in text for marker in _DATE_ISSUE_MARKERS):
         return QuestionPlan(
             mode="page_local_lookup",
             answer_type=normalized_answer_type,

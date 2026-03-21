@@ -15,6 +15,18 @@ def test_build_question_plan_detects_date_of_issue_compare() -> None:
 
 
 
+def test_build_question_plan_detects_issued_earlier_compare() -> None:
+    plan = build_question_plan(
+        "Which case was issued earlier by the Court of First Instance: CFI 057/2025 or CFI 067/2025?",
+        "name",
+    )
+
+    assert plan.mode == "date_of_issue_compare"
+    assert plan.page_hint == "front"
+    assert plan.target_field == "issue_date"
+    assert plan.case_ids == ("CFI 057/2025", "CFI 067/2025")
+
+
 def test_build_question_plan_detects_single_case_date_lookup() -> None:
     plan = build_question_plan(
         "What is the Date of Issue of the document in case CFI 057/2025?",
