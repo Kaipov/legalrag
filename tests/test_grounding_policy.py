@@ -92,6 +92,7 @@ def test_detect_grounding_intent_detects_judge_compare_when_question_says_in_com
     )
 
     assert intent.kind == "judge_compare"
+    assert intent.page_focus == "front"
     assert intent.max_docs == 4
     assert intent.max_total_pages == 4
 

@@ -71,7 +71,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             if "judge" in text:
                 return GroundingIntent(
                     kind="judge_compare",
-                    page_focus="first",
+                    page_focus="front",
                     keyphrases=("before", "justice", "judge", "hearing"),
                     case_ids=case_ids,
                     prefer_unique_docs=True,
@@ -169,7 +169,7 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
     if "judge" in text and is_compare_question:
         return GroundingIntent(
             kind="judge_compare",
-            page_focus="first",
+            page_focus="front",
             keyphrases=("before", "justice", "judge", "hearing"),
             case_ids=case_ids,
             prefer_unique_docs=True,

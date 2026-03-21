@@ -166,7 +166,7 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
                 answer_type=normalized_answer_type,
                 case_ids=case_ids,
                 article_refs=article_refs,
-                page_hint="first",
+                page_hint="front",
                 compare_op="set_overlap",
                 target_field="judge",
             )
@@ -241,7 +241,7 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             answer_type=normalized_answer_type,
             case_ids=case_ids,
             article_refs=article_refs,
-            page_hint="first",
+            page_hint="front",
             compare_op="set_overlap",
             target_field="judge",
         )

@@ -775,6 +775,10 @@ def test_resolve_judge_compare_returns_boolean_overlap(tmp_path) -> None:
 
     assert resolution is not None
     assert resolution.answer is True
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [
+        ("doc-a", 1),
+        ("doc-b", 1),
+    ]
 
 
 def test_resolve_judge_compare_false_keeps_case_file_coverage_pages(tmp_path) -> None:
@@ -809,6 +813,66 @@ def test_resolve_judge_compare_false_keeps_case_file_coverage_pages(tmp_path) ->
 
 
 
+def test_resolve_judge_compare_false_prefers_front_matter_page_with_judge_name(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {"doc_id": "doc-a", "page_num": 1, "case_ids": ["DEC 001/2025"], "issue_date": None, "judges": [], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "Opening cover page only."},
+            {"doc_id": "doc-a", "page_num": 2, "case_ids": ["DEC 001/2025"], "issue_date": None, "judges": ["Justice Michael Black KC"], "parties": [], "claim_numbers": [], "is_first_page": False, "is_last_page": False, "text": "BEFORE Justice Michael Black KC"},
+            {"doc_id": "doc-b", "page_num": 1, "case_ids": ["DEC 001/2025"], "issue_date": None, "judges": ["Justice Michael Black KC"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "Judgment of Justice Michael Black KC"},
+            {"doc_id": "doc-c", "page_num": 1, "case_ids": ["TCD 001/2024"], "issue_date": None, "judges": ["Chief Justice Wayne Martin"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "BEFORE Chief Justice Wayne Martin"},
+            {"doc_id": "doc-d", "page_num": 1, "case_ids": ["TCD 001/2024"], "issue_date": None, "judges": ["Justice Roger Stewart"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "BEFORE Justice Roger Stewart"},
+        ],
+    )
+    plan = QuestionPlan(
+        mode="judge_compare",
+        answer_type="boolean",
+        case_ids=("DEC 001/2025", "TCD 001/2024"),
+        page_hint="front",
+        compare_op="set_overlap",
+        target_field="judge",
+    )
+
+    resolution = resolve_judge_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer is False
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [
+        ("doc-a", 2),
+        ("doc-b", 1),
+        ("doc-c", 1),
+        ("doc-d", 1),
+    ]
+
+
+def test_resolve_judge_compare_true_uses_best_overlap_pair_without_duplicate_case_pages(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {"doc_id": "doc-ca-1", "page_num": 1, "case_ids": ["CA 005/2025"], "issue_date": None, "judges": [". CHIEF JUSTICE WAYNE MARTIN"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "Interlocutory page."},
+            {"doc_id": "doc-ca-2", "page_num": 1, "case_ids": ["CA 005/2025"], "issue_date": None, "judges": ["Chief Justice Wayne Martin", "Justice Roger Stewart"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "BEFORE H.E. CHIEF JUSTICE WAYNE MARTIN and Justice Roger Stewart"},
+            {"doc_id": "doc-tcd", "page_num": 1, "case_ids": ["TCD 001/2024"], "issue_date": None, "judges": ["Chief Justice Wayne Martin"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "BEFORE Chief Justice Wayne Martin"},
+        ],
+    )
+    plan = QuestionPlan(
+        mode="judge_compare",
+        answer_type="boolean",
+        case_ids=("CA 005/2025", "TCD 001/2024"),
+        page_hint="front",
+        compare_op="set_overlap",
+        target_field="judge",
+    )
+
+    resolution = resolve_judge_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer is True
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [
+        ("doc-ca-2", 1),
+        ("doc-tcd", 1),
+    ]
+
+
 def test_resolve_party_compare_ignores_role_prefix_during_overlap(tmp_path) -> None:
     store = _write_metadata(
         tmp_path,
@@ -830,6 +894,41 @@ def test_resolve_party_compare_ignores_role_prefix_during_overlap(tmp_path) -> N
 
     assert resolution is not None
     assert resolution.answer is True
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [
+        ("doc-a", 1),
+        ("doc-b", 1),
+    ]
+
+
+def test_resolve_party_compare_false_keeps_one_page_per_doc_across_both_cases(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {"doc_id": "doc-a", "page_num": 1, "case_ids": ["CA 004/2025"], "issue_date": None, "judges": [], "parties": ["Claimant: Alpha LLC"], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "Claimant Alpha LLC"},
+            {"doc_id": "doc-b", "page_num": 1, "case_ids": ["CA 004/2025"], "issue_date": None, "judges": [], "parties": ["Defendant: Beta LLC"], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "Defendant Beta LLC"},
+            {"doc_id": "doc-c", "page_num": 1, "case_ids": ["SCT 514/2025"], "issue_date": None, "judges": [], "parties": ["Claimant: Gamma LLC"], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "Claimant Gamma LLC"},
+            {"doc_id": "doc-d", "page_num": 1, "case_ids": ["SCT 514/2025"], "issue_date": None, "judges": [], "parties": ["Defendant: Delta LLC"], "claim_numbers": [], "is_first_page": True, "is_last_page": False, "text": "Defendant Delta LLC"},
+        ],
+    )
+    plan = QuestionPlan(
+        mode="party_compare",
+        answer_type="boolean",
+        case_ids=("CA 004/2025", "SCT 514/2025"),
+        page_hint="first",
+        compare_op="set_overlap",
+        target_field="party",
+    )
+
+    resolution = resolve_party_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer is False
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [
+        ("doc-a", 1),
+        ("doc-b", 1),
+        ("doc-c", 1),
+        ("doc-d", 1),
+    ]
 
 
 def test_select_article_evidence_pages_prefers_exact_definition_page(tmp_path) -> None:

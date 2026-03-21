@@ -71,6 +71,7 @@ def test_build_question_plan_detects_judge_compare() -> None:
     )
 
     assert plan.mode == "judge_compare"
+    assert plan.page_hint == "front"
     assert plan.compare_op == "set_overlap"
     assert plan.target_field == "judge"
 
@@ -144,6 +145,7 @@ def test_build_question_plan_detects_judge_compare_when_question_says_in_common(
     )
 
     assert plan.mode == "judge_compare"
+    assert plan.page_hint == "front"
     assert plan.compare_op == "set_overlap"
     assert plan.target_field == "judge"
 
