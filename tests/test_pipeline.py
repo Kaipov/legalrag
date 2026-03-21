@@ -51,6 +51,19 @@ def test_select_generation_chunks_compare_prefers_case_coverage() -> None:
     assert selected == [chunks[2], chunks[1]]
 
 
+def test_select_generation_chunks_prefers_chunks_from_case_matched_doc_for_single_case_questions() -> None:
+    chunks = [
+        ({"chunk_id": "first-page", "doc_id": "doc-a", "page_numbers": [1], "text": "SCT 295/2025 title page"}, 0.98),
+        ({"chunk_id": "other-case", "doc_id": "doc-b", "page_numbers": [1], "text": "SCT 514/2025 title page"}, 0.97),
+        ({"chunk_id": "same-doc-body", "doc_id": "doc-a", "page_numbers": [12], "text": "Costs of the Permission to Appeal Application"}, 0.96),
+    ]
+    intent = GroundingIntent(kind="generic", case_ids=("SCT 295/2025",))
+
+    selected = pipeline_mod._select_generation_chunks(chunks, 2, intent=intent)
+
+    assert selected == [chunks[0], chunks[2]]
+
+
 def test_should_override_compare_null_when_generic_first_pages_cover_both_cases() -> None:
     chunks = [
         ({"chunk_id": "a", "doc_id": "doc-a", "page_numbers": [1], "text": "ARB 034/2025 title page"}, 0.9),
@@ -130,7 +143,7 @@ def test_answer_question_passes_answer_type_into_collect_grounding_pages(monkeyp
     monkeypatch.setattr(
         pipeline_mod,
         "build_prompt",
-        lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}],
+        lambda question, answer_type, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False: [{"role": "user", "content": "prompt"}],
     )
     monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: Confirmation Statement"]))
     monkeypatch.setattr(
@@ -185,7 +198,7 @@ def test_answer_question_overrides_article_grounding_with_structural_evidence(mo
     monkeypatch.setattr(
         pipeline_mod,
         "build_prompt",
-        lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}],
+        lambda question, answer_type, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False: [{"role": "user", "content": "prompt"}],
     )
     monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: true"]))
     monkeypatch.setattr(
@@ -286,7 +299,14 @@ def test_answer_question_overrides_compare_null_when_generic_first_pages_cover_b
         def encode(self, text: str) -> list[str]:
             return text.split()
 
-    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None):
+    def fake_build_prompt(
+        question: str,
+        answer_type: str,
+        chunks,
+        max_chunks=None,
+        intent=None,
+        allow_scoped_insufficiency=False,
+    ):
         prompt_call["intent_kind"] = intent.kind if intent is not None else "generic"
         prompt_call["chunk_ids"] = [chunk[0]["chunk_id"] for chunk in chunks]
         return [{"role": "user", "content": "compare prompt"}]
@@ -378,7 +398,14 @@ def test_run_generation_pass_limits_page_retrieval_to_generation_docs(monkeypatc
         def encode(self, text: str) -> list[str]:
             return text.split()
 
-    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None):
+    def fake_build_prompt(
+        question: str,
+        answer_type: str,
+        chunks,
+        max_chunks=None,
+        intent=None,
+        allow_scoped_insufficiency=False,
+    ):
         return [{"role": "user", "content": "prompt"}]
 
     def fake_collect_grounding_pages(reranked_chunks, **kwargs):
@@ -443,7 +470,11 @@ def test_answer_question_ttft_is_marked_before_grounding_collection(monkeypatch)
     monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
     monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
     monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
-    monkeypatch.setattr(pipeline_mod, "build_prompt", lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}])
+    monkeypatch.setattr(
+        pipeline_mod,
+        "build_prompt",
+        lambda question, answer_type, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False: [{"role": "user", "content": "prompt"}],
+    )
     monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: example answer"]))
     monkeypatch.setattr(
         pipeline_mod,
@@ -507,5 +538,115 @@ def test_answer_question_uses_question_specific_free_text_abstention(monkeypatch
 
     assert result.answer == "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025."
     assert result.telemetry.retrieval == []
+
+
+def test_answer_question_retries_free_text_null_with_scoped_insufficiency(monkeypatch) -> None:
+    prompt_flags: list[bool] = []
+    responses = iter(
+        [
+            "SOURCES: NONE\nANSWER: NULL_ANSWER",
+            "SOURCES: 1\nANSWER: The provided context does not specify the outcome of the order in case SCT 295/2025.",
+        ]
+    )
+
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return [({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [1, 2, 12], "text": "SCT 295/2025 order materials"}, 0.9)]
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False):
+        prompt_flags.append(bool(allow_scoped_insufficiency))
+        return [{"role": "user", "content": "prompt"}]
+
+    def fake_collect_grounding_pages(reranked_chunks, **kwargs):
+        if kwargs.get("is_null"):
+            return []
+        return [{"doc_id": "doc-a", "page_numbers": [1, 2, 12]}]
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
+    monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
+    monkeypatch.setattr(pipeline_mod, "build_prompt", fake_build_prompt)
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter([next(responses)]))
+    monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-free-text-scoped-fallback",
+            "question": "What was the outcome of the specific order or application described in case SCT 295/2025?",
+            "answer_type": "free_text",
+        }
+    )
+
+    assert prompt_flags == [False, True]
+    assert result.answer == "The provided context does not specify the outcome of the order in case SCT 295/2025."
+    assert [(ref.doc_id, ref.page_numbers) for ref in result.telemetry.retrieval] == [("doc-a", [1, 2, 12])]
+
+
+def test_answer_question_retries_article_structured_null_with_wider_context(monkeypatch) -> None:
+    prompt_chunk_ids: list[list[str]] = []
+    responses = iter(
+        [
+            "SOURCES: NONE\nANSWER: NULL_ANSWER",
+            "SOURCES: 3\nANSWER: 6",
+        ]
+    )
+
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return [
+                ({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [12], "text": "Later claims material"}, 0.9),
+                ({"chunk_id": "c2", "doc_id": "doc-a", "page_numbers": [4], "text": "Employment Law title and repeal"}, 0.8),
+                ({"chunk_id": "c3", "doc_id": "doc-a", "page_numbers": [6], "text": "Article 10 claim must be presented within 6 months"}, 0.7),
+            ]
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False):
+        prompt_chunk_ids.append([chunk[0]["chunk_id"] for chunk in chunks])
+        return [{"role": "user", "content": "prompt"}]
+
+    def fake_collect_grounding_pages(reranked_chunks, **kwargs):
+        return [{"doc_id": "doc-a", "page_numbers": [6]}]
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
+    monkeypatch.setattr(
+        pipeline_mod,
+        "build_question_plan",
+        lambda question, answer_type: QuestionPlan(mode="article_lookup", answer_type=answer_type, article_refs=("Article 10",)),
+    )
+    monkeypatch.setattr(
+        pipeline_mod,
+        "detect_grounding_intent",
+        lambda question, answer_type: GroundingIntent(kind="article_ref", article_refs=("Article 10",)),
+    )
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
+    monkeypatch.setattr(pipeline_mod, "build_prompt", fake_build_prompt)
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter([next(responses)]))
+    monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+    monkeypatch.setattr(pipeline_mod, "select_article_evidence_pages", lambda *args, **kwargs: [EvidencePage(doc_id="doc-a", page_num=6)])
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-article-structured-retry",
+            "question": "According to Article 10 of the Employment Law 2019, how many months after the Termination Date must a claim under this Law be presented to the Court, unless otherwise specified?",
+            "answer_type": "number",
+        }
+    )
+
+    assert prompt_chunk_ids == [["c1", "c2"], ["c1", "c2", "c3"]]
+    assert result.answer == 6
+    assert [(ref.doc_id, ref.page_numbers) for ref in result.telemetry.retrieval] == [("doc-a", [6])]
 
 

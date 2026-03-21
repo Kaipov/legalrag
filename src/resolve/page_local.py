@@ -110,6 +110,20 @@ def _extract_title_page_query(question_text: str) -> str | None:
     return title_query or None
 
 
+def _asks_for_case_file_coverage(question_text: str) -> bool:
+    lowered = str(question_text or "").lower()
+    return any(
+        marker in lowered
+        for marker in (
+            "all documents",
+            "every document",
+            "each document",
+            "full case files",
+            "case files",
+        )
+    )
+
+
 
 def _score_title_page_record(record: dict, title_query: str) -> tuple[int, int, str]:
     normalized_query = _normalize_title_query(title_query).lower()
@@ -198,10 +212,71 @@ def _filter_party_values(values: list[str], question_text: str) -> list[str]:
     return values
 
 
+def _dedupe_preserve_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for value in values:
+        normalized = str(value or "").strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(normalized)
+    return deduped
+
+
+def _resolve_case_title_page_coverage(plan: QuestionPlan, store: PageMetadataStore, question_text: str) -> Resolution | None:
+    if len(plan.case_ids) != 1 or plan.page_hint != "first" or not _asks_for_case_file_coverage(question_text):
+        return None
+    if plan.target_field != "party":
+        return None
+
+    case_id = plan.case_ids[0]
+    records = store.get_case_records(case_id, page_hint=plan.page_hint)
+    if not records:
+        return None
+
+    collected_values: list[str] = []
+    evidence_pages: list[EvidencePage] = []
+    seen_evidence: set[tuple[str, int]] = set()
+
+    for record in records:
+        value = _extract_value(record, plan, question_text=question_text)
+        if isinstance(value, list):
+            collected_values.extend(str(item) for item in value if str(item).strip())
+        elif value is not None and str(value).strip():
+            collected_values.append(str(value))
+
+        evidence_key = (str(record.get("doc_id") or ""), int(record.get("page_num") or 0))
+        if not evidence_key[0] or evidence_key[1] <= 0 or evidence_key in seen_evidence:
+            continue
+        seen_evidence.add(evidence_key)
+        evidence_pages.append(EvidencePage(doc_id=evidence_key[0], page_num=evidence_key[1]))
+
+    collected_values = _dedupe_preserve_order(collected_values)
+    if not collected_values or not evidence_pages:
+        return None
+
+    answer = _shape_answer(collected_values, plan, question_text)
+    if answer is None:
+        return None
+
+    return Resolution(
+        answer=answer,
+        evidence_pages=evidence_pages,
+        confidence=0.99,
+        method=plan.mode,
+        facts={"case_id": case_id, "target_field": plan.target_field, "value": collected_values},
+    )
+
+
 
 def resolve_page_local_lookup(plan: QuestionPlan, store: PageMetadataStore, question_text: str) -> Resolution | None:
     if not plan.case_ids:
         return _resolve_law_title_page_lookup(plan, store, question_text)
+
+    title_page_coverage_resolution = _resolve_case_title_page_coverage(plan, store, question_text)
+    if title_page_coverage_resolution is not None:
+        return title_page_coverage_resolution
 
     case_id = plan.case_ids[0]
     for record in store.get_case_records(case_id, page_hint=plan.page_hint):

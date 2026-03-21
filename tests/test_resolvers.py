@@ -305,6 +305,74 @@ def test_resolve_title_page_parties_returns_entity_names_only(tmp_path) -> None:
     assert resolution.answer == ["ARCHITERIORS INTERIOR DESIGN (L.L.C)"]
 
 
+def test_resolve_title_page_parties_keeps_case_file_coverage_pages(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["TCD 001/2024"],
+                "issue_date": None,
+                "judges": [],
+                "parties": ["Claimant: ARCHITERIORS INTERIOR DESIGN (L.L.C)", "Defendant: ALPHA LLC"],
+                "claim_numbers": ["TCD-001/2024"],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "Main claim",
+                "text": "Claimant ARCHITERIORS INTERIOR DESIGN (L.L.C) Defendant ALPHA LLC",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 1,
+                "case_ids": ["TCD 001/2024"],
+                "issue_date": None,
+                "judges": [],
+                "parties": ["Claimant: ARCHITERIORS INTERIOR DESIGN (L.L.C)", "Defendant: BETA LLC"],
+                "claim_numbers": ["TCD-001/2024"],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "Application",
+                "text": "Claimant ARCHITERIORS INTERIOR DESIGN (L.L.C) Defendant BETA LLC",
+            },
+            {
+                "doc_id": "doc-c",
+                "page_num": 1,
+                "case_ids": ["TCD 001/2024"],
+                "issue_date": None,
+                "judges": [],
+                "parties": ["Claimant: ARCHITERIORS INTERIOR DESIGN (L.L.C)", "Defendant: GAMMA LLC"],
+                "claim_numbers": ["TCD-001/2024"],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "Order",
+                "text": "Claimant ARCHITERIORS INTERIOR DESIGN (L.L.C) Defendant GAMMA LLC",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="title_page_metadata",
+        answer_type="names",
+        case_ids=("TCD 001/2024",),
+        page_hint="first",
+        target_field="party",
+    )
+
+    resolution = resolve_page_local_lookup(
+        plan,
+        store,
+        question_text="From the header/caption section of each document in case TCD 001/2024, identify all parties listed as Claimant.",
+    )
+
+    assert resolution is not None
+    assert resolution.answer == ["ARCHITERIORS INTERIOR DESIGN (L.L.C)"]
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [
+        ("doc-a", 1),
+        ("doc-b", 1),
+        ("doc-c", 1),
+    ]
+
+
 
 def test_resolve_title_page_law_number_without_case_id_uses_document_title_query(tmp_path) -> None:
     store = _write_metadata(
@@ -597,6 +665,37 @@ def test_resolve_judge_compare_returns_boolean_overlap(tmp_path) -> None:
 
     assert resolution is not None
     assert resolution.answer is True
+
+
+def test_resolve_judge_compare_false_keeps_case_file_coverage_pages(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {"doc_id": "doc-a", "page_num": 1, "case_ids": ["DEC 001/2025"], "issue_date": None, "judges": ["Justice Michael Black KC"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False},
+            {"doc_id": "doc-b", "page_num": 1, "case_ids": ["DEC 001/2025"], "issue_date": None, "judges": ["Justice Michael Black KC"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False},
+            {"doc_id": "doc-c", "page_num": 1, "case_ids": ["TCD 001/2024"], "issue_date": None, "judges": ["Chief Justice Wayne Martin"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False},
+            {"doc_id": "doc-d", "page_num": 1, "case_ids": ["TCD 001/2024"], "issue_date": None, "judges": ["Justice Roger Stewart"], "parties": [], "claim_numbers": [], "is_first_page": True, "is_last_page": False},
+        ],
+    )
+    plan = QuestionPlan(
+        mode="judge_compare",
+        answer_type="boolean",
+        case_ids=("DEC 001/2025", "TCD 001/2024"),
+        page_hint="first",
+        compare_op="set_overlap",
+        target_field="judge",
+    )
+
+    resolution = resolve_judge_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer is False
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [
+        ("doc-a", 1),
+        ("doc-b", 1),
+        ("doc-c", 1),
+        ("doc-d", 1),
+    ]
 
 
 

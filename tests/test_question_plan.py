@@ -123,3 +123,37 @@ def test_build_question_plan_detects_title_page_law_number_without_case_id() -> 
     assert plan.page_hint == "first"
     assert plan.target_field == "law_number"
     assert plan.case_ids == ()
+
+
+def test_build_question_plan_routes_title_page_multi_case_party_compare() -> None:
+    plan = build_question_plan(
+        "From the title pages of all documents in case CA 005/2025 and case CFI 067/2025, identify whether any individual or company is named as a main party in both cases.",
+        "boolean",
+    )
+
+    assert plan.mode == "party_compare"
+    assert plan.page_hint == "first"
+    assert plan.compare_op == "set_overlap"
+    assert plan.target_field == "party"
+
+
+def test_build_question_plan_detects_judge_compare_when_question_says_in_common() -> None:
+    plan = build_question_plan(
+        "Did cases CA 004/2025 and ARB 034/2025 have any judges in common?",
+        "boolean",
+    )
+
+    assert plan.mode == "judge_compare"
+    assert plan.compare_op == "set_overlap"
+    assert plan.target_field == "judge"
+
+
+def test_build_question_plan_detects_party_compare_when_question_says_to_both() -> None:
+    plan = build_question_plan(
+        "Identify whether any person or company is a main party to both ENF 269/2023 and SCT 514/2025.",
+        "boolean",
+    )
+
+    assert plan.mode == "party_compare"
+    assert plan.compare_op == "set_overlap"
+    assert plan.target_field == "party"

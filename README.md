@@ -9,7 +9,7 @@ Baseline RAG pipeline for the ARLC legal challenge over DIFC documents.
 - Hybrid retrieval: BM25 + FAISS + reciprocal rank fusion
 - Gemini Embedding 2 Preview dense retrieval via API
 - Optional cross-encoder reranking with `bge-reranker-v2-m3` (disabled by default)
-- GPT-4o answer generation with answer-type-specific prompts
+- OpenAI-compatible answer generation with answer-type-specific prompts
 - Null detection, grounding extraction, and submission telemetry
 - Local validation for answer format and telemetry completeness
 
@@ -77,6 +77,13 @@ python -m scripts.preprocess
 3. Run the pipeline on questions:
 
 ```powershell
+python -m scripts.run --no-submit
+```
+
+To try `gpt-5.4-mini` without changing the repository default, set `GENERATION_MODEL=gpt-5.4-mini` in `.env` first, or override it for one run:
+
+```powershell
+$env:GENERATION_MODEL="gpt-5.4-mini"
 python -m scripts.run --no-submit
 ```
 

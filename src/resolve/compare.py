@@ -36,20 +36,27 @@ def _collect_case_values(
     *,
     field: str,
     page_hint: str,
-) -> tuple[dict[str, str], dict[str, EvidencePage]]:
+) -> tuple[dict[str, str], dict[str, EvidencePage], list[EvidencePage]]:
     values_by_key: dict[str, str] = {}
     evidence_by_key: dict[str, EvidencePage] = {}
+    coverage_pages: list[EvidencePage] = []
+    seen_page_keys: set[tuple[str, int]] = set()
     for record in store.get_case_records(case_id, page_hint=page_hint):
+        evidence_page = EvidencePage(
+            doc_id=str(record.get("doc_id") or ""),
+            page_num=int(record.get("page_num") or 0),
+        )
+        page_key = (evidence_page.doc_id, evidence_page.page_num)
+        if evidence_page.doc_id and evidence_page.page_num > 0 and page_key not in seen_page_keys:
+            seen_page_keys.add(page_key)
+            coverage_pages.append(evidence_page)
         for raw_value in record.get(field, []) or []:
             normalized = _normalize_compare_value(str(raw_value), field=field)
             if not normalized or normalized in values_by_key:
                 continue
             values_by_key[normalized] = str(raw_value)
-            evidence_by_key[normalized] = EvidencePage(
-                doc_id=str(record.get("doc_id") or ""),
-                page_num=int(record.get("page_num") or 0),
-            )
-    return values_by_key, evidence_by_key
+            evidence_by_key[normalized] = evidence_page
+    return values_by_key, evidence_by_key, coverage_pages
 
 
 def _as_number(value: object) -> float | None:
@@ -198,25 +205,54 @@ def _resolve_overlap_compare(
     if len(plan.case_ids) < 2:
         return None
 
-    collected: list[tuple[dict[str, str], dict[str, EvidencePage]]] = []
+    collected: list[tuple[dict[str, str], dict[str, EvidencePage], list[EvidencePage]]] = []
     for case_id in plan.case_ids[:2]:
-        values_by_key, evidence_by_key = _collect_case_values(store, case_id, field=field, page_hint=plan.page_hint)
+        values_by_key, evidence_by_key, coverage_pages = _collect_case_values(
+            store,
+            case_id,
+            field=field,
+            page_hint=plan.page_hint,
+        )
         if not values_by_key:
             return None
-        collected.append((values_by_key, evidence_by_key))
+        collected.append((values_by_key, evidence_by_key, coverage_pages))
 
     overlap_keys = sorted(set(collected[0][0]) & set(collected[1][0]))
     evidence_pages: list[EvidencePage] = []
-    for values_by_key, evidence_by_key in collected:
-        chosen_key = overlap_keys[0] if overlap_keys else next(iter(values_by_key.keys()))
-        evidence_pages.append(evidence_by_key[chosen_key])
+    seen_page_keys: set[tuple[str, int]] = set()
+
+    def append_page(page: EvidencePage) -> None:
+        page_key = (page.doc_id, page.page_num)
+        if not page.doc_id or page.page_num <= 0 or page_key in seen_page_keys:
+            return
+        seen_page_keys.add(page_key)
+        evidence_pages.append(page)
 
     if plan.answer_type == "boolean":
         answer = bool(overlap_keys)
+        if overlap_keys:
+            for _values_by_key, evidence_by_key, _coverage_pages in collected:
+                for overlap_key in overlap_keys:
+                    evidence_page = evidence_by_key.get(overlap_key)
+                    if evidence_page is not None:
+                        append_page(evidence_page)
+        else:
+            for _values_by_key, _evidence_by_key, coverage_pages in collected:
+                for evidence_page in coverage_pages:
+                    append_page(evidence_page)
     elif plan.answer_type == "names":
         answer = [collected[0][0][key] for key in overlap_keys]
+        for _values_by_key, evidence_by_key, _coverage_pages in collected:
+            for overlap_key in overlap_keys:
+                evidence_page = evidence_by_key.get(overlap_key)
+                if evidence_page is not None:
+                    append_page(evidence_page)
     elif plan.answer_type == "name" and overlap_keys:
         answer = collected[0][0][overlap_keys[0]]
+        for _values_by_key, evidence_by_key, _coverage_pages in collected:
+            evidence_page = evidence_by_key.get(overlap_keys[0])
+            if evidence_page is not None:
+                append_page(evidence_page)
     else:
         return None
 

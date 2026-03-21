@@ -5,6 +5,7 @@ Orchestrates all components into a single answer_question() function.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 import logging
 import re
 import sys
@@ -61,6 +62,17 @@ def _get_tokenizer():
 
 
 _AUXILIARY_NULL_QUESTION_RE = re.compile(r"^(is|are|was|were|did|does|do|can|could|has|have|had)\s+(.+)$", re.IGNORECASE)
+_SCOPED_INSUFFICIENCY_QUESTION_MARKERS = (
+    "what was the outcome",
+    "what was the result",
+    "final ruling",
+    "how did the court of appeal rule",
+    "how did the court rule",
+    "what did the court decide",
+    "it is hereby ordered that",
+    "conclusion section",
+    "what was the court's final ruling",
+)
 
 
 def _free_text_null_answer(question_text: str) -> str:
@@ -259,6 +271,40 @@ def _select_compare_case_coverage_chunks(
     return selected
 
 
+def _preferred_case_doc_ids(
+    retrieved_chunks: list[tuple[dict, float]],
+    case_ids: tuple[str, ...],
+) -> tuple[str, ...]:
+    if not retrieved_chunks or not case_ids:
+        return ()
+
+    preferred_doc_ids: list[str] = []
+    seen_doc_ids: set[str] = set()
+    for chunk_with_score in retrieved_chunks:
+        chunk = chunk_with_score[0]
+        doc_id = str(chunk.get("doc_id") or "").strip()
+        if not doc_id or doc_id in seen_doc_ids:
+            continue
+        if not any(_chunk_matches_case_id(chunk, case_id) for case_id in case_ids):
+            continue
+        seen_doc_ids.add(doc_id)
+        preferred_doc_ids.append(doc_id)
+    return tuple(preferred_doc_ids)
+
+
+def _filter_chunks_to_doc_ids(
+    retrieved_chunks: list[tuple[dict, float]],
+    allowed_doc_ids: set[str],
+) -> list[tuple[dict, float]]:
+    if not retrieved_chunks or not allowed_doc_ids:
+        return []
+    return [
+        chunk_with_score
+        for chunk_with_score in retrieved_chunks
+        if str(chunk_with_score[0].get("doc_id") or "").strip() in allowed_doc_ids
+    ]
+
+
 def _has_compare_first_page_coverage(
     retrieved_chunks: list[tuple[dict, float]],
     intent: GroundingIntent | None,
@@ -332,6 +378,22 @@ def _select_generation_chunks(
                 seen_docs.add(doc_id)
             if len(selected) >= top_k:
                 return selected
+
+    if intent is not None and not intent.is_compare and intent.case_ids:
+        preferred_doc_ids = set(_preferred_case_doc_ids(retrieved_chunks, intent.case_ids))
+        if preferred_doc_ids:
+            for chunk_with_score in retrieved_chunks:
+                chunk = chunk_with_score[0]
+                doc_id = str(chunk.get("doc_id") or "").strip()
+                chunk_key = _chunk_identity(chunk_with_score)
+                if chunk_key in seen_chunks or doc_id not in preferred_doc_ids:
+                    continue
+                selected.append(chunk_with_score)
+                seen_chunks.add(chunk_key)
+                if doc_id:
+                    seen_docs.add(doc_id)
+                if len(selected) >= top_k:
+                    return selected
 
     if intent is None or disable_unique_doc_preference or not intent.prefer_unique_docs:
         for chunk_with_score in retrieved_chunks:
@@ -447,6 +509,7 @@ def _run_generation_pass(
     grounding_threshold: float,
     intent: GroundingIntent | None = None,
     disable_unique_doc_preference: bool = False,
+    allow_scoped_insufficiency: bool = False,
 ) -> dict[str, Any]:
     generation_top_k = _generation_top_k_for(answer_type, intent=intent)
     generation_chunks = _select_generation_chunks(
@@ -460,6 +523,7 @@ def _run_generation_pass(
         answer_type,
         generation_chunks,
         intent=intent,
+        allow_scoped_insufficiency=allow_scoped_insufficiency,
     )
 
     prompt_text = " ".join(message["content"] for message in messages)
@@ -533,6 +597,62 @@ def _should_retry_compare_without_intent(
     grounding_refs: list[dict[str, Any]],
 ) -> bool:
     return bool(intent and intent.is_compare and (is_llm_null or not grounding_refs))
+
+
+def _should_retry_scoped_free_text_generation(
+    question_text: str,
+    answer_type: str,
+    plan: Any,
+    primary_attempt: dict[str, Any],
+    reranked_chunks: list[tuple[dict, float]],
+) -> bool:
+    if str(answer_type or "").lower() != "free_text":
+        return False
+    if not primary_attempt["is_llm_null"] or not reranked_chunks:
+        return False
+    if not getattr(plan, "case_ids", ()):
+        return False
+    lowered_question = str(question_text or "").lower()
+    return any(marker in lowered_question for marker in _SCOPED_INSUFFICIENCY_QUESTION_MARKERS)
+
+
+def _chunks_for_scoped_free_text_retry(
+    intent: GroundingIntent | None,
+    reranked_chunks: list[tuple[dict, float]],
+) -> list[tuple[dict, float]]:
+    if intent is None or intent.kind != "generic" or len(intent.case_ids) != 1:
+        return reranked_chunks
+
+    preferred_doc_ids = set(_preferred_case_doc_ids(reranked_chunks, intent.case_ids))
+    filtered_chunks = _filter_chunks_to_doc_ids(reranked_chunks, preferred_doc_ids)
+    return filtered_chunks or reranked_chunks
+
+
+def _should_retry_article_structured_generation(
+    answer_type: str,
+    plan: Any,
+    intent: GroundingIntent | None,
+    primary_attempt: dict[str, Any],
+) -> bool:
+    if str(answer_type or "").lower() not in _STRUCTURED_ANSWER_TYPES:
+        return False
+    if not primary_attempt["is_llm_null"]:
+        return False
+    if getattr(plan, "mode", "") != "article_lookup":
+        return False
+    return bool(intent and intent.kind == "article_ref")
+
+
+def _widen_article_generation_intent(intent: GroundingIntent | None) -> GroundingIntent | None:
+    if intent is None:
+        return None
+    widened_generation_top_k = max(4, int(intent.generation_top_k or 0))
+    widened_grounding_top_k = max(2, int(intent.grounding_chunk_top_k or 0))
+    return replace(
+        intent,
+        generation_top_k=widened_generation_top_k,
+        grounding_chunk_top_k=widened_grounding_top_k,
+    )
 
 
 def _should_use_fallback_attempt(
@@ -680,6 +800,47 @@ class RAGPipeline:
         )
         input_tokens = int(attempt["input_tokens"])
         output_tokens = int(attempt["output_tokens"])
+
+        if _should_retry_scoped_free_text_generation(question_text, answer_type, plan, attempt, reranked_chunks):
+            logger.info(
+                f"[{question_id[:8]}] free-text null fallback; retrying generation with scoped insufficiency allowed"
+            )
+            scoped_retry_chunks = _chunks_for_scoped_free_text_retry(active_intent, reranked_chunks)
+            scoped_attempt = _run_generation_pass(
+                question_text,
+                answer_type,
+                scoped_retry_chunks,
+                tokenizer,
+                timer,
+                self.grounding_threshold,
+                intent=active_intent,
+                disable_unique_doc_preference=compare_bias_disabled,
+                allow_scoped_insufficiency=True,
+            )
+            input_tokens += int(scoped_attempt["input_tokens"])
+            output_tokens += int(scoped_attempt["output_tokens"])
+            if _should_use_fallback_attempt(attempt, scoped_attempt):
+                attempt = scoped_attempt
+
+        if _should_retry_article_structured_generation(answer_type, plan, active_intent, attempt):
+            logger.info(
+                f"[{question_id[:8]}] article structured null fallback; retrying generation with wider article context"
+            )
+            widened_article_intent = _widen_article_generation_intent(active_intent)
+            article_attempt = _run_generation_pass(
+                question_text,
+                answer_type,
+                reranked_chunks,
+                tokenizer,
+                timer,
+                self.grounding_threshold,
+                intent=widened_article_intent,
+                disable_unique_doc_preference=compare_bias_disabled,
+            )
+            input_tokens += int(article_attempt["input_tokens"])
+            output_tokens += int(article_attempt["output_tokens"])
+            if _should_use_fallback_attempt(attempt, article_attempt):
+                attempt = article_attempt
 
         if (
             _should_retry_compare_without_intent(active_intent, attempt["is_llm_null"], attempt["grounding_refs"])

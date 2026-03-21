@@ -15,6 +15,16 @@ Key evaluation dimensions:
 - Grounding quality (source citations) — **strongest signal, acts as multiplier**
 - Time-to-first-token (TTFT)
 
+### Repository Snapshot (March 21, 2026)
+- Branch snapshot: `codex/baseline-v8`
+- Generation model under test: `gpt-5.4-mini`
+- Benchmark basis: local regression comparison against `golden_submission.json`
+- Structured proxy: `score=1.0000`, `mismatches=0`
+- Grounding proxy: `macro_fbeta=0.8933`, `macro_jaccard=0.7825`, `exact_page_set_matches=61`, `answer_exact_grounding_bad=2`
+- Free-text proxy: `strong=19`, `mid=5`, `weak=2`, `null_risk=0`
+- Regression gate: `PASS` via `python -m scripts.regression_report --strict`
+- This snapshot is **not** a platform evaluation. The warmup platform score for `golden_submission.json` remains `total_score=0.887146` on March 13, 2026.
+
 ---
 
 ## 2. Corpus & Dataset

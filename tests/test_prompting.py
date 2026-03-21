@@ -108,3 +108,19 @@ def test_build_prompt_adds_outcome_question_rule() -> None:
 
     assert "OUTCOME QUESTION RULE" in user_content
     assert "Do not answer that the outcome or result is unspecified" in user_content
+
+
+def test_build_prompt_adds_law_scope_rule_for_boolean_law_subject_questions() -> None:
+    chunks = [
+        ({"doc_id": "doc-1", "page_numbers": [1], "section_path": "Section 1", "doc_title": "Title 1", "text": "Text 1"}, 1.0)
+    ]
+
+    messages = build_prompt(
+        "Does the DIFC law numbered DIFC Law No. 7 of 2018 deal with insolvency and preferential debts?",
+        "boolean",
+        chunks,
+    )
+    user_content = messages[1]["content"]
+
+    assert "LAW SCOPE RULE" in user_content
+    assert "Do not answer true based only on passing definitions" in user_content
