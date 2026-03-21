@@ -30,8 +30,12 @@ from src.config import (
     PAGES_JSONL,
 )
 from src.embeddings import GeminiApiError, get_embedding_client
-from src.preprocess.chunk import _detect_doc_title
-from src.preprocess.page_metadata import build_page_metadata_indices
+from src.preprocess.index_enrichment import (
+    build_doc_level_metadata,
+    build_embedding_input,
+    enrich_record_for_indexing,
+)
+from src.preprocess.page_metadata import build_page_metadata_indices, build_page_metadata_records
 from src.retrieve.lexical import build_bm25_document_tokens
 
 logger = logging.getLogger(__name__)
@@ -51,9 +55,28 @@ def _read_jsonl_records(path: Path) -> list[dict]:
 # --- Chunk BM25 Index ---
 
 
+def _load_chunk_records(
+    chunks_path: Path | str | None = None,
+    pages_path: Path | str | None = None,
+) -> list[dict]:
+    chunks_path = Path(chunks_path) if chunks_path else CHUNKS_JSONL
+    records = _read_jsonl_records(chunks_path)
+
+    doc_metadata_by_id: dict[str, dict] = {}
+    if pages_path:
+        page_records = build_page_metadata_records(pages_path)
+        doc_metadata_by_id = build_doc_level_metadata(page_records)
+
+    return [
+        enrich_record_for_indexing(record, doc_metadata_by_id.get(str(record.get("doc_id") or "").strip()))
+        for record in records
+    ]
+
+
 def build_bm25_index(
     chunks_path: Path | str | None = None,
     output_path: Path | str | None = None,
+    pages_path: Path | str | None = None,
 ) -> Path:
     """
     Build BM25 index from chunks.jsonl.
@@ -66,7 +89,7 @@ def build_bm25_index(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    records = _read_jsonl_records(chunks_path)
+    records = _load_chunk_records(chunks_path, pages_path=pages_path)
     chunk_ids = [str(record["chunk_id"]) for record in records]
     tokenized_corpus = [build_bm25_document_tokens(record) for record in tqdm(records, desc="Tokenizing chunks for BM25")]
 
@@ -100,37 +123,29 @@ def _build_page_section_path(page_num: int, last_page: int) -> str:
 
 
 def _load_page_records(pages_path: Path | str | None = None) -> list[dict]:
-    pages_path = Path(pages_path) if pages_path else PAGES_JSONL
-    grouped_rows: dict[str, list[dict]] = defaultdict(list)
+    page_metadata_records = build_page_metadata_records(pages_path)
+    if not page_metadata_records:
+        return []
 
-    for record in _read_jsonl_records(pages_path):
-        doc_id = str(record.get("doc_id") or "").strip()
-        page_num = int(record.get("page_num") or 0)
+    last_page_by_doc: dict[str, int] = defaultdict(int)
+    for row in page_metadata_records:
+        doc_id = str(row.get("doc_id") or "").strip()
+        page_num = int(row.get("page_num") or 0)
+        if doc_id and page_num > 0:
+            last_page_by_doc[doc_id] = max(last_page_by_doc[doc_id], page_num)
+
+    doc_metadata_by_id = build_doc_level_metadata(page_metadata_records)
+    page_records: list[dict] = []
+    for row in page_metadata_records:
+        doc_id = str(row.get("doc_id") or "").strip()
+        page_num = int(row.get("page_num") or 0)
         if not doc_id or page_num <= 0:
             continue
-        grouped_rows[doc_id].append(record)
 
-    page_records: list[dict] = []
-    for doc_id in sorted(grouped_rows.keys()):
-        rows = sorted(grouped_rows[doc_id], key=lambda row: int(row.get("page_num") or 0))
-        title_sample = "\n\n".join(str(row.get("text") or "") for row in rows[:2])
-        doc_title = _detect_doc_title(title_sample)
-        last_page = max(int(row.get("page_num") or 0) for row in rows)
-
-        for row in rows:
-            page_num = int(row.get("page_num") or 0)
-            if page_num <= 0:
-                continue
-            page_records.append(
-                {
-                    "page_id": f"{doc_id}:{page_num}",
-                    "doc_id": doc_id,
-                    "page_num": page_num,
-                    "doc_title": doc_title,
-                    "section_path": _build_page_section_path(page_num, last_page),
-                    "text": str(row.get("text") or ""),
-                }
-            )
+        enriched = enrich_record_for_indexing(row, doc_metadata_by_id.get(doc_id))
+        enriched["page_id"] = f"{doc_id}:{page_num}"
+        enriched["section_path"] = _build_page_section_path(page_num, last_page_by_doc[doc_id])
+        page_records.append(enriched)
 
     return page_records
 
@@ -261,7 +276,7 @@ def _build_faiss_index_from_records(
     with tqdm(total=len(records), desc=f"Embedding {desc}") as progress:
         for record in records:
             current_ids.append(str(record[record_id_field]))
-            current_texts.append(str(record.get("text") or ""))
+            current_texts.append(build_embedding_input(record))
             current_titles.append(_build_embedding_title(record))
 
             if len(current_texts) < current_batch_size:
@@ -321,6 +336,7 @@ def build_faiss_index(
     index_path: Path | str | None = None,
     ids_path: Path | str | None = None,
     batch_size: int | None = None,
+    pages_path: Path | str | None = None,
 ) -> Path:
     """
     Build FAISS index from chunks.jsonl using dense embeddings.
@@ -331,7 +347,7 @@ def build_faiss_index(
     ids_path = Path(ids_path) if ids_path else FAISS_IDS
     batch_size = batch_size or EMBEDDING_BATCH_SIZE
 
-    records = _read_jsonl_records(chunks_path)
+    records = _load_chunk_records(chunks_path, pages_path=pages_path)
     return _build_faiss_index_from_records(
         records,
         record_id_field="chunk_id",
@@ -374,8 +390,8 @@ def build_all_indices(
     chunks_path = chunks_path or CHUNKS_JSONL
     pages_path = pages_path or PAGES_JSONL
 
-    build_bm25_index(chunks_path)
-    build_faiss_index(chunks_path)
+    build_bm25_index(chunks_path, pages_path=pages_path)
+    build_faiss_index(chunks_path, pages_path=pages_path)
     build_page_bm25_index(pages_path)
     build_page_faiss_index(pages_path)
     build_page_metadata_indices(pages_path)
