@@ -63,6 +63,7 @@ def test_build_create_kwargs_uses_gpt54_mini_compatible_parameters() -> None:
         [{"role": "user", "content": "hi"}],
         "gpt-5.4-mini",
         0.1,
+        500,
     )
 
     assert kwargs["max_completion_tokens"] == 500
@@ -75,9 +76,21 @@ def test_build_create_kwargs_uses_legacy_chat_parameters() -> None:
         [{"role": "user", "content": "hi"}],
         "gpt-4.1-mini",
         0.1,
+        500,
     )
 
     assert kwargs["max_tokens"] == 500
     assert "max_completion_tokens" not in kwargs
     assert kwargs["temperature"] == 0.1
+
+
+def test_build_create_kwargs_respects_max_output_tokens_override() -> None:
+    kwargs = llm_mod._build_create_kwargs(
+        [{"role": "user", "content": "hi"}],
+        "gpt-4.1-mini",
+        0.0,
+        1500,
+    )
+
+    assert kwargs["max_tokens"] == 1500
 

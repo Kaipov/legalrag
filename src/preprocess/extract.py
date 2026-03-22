@@ -10,6 +10,8 @@ Output: index/pages.jsonl — one line per page:
 """
 from __future__ import annotations
 
+import base64
+import io
 import json
 import logging
 from pathlib import Path
@@ -18,28 +20,40 @@ from typing import Iterator
 import pdfplumber
 from tqdm import tqdm
 
-from src.config import DOCUMENTS_DIR, PAGES_JSONL, INDEX_DIR, OCR_MIN_CHARS
+from src.config import (
+    DOCUMENTS_DIR,
+    ENABLE_VISION_OCR_FALLBACK,
+    OCR_MIN_CHARS,
+    PAGES_JSONL,
+    VISION_OCR_MAX_OUTPUT_TOKENS,
+    VISION_OCR_MODEL,
+)
+from src.generate.llm import generate
 
 logger = logging.getLogger(__name__)
 
 # Lazy-load PaddleOCR to avoid import errors when not installed
 _paddle_ocr = None
+_paddle_ocr_missing_logged = False
+_vision_ocr_disabled_logged = False
 
 
 def _get_paddle_ocr():
     """Lazy-initialize PaddleOCR-VL-1.5 model (loads on first call)."""
-    global _paddle_ocr
+    global _paddle_ocr, _paddle_ocr_missing_logged
     if _paddle_ocr is None:
         try:
             from paddleocr import PaddleOCRVL
             _paddle_ocr = PaddleOCRVL()
             logger.info("PaddleOCR-VL-1.5 loaded successfully")
         except ImportError:
-            logger.warning(
-                "PaddleOCR not installed. Scanned pages will have empty text. "
-                "Install with: pip install paddlepaddle-gpu==3.2.1 && "
-                "pip install -U 'paddleocr[doc-parser]'"
-            )
+            if not _paddle_ocr_missing_logged:
+                logger.warning(
+                    "PaddleOCR not installed. Scanned pages may fall back to vision OCR if configured. "
+                    "Install with: pip install paddlepaddle-gpu==3.2.1 && "
+                    "pip install -U 'paddleocr[doc-parser]'"
+                )
+                _paddle_ocr_missing_logged = True
             return None
     return _paddle_ocr
 
@@ -48,6 +62,24 @@ def _extract_page_pdfplumber(page: pdfplumber.page.Page) -> str:
     """Extract text from a single pdfplumber page."""
     text = page.extract_text() or ""
     return text.strip()
+
+
+def _render_page_png_bytes(pdf_path: Path, page_num: int) -> bytes:
+    """Render a single PDF page to PNG bytes."""
+    from pdf2image import convert_from_path
+
+    images = convert_from_path(
+        str(pdf_path),
+        first_page=page_num + 1,
+        last_page=page_num + 1,
+        dpi=200,
+    )
+    if not images:
+        return b""
+
+    buffer = io.BytesIO()
+    images[0].save(buffer, "PNG")
+    return buffer.getvalue()
 
 
 def _extract_page_ocr(pdf_path: Path, page_num: int) -> str:
@@ -61,22 +93,15 @@ def _extract_page_ocr(pdf_path: Path, page_num: int) -> str:
         return ""
 
     try:
-        from pdf2image import convert_from_path
-        # Convert single page to image (1-indexed for pdf2image)
-        images = convert_from_path(
-            str(pdf_path),
-            first_page=page_num + 1,
-            last_page=page_num + 1,
-            dpi=200,
-        )
-        if not images:
+        image_bytes = _render_page_png_bytes(pdf_path, page_num)
+        if not image_bytes:
             return ""
 
         # Save temp image and run OCR
         import tempfile
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = tmp.name
-            images[0].save(tmp_path, "PNG")
+            Path(tmp_path).write_bytes(image_bytes)
 
         try:
             output = ocr.predict(tmp_path)
@@ -98,6 +123,79 @@ def _extract_page_ocr(pdf_path: Path, page_num: int) -> str:
 
     except Exception as e:
         logger.warning(f"OCR failed for {pdf_path.name} page {page_num + 1}: {e}")
+        return ""
+
+
+def _normalize_vision_ocr_text(text: str) -> str:
+    text = str(text or "").strip()
+    if text.startswith("```") and text.endswith("```"):
+        text = text.strip("`").strip()
+    normalized = text.lower().strip()
+    if normalized in {
+        "",
+        "(empty)",
+        "[empty]",
+        "no readable text",
+        "no visible text",
+        "no text",
+    }:
+        return ""
+    return text
+
+
+def _extract_page_vision(pdf_path: Path, page_num: int) -> str:
+    """Fallback OCR using a vision-capable chat model on rendered page images."""
+    global _vision_ocr_disabled_logged
+
+    if not ENABLE_VISION_OCR_FALLBACK:
+        return ""
+
+    try:
+        image_bytes = _render_page_png_bytes(pdf_path, page_num)
+        if not image_bytes:
+            return ""
+        image_b64 = base64.b64encode(image_bytes).decode("ascii")
+
+        response = generate(
+            [
+                {
+                    "role": "system",
+                    "content": (
+                        "You extract text from legal document page images. "
+                        "Return only the text visible on the page. Preserve meaningful line breaks. "
+                        "Do not summarize, explain, or add markdown fences. "
+                        "If there is no readable text, return an empty string."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Transcribe this page exactly as text.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{image_b64}",
+                                "detail": "high",
+                            },
+                        },
+                    ],
+                },
+            ],
+            model=VISION_OCR_MODEL,
+            temperature=0.0,
+            max_output_tokens=VISION_OCR_MAX_OUTPUT_TOKENS,
+        )
+        return _normalize_vision_ocr_text(response)
+    except ValueError as exc:
+        if not _vision_ocr_disabled_logged:
+            logger.warning("Vision OCR fallback unavailable: %s", exc)
+            _vision_ocr_disabled_logged = True
+        return ""
+    except Exception as exc:
+        logger.warning("Vision OCR failed for %s page %s: %s", pdf_path.name, page_num + 1, exc)
         return ""
 
 
@@ -123,6 +221,11 @@ def extract_single_pdf(pdf_path: Path) -> Iterator[dict]:
                     if len(ocr_text) > len(text):
                         text = ocr_text
                         method = "paddleocr"
+                    elif not text.strip():
+                        vision_text = _extract_page_vision(pdf_path, page_idx)
+                        if len(vision_text) > len(text):
+                            text = vision_text
+                            method = "vision_llm"
 
                 yield {
                     "doc_id": doc_id,
@@ -157,6 +260,7 @@ def extract_all_documents(
 
     total_pages = 0
     ocr_pages = 0
+    vision_pages = 0
 
     with open(output_path, "w", encoding="utf-8") as f:
         for pdf_path in tqdm(pdf_files, desc="Extracting PDFs"):
@@ -165,10 +269,12 @@ def extract_all_documents(
                 total_pages += 1
                 if page_data["method"] == "paddleocr":
                     ocr_pages += 1
+                elif page_data["method"] == "vision_llm":
+                    vision_pages += 1
 
     logger.info(
         f"Extracted {total_pages} pages from {len(pdf_files)} PDFs "
-        f"({ocr_pages} pages needed OCR). Saved to {output_path}"
+        f"({ocr_pages} pages used PaddleOCR, {vision_pages} pages used vision OCR). Saved to {output_path}"
     )
     return output_path
 

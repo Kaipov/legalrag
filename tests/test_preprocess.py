@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import numpy as np
+from pathlib import Path
 
 from src.embeddings import GeminiApiError
 from src.preprocess import chunk as chunk_mod
+from src.preprocess import extract as extract_mod
 from src.preprocess.build_index import _encode_with_backoff
 
 
@@ -177,3 +179,56 @@ def test_encode_with_backoff_reduces_batch_size() -> None:
     assert client.calls == [4, 2, 2]
     assert embeddings.shape == (4, 3)
     assert embeddings.dtype == np.float32
+
+
+class _FakePdf:
+    def __init__(self, pages):
+        self.pages = pages
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+def test_extract_single_pdf_uses_vision_fallback_when_text_is_empty(monkeypatch) -> None:
+    monkeypatch.setattr(
+        extract_mod.pdfplumber,
+        "open",
+        lambda *_args, **_kwargs: _FakePdf([object()]),
+    )
+    monkeypatch.setattr(extract_mod, "_extract_page_pdfplumber", lambda _page: "")
+    monkeypatch.setattr(extract_mod, "_extract_page_ocr", lambda _pdf_path, _page_num: "")
+    monkeypatch.setattr(extract_mod, "_extract_page_vision", lambda _pdf_path, _page_num: "Recovered scanned text")
+
+    rows = list(extract_mod.extract_single_pdf(Path("sample.pdf")))
+
+    assert rows == [
+        {
+            "doc_id": "sample",
+            "page_num": 1,
+            "text": "Recovered scanned text",
+            "method": "vision_llm",
+        }
+    ]
+
+
+def test_extract_single_pdf_skips_vision_when_pdfplumber_has_text(monkeypatch) -> None:
+    monkeypatch.setattr(
+        extract_mod.pdfplumber,
+        "open",
+        lambda *_args, **_kwargs: _FakePdf([object()]),
+    )
+    monkeypatch.setattr(extract_mod, "_extract_page_pdfplumber", lambda _page: "Already extracted text")
+    monkeypatch.setattr(extract_mod, "_extract_page_ocr", lambda _pdf_path, _page_num: "")
+
+    def _unexpected_vision(*_args, **_kwargs):
+        raise AssertionError("vision fallback should not run when pdfplumber already extracted text")
+
+    monkeypatch.setattr(extract_mod, "_extract_page_vision", _unexpected_vision)
+
+    rows = list(extract_mod.extract_single_pdf(Path("sample.pdf")))
+
+    assert rows[0]["method"] == "pdfplumber"
+    assert rows[0]["text"] == "Already extracted text"

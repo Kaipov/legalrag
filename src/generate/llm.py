@@ -110,6 +110,7 @@ def _build_create_kwargs(
     messages: list[dict],
     model: str,
     temperature: float,
+    max_output_tokens: int,
 ) -> dict:
     kwargs = {
         "model": model,
@@ -119,7 +120,7 @@ def _build_create_kwargs(
     if _supports_custom_temperature(model):
         kwargs["temperature"] = temperature
     token_param_name = "max_completion_tokens" if _uses_max_completion_tokens(model) else "max_tokens"
-    kwargs[token_param_name] = _MAX_OUTPUT_TOKENS
+    kwargs[token_param_name] = max(1, int(max_output_tokens))
     return kwargs
 
 
@@ -128,8 +129,11 @@ def _stream_once(
     messages: list[dict],
     model: str,
     temperature: float,
+    max_output_tokens: int,
 ) -> Generator[str, None, None]:
-    response = client.chat.completions.create(**_build_create_kwargs(messages, model, temperature))
+    response = client.chat.completions.create(
+        **_build_create_kwargs(messages, model, temperature, max_output_tokens)
+    )
 
     for chunk in response:
         if chunk.choices and chunk.choices[0].delta.content:
@@ -140,6 +144,7 @@ def stream_generate(
     messages: list[dict],
     model: str | None = None,
     temperature: float | None = None,
+    max_output_tokens: int | None = None,
 ) -> Generator[str, None, None]:
     """
     Stream tokens from the LLM.
@@ -150,12 +155,13 @@ def stream_generate(
     model = model or GENERATION_MODEL
     client = _get_client(model)
     temperature = temperature if temperature is not None else GENERATION_TEMPERATURE
+    max_output_tokens = max_output_tokens or _MAX_OUTPUT_TOKENS
 
     attempt = 0
     while True:
         yielded_any = False
         try:
-            for token in _stream_once(client, messages, model, temperature):
+            for token in _stream_once(client, messages, model, temperature, max_output_tokens):
                 yielded_any = True
                 yield token
             return
@@ -180,10 +186,11 @@ def generate(
     messages: list[dict],
     model: str | None = None,
     temperature: float | None = None,
+    max_output_tokens: int | None = None,
 ) -> str:
     """
     Non-streaming generation. Returns the full response text.
     Use stream_generate() for TTFT-optimized pipeline.
     """
-    chunks = list(stream_generate(messages, model, temperature))
+    chunks = list(stream_generate(messages, model, temperature, max_output_tokens=max_output_tokens))
     return "".join(chunks)
