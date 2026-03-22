@@ -97,3 +97,52 @@ def test_build_case_metadata_groups_pages_by_case_id() -> None:
     assert list(case_metadata.keys()) == ["CA 009/2024"]
     assert case_metadata["CA 009/2024"]["doc_ids"] == ["doc-a"]
     assert [page["page_num"] for page in case_metadata["CA 009/2024"]["pages"]] == [1, 2]
+
+
+def test_extract_case_ids_normalizes_hyphenated_formats() -> None:
+    assert metadata_mod.extract_case_ids("Order in ENF-022-2023 and TCD 003/2022") == [
+        "ENF 022/2023",
+        "TCD 003/2022",
+    ]
+
+
+def test_extract_case_ids_normalizes_slash_after_prefix_formats() -> None:
+    assert metadata_mod.extract_case_ids("Order in ARB/031/2025 and SCT 169/2025") == [
+        "ARB 031/2025",
+        "SCT 169/2025",
+    ]
+
+
+def test_extract_judges_handles_single_line_case_management_and_judgment_headers() -> None:
+    assert metadata_mod.extract_judges(
+        "TCD 001/2023 CASE MANAGEMENT ORDER OF H.E. JUSTICE MAHA AL MHEIRI UPON reviewing the Court file"
+    ) == ["Justice Maha Al Mheiri"]
+    assert metadata_mod.extract_judges(
+        "Bond v TR88 [2023] DIFC TCD 001 JUDGMENT OF H.E. JUSTICE WAYNE MARTIN Trial : 12 February 2024"
+    ) == ["Justice Wayne Martin"]
+
+
+def test_extract_judges_prefers_heading_panel_over_referenced_upon_judges() -> None:
+    text = (
+        "TCD 001/2024 ORDER WITH REASONS OF H.E. JUSTICE ROGER STEWART "
+        "UPON the Case Management Order of H.E. Justice Maha Al Mheiri of 8 October 2024 "
+        "AND UPON hearing Counsel at the Pre-Trial Review before H.E. Justice Roger Stewart on 2 June 2025"
+    )
+
+    assert metadata_mod.extract_judges(text) == ["Justice Roger Stewart"]
+
+
+def test_extract_judges_cleans_held_before_panel_suffixes() -> None:
+    text = (
+        "ORDER OF THE COURT OF APPEAL "
+        "AND UPON hearing Counsel at the Appeal hearing held before "
+        "H.E. Chief Justice Wayne Martin, H.E. Justice Rene Le Miere and "
+        "H.E. Justice Sir Peter Gross (the \"Hearing\") "
+        "IT IS HEREBY ORDERED THAT..."
+    )
+
+    assert metadata_mod.extract_judges(text) == [
+        "Chief Justice Wayne Martin",
+        "Justice Rene Le Miere",
+        "Justice Sir Peter Gross",
+    ]

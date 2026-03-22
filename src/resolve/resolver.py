@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from src.resolve.compare import (
     resolve_date_of_issue_compare,
+    resolve_judge_timeline_change,
     resolve_judge_compare,
     resolve_monetary_claim_compare,
     resolve_party_compare,
@@ -32,6 +33,8 @@ def try_resolve_question(question_item: dict, plan: QuestionPlan) -> Resolution 
         return resolve_page_local_lookup(plan, store, question_text=question_text)
     if plan.mode == "judge_compare":
         return resolve_judge_compare(plan, store)
+    if plan.mode == "judge_timeline_change":
+        return resolve_judge_timeline_change(plan, store)
     if plan.mode == "party_compare":
         return resolve_party_compare(plan, store)
     if plan.mode == "last_page_outcome":

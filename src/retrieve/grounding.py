@@ -260,7 +260,7 @@ def _max_total_pages_limit(intent: GroundingIntent | None, answer_type: str, doc
     if intent is not None and intent.max_total_pages is not None:
         return max(1, int(intent.max_total_pages))
     if intent is None or intent.kind == "generic":
-        return 2 if _is_structured_answer_type(answer_type) else 3
+        return 2 if _is_structured_answer_type(answer_type) else 4
     if intent.is_compare:
         return max(2, min(3, doc_count))
     if intent.kind == "article_ref":
@@ -281,6 +281,7 @@ def _generic_intent_from(intent: GroundingIntent | None) -> GroundingIntent | No
         case_ids=intent.case_ids,
         quoted_sections=intent.quoted_sections,
         max_pages_per_doc=2,
+        max_total_pages=4,
     )
 
 
@@ -747,6 +748,8 @@ def _finalize_grounding_results(
         return []
 
     total_page_limit = _max_total_pages_limit(intent, answer_type, len(kept_entries))
+    if (intent is None or intent.kind == "generic") and _is_structured_answer_type(answer_type) and multi_doc_signal:
+        total_page_limit = max(3, total_page_limit)
     if intent is not None and intent.kind == "article_ref" and _is_structured_answer_type(answer_type):
         exact_article_present = any(
             _page_has_exact_article_match(

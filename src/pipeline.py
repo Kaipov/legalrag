@@ -44,10 +44,12 @@ _GENERATION_TOP_K_BY_TYPE = {
     "names": 3,
 }
 _GROUNDING_FALLBACK_TOP_K_BY_TYPE = {
+    "boolean": 2,
     "number": 1,
     "date": 1,
     "name": 1,
-    "names": 2,
+    "names": 3,
+    "free_text": 2,
 }
 _COMPARE_NULL_RELAXED_TYPES = {"boolean", "name", "names"}
 _STRUCTURED_ANSWER_TYPES = {"number", "date", "boolean", "name", "names"}
@@ -861,6 +863,29 @@ def _select_generation_chunks(
             if len(selected) >= top_k:
                 return selected
 
+    elif (
+        plan is not None
+        and str(answer_type or "").lower() in _STRUCTURED_ANSWER_TYPES
+        and plan.case_ids
+        and plan.page_hint in {"front", "first"}
+    ):
+        for chunk_with_score in _select_compare_case_coverage_chunks(
+            ordered_chunks,
+            plan.case_ids,
+            min(top_k, len(plan.case_ids)),
+        ):
+            chunk = chunk_with_score[0]
+            chunk_key = _chunk_identity(chunk_with_score)
+            if chunk_key in seen_chunks:
+                continue
+            selected.append(chunk_with_score)
+            seen_chunks.add(chunk_key)
+            doc_id = str(chunk.get("doc_id") or "").strip()
+            if doc_id:
+                seen_docs.add(doc_id)
+            if len(selected) >= top_k:
+                return selected
+
     elif intent is not None and intent.is_compare and intent.case_ids:
         for chunk_with_score in _select_compare_case_coverage_chunks(ordered_chunks, intent.case_ids, top_k):
             chunk = chunk_with_score[0]
@@ -989,8 +1014,6 @@ def _select_grounding_chunks(
     fallback_top_k = max(1, min(len(generation_chunks), fallback_top_k))
 
     if selected_chunks:
-        if intent is None or intent.kind == "generic":
-            return selected_chunks
         if len(selected_chunks) >= fallback_top_k:
             return selected_chunks[:fallback_top_k]
 

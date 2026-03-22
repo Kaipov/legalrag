@@ -19,8 +19,11 @@ index/
 
 # Build artifacts
 submission.json
+submission.*.json
+submission.*.txt
 code_archive.zip
 *.zip
+eval/
 
 # IDE
 .claude/

@@ -75,6 +75,8 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
         "issued later",
         "earlier issue date",
         "later issue date",
+        "issue its document",
+        "issue the document",
     )
 
     if any(marker in text for marker in title_page_markers):

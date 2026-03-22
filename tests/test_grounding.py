@@ -374,8 +374,58 @@ def test_collect_grounding_pages_generic_free_text_keeps_top_cited_page_and_caps
         answer_type="free_text",
     )
 
-    assert sum(len(entry["page_numbers"]) for entry in result) <= 3
+    assert sum(len(entry["page_numbers"]) for entry in result) <= 4
     assert any(entry["doc_id"] == "doc-a" and 5 in entry["page_numbers"] for entry in result)
+
+
+def test_collect_grounding_pages_generic_structured_allows_three_pages_total_with_multi_doc_signal(monkeypatch):
+    reranked_chunks = [
+        ({"doc_id": "doc-a", "page_numbers": [2], "text": "alpha answer", "__is_cited__": True}, 0.92),
+        ({"doc_id": "doc-b", "page_numbers": [4], "text": "alpha answer appendix", "__is_cited__": True}, 0.9),
+    ]
+    page_texts_by_doc = {
+        "doc-a": {
+            1: "alpha answer exact support",
+            2: "alpha answer exact support",
+        },
+        "doc-b": {
+            3: "alpha answer appendix support",
+            4: "alpha answer appendix support",
+        },
+    }
+    page_records_by_doc = {
+        "doc-a": {
+            1: {"doc_id": "doc-a", "page_num": 1, "doc_title": "TITLE A", "text": "alpha answer exact support", "article_refs": [], "case_ids": []},
+            2: {"doc_id": "doc-a", "page_num": 2, "doc_title": "TITLE A", "text": "alpha answer exact support", "article_refs": [], "case_ids": []},
+        },
+        "doc-b": {
+            3: {"doc_id": "doc-b", "page_num": 3, "doc_title": "TITLE B", "text": "alpha answer appendix support", "article_refs": [], "case_ids": []},
+            4: {"doc_id": "doc-b", "page_num": 4, "doc_title": "TITLE B", "text": "alpha answer appendix support", "article_refs": [], "case_ids": []},
+        },
+    }
+
+    class FakePageRetriever:
+        def search(self, query: str, *, top_k: int = 6, allowed_doc_ids: set[str] | None = None):
+            return [
+                ({"doc_id": "doc-a", "page_num": 1}, 0.95),
+            ]
+
+    monkeypatch.setattr(grounding_mod, "_get_page_retriever", lambda: FakePageRetriever())
+
+    result = grounding_mod.collect_grounding_pages(
+        reranked_chunks,
+        question_text="What is the alpha answer?",
+        answer_text="Alpha answer.",
+        page_texts_by_doc=page_texts_by_doc,
+        page_records_by_doc=page_records_by_doc,
+        answer_type="number",
+        cited_page_keys={("doc-a", 2), ("doc-b", 4)},
+    )
+
+    assert result == [
+        {"doc_id": "doc-b", "page_numbers": [4]},
+        {"doc_id": "doc-a", "page_numbers": [1, 2]},
+    ]
 
 
 def test_collect_grounding_pages_article_ref_prefers_exact_page_for_explicit_law_number(monkeypatch):

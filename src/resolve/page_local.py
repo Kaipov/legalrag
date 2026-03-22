@@ -28,6 +28,7 @@ _TITLE_PAGE_QUERY_RE = re.compile(
     r"(?:title|cover)\s+page\s+of\s+(?:the\s+)?(?P<title>.+?)(?:,|\?|$|\s+what\b)",
     re.IGNORECASE,
 )
+_QUOTED_TITLE_RE = re.compile(r"[\"“](?P<title>[^\"”]+)[\"”]")
 
 
 
@@ -36,7 +37,8 @@ def _extract_law_number(record: dict) -> str | None:
         source_text = str(source or "")
         match = _LAW_NUMBER_RE.search(source_text)
         if match:
-            return f"DIFC Law No. {match.group(1)}"
+            law_number = re.sub(r"\s+of\s+", " of ", match.group(1), flags=re.IGNORECASE)
+            return f"DIFC Law No. {law_number}"
     return None
 
 
@@ -105,9 +107,14 @@ def _normalize_title_query(value: str) -> str:
 
 def _extract_title_page_query(question_text: str) -> str | None:
     match = _TITLE_PAGE_QUERY_RE.search(str(question_text or ""))
-    if not match:
+    if match:
+        title_query = _normalize_title_query(match.group("title"))
+        return title_query or None
+
+    quoted_match = _QUOTED_TITLE_RE.search(str(question_text or ""))
+    if not quoted_match:
         return None
-    title_query = _normalize_title_query(match.group("title"))
+    title_query = _normalize_title_query(quoted_match.group("title"))
     return title_query or None
 
 
@@ -198,6 +205,12 @@ def _resolve_law_title_page_lookup(plan: QuestionPlan, store: PageMetadataStore,
 
 def _filter_party_values(values: list[str], question_text: str) -> list[str]:
     lowered_question = str(question_text or "").lower()
+    if any(marker in lowered_question for marker in ("initiated the proceedings", "initiated proceedings")):
+        filtered = [
+            value for value in values
+            if value.lower().startswith(("claimant:", "applicant:", "plaintiff:", "petitioner:"))
+        ]
+        return filtered or values
     if "claimant" in lowered_question:
         filtered = [value for value in values if value.lower().startswith("claimant:")]
         return filtered or values
@@ -333,7 +346,7 @@ def _extract_value(record: dict, plan: QuestionPlan, *, question_text: str):
         if not values:
             return None
         values = _filter_party_values(values, question_text)
-        if plan.answer_type == "names":
+        if plan.answer_type in {"names", "number"}:
             return values
         return values[0]
     if target_field == "law_number":
@@ -344,6 +357,12 @@ def _extract_value(record: dict, plan: QuestionPlan, *, question_text: str):
 
 def _shape_answer(value, plan: QuestionPlan, question_text: str):
     if plan.answer_type == "number":
+        if plan.target_field == "party":
+            if isinstance(value, list):
+                normalized_parties = [_strip_party_prefix(str(item)) for item in value if _strip_party_prefix(str(item))]
+                return len(_dedupe_preserve_order(normalized_parties)) if normalized_parties else None
+            normalized_value = _strip_party_prefix(str(value))
+            return 1 if normalized_value else None
         if plan.target_field == "law_number":
             return _extract_law_number_value(str(value))
         return _coerce_numeric_value(value)

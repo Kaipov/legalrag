@@ -191,6 +191,32 @@ def test_select_generation_chunks_generic_single_case_prefers_money_signal_chunk
     assert selected == [chunks[2], chunks[1]]
 
 
+def test_select_generation_chunks_structured_single_case_frontmatter_keeps_first_page_anchor() -> None:
+    chunks = [
+        ({"chunk_id": "body", "doc_id": "doc-a", "page_numbers": [6], "text": "CFI 092/2024 procedural history with claimant references"}, 0.99),
+        ({"chunk_id": "title", "doc_id": "doc-a", "page_numbers": [1], "text": "CFI 092/2024 MAG Development Services Limited v defendants"}, 0.95),
+    ]
+    intent = GroundingIntent(kind="generic", case_ids=("CFI 092/2024",))
+    plan = QuestionPlan(
+        mode="page_local_lookup",
+        answer_type="number",
+        case_ids=("CFI 092/2024",),
+        page_hint="first",
+        target_field="party",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="How many unique parties initiated the proceedings in case CFI 092/2024?",
+        answer_type="number",
+        plan=plan,
+    )
+
+    assert selected[0] == chunks[1]
+
+
 def test_select_generation_chunks_generic_penalizes_front_matter_for_admin_question() -> None:
     chunks = [
         ({"chunk_id": "definitions", "doc_id": "doc-a", "page_numbers": [42], "text": "FOUNDATIONS LAW Term Definition Council means the council established to administer a Foundation's property."}, 0.99),
@@ -239,6 +265,18 @@ def test_select_grounding_chunks_prefers_cited_sources() -> None:
     selected = pipeline_mod._select_grounding_chunks("free_text", chunks, [3, 1, 3])
 
     assert selected == [chunks[2], chunks[0]]
+
+
+def test_select_grounding_chunks_generic_supplements_single_citation_with_support_chunk() -> None:
+    chunks = [
+        ({"chunk_id": "c1", "doc_id": "doc-a"}, 0.9),
+        ({"chunk_id": "c2", "doc_id": "doc-b"}, 0.8),
+        ({"chunk_id": "c3", "doc_id": "doc-c"}, 0.7),
+    ]
+
+    selected = pipeline_mod._select_grounding_chunks("free_text", chunks, [2], intent=GroundingIntent(kind="generic"))
+
+    assert selected == [chunks[1], chunks[0]]
 
 
 def test_select_grounding_chunks_falls_back_conservatively_for_number() -> None:

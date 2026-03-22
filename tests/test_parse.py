@@ -81,3 +81,19 @@ def test_parse_free_text_strips_leading_context_boilerplate():
 
 def test_parse_free_text_strips_the_answer_is_prefix():
     assert parse_answer("The answer is USD 1,500.", "free_text") == "USD 1,500."
+
+
+def test_parse_name_normalizes_hyphenated_case_id_from_answer():
+    assert parse_answer(
+        "ENF-022-2023 was issued first.",
+        "name",
+        question_text="Between ENF-022-2023 and TCD 003/2022, which was issued first?",
+    ) == "ENF 022/2023"
+
+
+def test_parse_name_normalizes_slash_after_prefix_case_id_from_answer():
+    assert parse_answer(
+        "ARB/031/2025 is the referenced case.",
+        "name",
+        question_text="Which case is referenced: ARB/031/2025 or ARB 024/2025?",
+    ) == "ARB 031/2025"

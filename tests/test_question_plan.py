@@ -171,3 +171,72 @@ def test_build_question_plan_detects_party_compare_when_question_says_to_both() 
     assert plan.mode == "party_compare"
     assert plan.compare_op == "set_overlap"
     assert plan.target_field == "party"
+
+
+def test_build_question_plan_normalizes_hyphenated_case_ids() -> None:
+    plan = build_question_plan(
+        "Considering all documents across case ENF-022-2023 and case TCD 003/2022, was there any judge who participated in both cases?",
+        "boolean",
+    )
+
+    assert plan.mode == "judge_compare"
+    assert plan.case_ids == ("ENF 022/2023", "TCD 003/2022")
+
+
+def test_build_question_plan_extracts_slash_after_prefix_case_id() -> None:
+    plan = build_question_plan(
+        "On what date did the DIFC court issue its document in case ARB/031/2025?",
+        "date",
+    )
+
+    assert plan.mode == "page_local_lookup"
+    assert plan.page_hint == "front"
+    assert plan.target_field == "issue_date"
+    assert plan.case_ids == ("ARB 031/2025",)
+
+
+def test_build_question_plan_detects_larger_sum_claimed_compare() -> None:
+    plan = build_question_plan(
+        "Between SCT 387/2024 and SCT 452/2024, which case involved the larger sum claimed by the claimant?",
+        "name",
+    )
+
+    assert plan.mode == "monetary_claim_compare"
+    assert plan.page_hint == "page_2"
+    assert plan.target_field == "money_value"
+    assert plan.case_ids == ("SCT 387/2024", "SCT 452/2024")
+
+
+def test_build_question_plan_detects_single_case_judge_timeline_change() -> None:
+    plan = build_question_plan(
+        "Were there any changes to the judges presiding over case TCD 001/2023 across its various stages?",
+        "boolean",
+    )
+
+    assert plan.mode == "judge_timeline_change"
+    assert plan.page_hint == "front"
+    assert plan.target_field == "judge"
+    assert plan.case_ids == ("TCD 001/2023",)
+
+
+def test_build_question_plan_routes_single_case_party_count_to_page_local_lookup() -> None:
+    plan = build_question_plan(
+        "How many unique parties initiated the proceedings in case CFI 092/2024?",
+        "number",
+    )
+
+    assert plan.mode == "page_local_lookup"
+    assert plan.page_hint == "first"
+    assert plan.target_field == "party"
+    assert plan.case_ids == ("CFI 092/2024",)
+
+
+def test_build_question_plan_routes_existing_law_basis_question_to_title_page_metadata() -> None:
+    plan = build_question_plan(
+        'What existing law is the basis for the amendments proposed in "PROPOSED AMENDMENTS TO THE REAL PROPERTY LAW DIFC LAW NO. 4 OF 2007 AND REGULATIONS"?',
+        "name",
+    )
+
+    assert plan.mode == "title_page_metadata"
+    assert plan.page_hint == "first"
+    assert plan.target_field == "law_number"

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import re
 
+from src.case_ids import extract_case_ids as _extract_case_id_list
 from src.generate.null_detect import check_foreign_concepts
 
 _COMPARE_MARKERS = (
@@ -22,6 +23,10 @@ _MONETARY_COMPARE_MARKERS = (
     "higher claim",
     "higher amount",
     "greater monetary claim",
+    "larger sum claimed",
+    "larger claim amount",
+    "larger claimed sum",
+    "higher sum claimed",
 )
 _DATE_ISSUE_MARKERS = (
     "date of issue",
@@ -31,8 +36,22 @@ _DATE_ISSUE_MARKERS = (
     "issued later",
     "earlier issue date",
     "later issue date",
+    "issue its document",
+    "issue the document",
 )
-_CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
+_JUDGE_TIMELINE_MARKERS = (
+    "across its various stages",
+    "across the various stages",
+    "at any point during the proceedings",
+    "during the proceedings",
+    "throughout the proceedings",
+    "panel of judges change",
+    "changes to the judges presiding",
+)
+_LAW_BASIS_MARKERS = (
+    "existing law is the basis",
+    "basis for the amendments proposed",
+)
 _ARTICLE_REF_RE = re.compile(r"\bArticle\s+\d+[A-Z]?(?:\(\d+[A-Z]?\)|\([a-z]\))*", re.IGNORECASE)
 
 
@@ -56,26 +75,12 @@ class QuestionPlan:
             "party_compare",
             "page_local_lookup",
             "title_page_metadata",
+            "judge_timeline_change",
             "last_page_outcome",
         }
 
-
-
-def _normalize_case_id(raw_value: str) -> str:
-    return " ".join(str(raw_value or "").upper().split())
-
-
-
 def _extract_case_ids(question_text: str) -> tuple[str, ...]:
-    seen: set[str] = set()
-    values: list[str] = []
-    for match in _CASE_ID_RE.finditer(question_text or ""):
-        value = _normalize_case_id(match.group(0))
-        if value in seen:
-            continue
-        seen.add(value)
-        values.append(value)
-    return tuple(values)
+    return tuple(_extract_case_id_list(question_text))
 
 
 
@@ -123,6 +128,16 @@ def _infer_target_field(text: str) -> str | None:
     return None
 
 
+def _is_judge_timeline_question(text: str) -> bool:
+    if "judge" not in text:
+        return False
+    return any(marker in text for marker in _JUDGE_TIMELINE_MARKERS)
+
+
+def _asks_for_existing_law_basis(text: str) -> bool:
+    return "existing law" in text and any(marker in text for marker in _LAW_BASIS_MARKERS)
+
+
 
 def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
     text = str(question_text or "").lower()
@@ -168,6 +183,26 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             target_field=target_field,
         )
 
+    if len(case_ids) == 1 and target_field == "party" and normalized_answer_type in {"name", "names", "number"}:
+        return QuestionPlan(
+            mode="page_local_lookup",
+            answer_type=normalized_answer_type,
+            case_ids=case_ids,
+            article_refs=article_refs,
+            page_hint="first",
+            target_field="party",
+        )
+
+    if len(case_ids) == 1 and target_field == "judge" and _is_judge_timeline_question(text):
+        return QuestionPlan(
+            mode="judge_timeline_change",
+            answer_type=normalized_answer_type,
+            case_ids=case_ids,
+            article_refs=article_refs,
+            page_hint="front",
+            target_field="judge",
+        )
+
     if len(case_ids) >= 2 and any(marker in text for marker in title_page_markers) and _is_compare_question(text, case_ids):
         if target_field == "judge":
             return QuestionPlan(
@@ -200,6 +235,16 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             article_refs=article_refs,
             page_hint="first",
             target_field=target_field,
+        )
+
+    if not case_ids and normalized_answer_type in {"name", "number"} and _asks_for_existing_law_basis(text):
+        return QuestionPlan(
+            mode="title_page_metadata",
+            answer_type=normalized_answer_type,
+            case_ids=case_ids,
+            article_refs=article_refs,
+            page_hint="first",
+            target_field="law_number",
         )
 
     if len(case_ids) >= 2 and any(marker in text for marker in _MONETARY_COMPARE_MARKERS):

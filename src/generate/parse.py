@@ -8,13 +8,14 @@ from __future__ import annotations
 import logging
 import re
 
+from src.case_ids import CASE_ID_RE, extract_case_ids as _extract_case_id_list, normalize_case_id
+
 logger = logging.getLogger(__name__)
 
 # Marker for null/unanswerable detection
 NULL_MARKER = "NULL_ANSWER"
 _SOURCE_LINE_RE = re.compile(r"^\s*SOURCES?\s*:\s*(.*?)\s*$", re.IGNORECASE | re.MULTILINE)
 _ANSWER_PREFIX_RE = re.compile(r"^\s*ANSWER\s*:\s*", re.IGNORECASE | re.MULTILINE)
-_CASE_CANDIDATE_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
 _NUMBER_RE = re.compile(r"[-+]?\d[\d,]*\.?\d*(?:[eE][-+]?\d+)?")
 _ISO_DATE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})(?:\D+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?", re.IGNORECASE)
 _DMY_DATE_RE = re.compile(
@@ -102,24 +103,16 @@ def extract_answer_text(raw_text: str) -> str:
 
 
 def _extract_case_candidates(question_text: str) -> list[str]:
-    candidates: list[str] = []
-    seen: set[str] = set()
-    for match in _CASE_CANDIDATE_RE.finditer(question_text or ""):
-        candidate = _normalize_space(match.group(0).upper())
-        if candidate in seen:
-            continue
-        seen.add(candidate)
-        candidates.append(candidate)
-    return candidates
+    return list(_extract_case_id_list(question_text))
 
 
 def _select_case_candidate_from_text(text: str, candidates: list[str]) -> str | None:
-    text_upper = (text or "").upper()
+    candidate_set = set(candidates)
     matches: list[tuple[int, str]] = []
-    for candidate in candidates:
-        index = text_upper.find(candidate)
-        if index >= 0:
-            matches.append((index, candidate))
+    for match in CASE_ID_RE.finditer(text or ""):
+        candidate = normalize_case_id(match.group(0))
+        if candidate in candidate_set:
+            matches.append((match.start(), candidate))
     if not matches:
         return None
     matches.sort(key=lambda item: item[0])
@@ -356,6 +349,10 @@ def _parse_name(text: str, question_text: str = "") -> str:
     inferred_candidate = _infer_case_candidate_from_segments(result, question_text, candidates)
     if inferred_candidate:
         return inferred_candidate
+
+    exact_case_match = CASE_ID_RE.fullmatch(result)
+    if exact_case_match:
+        return normalize_case_id(exact_case_match.group(0))
 
     return result.split("\n", 1)[0].strip()
 
