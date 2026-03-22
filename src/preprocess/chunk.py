@@ -22,6 +22,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
+from src.case_ids import CASE_ID_RE
 from src.config import PAGES_JSONL, CHUNKS_JSONL, MAX_CHUNK_TOKENS, MIN_CHUNK_TOKENS
 from src.embeddings import get_embedding_client
 
@@ -68,7 +69,6 @@ BOUNDARY_PATTERNS = [
     ("section", RE_SECTION),
     ("regulation", RE_REGULATION),
 ]
-_CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
 _TOC_DOT_PATTERN = re.compile(r"\.{3,}")
 _INLINE_REFERENCE_TITLE_PREFIXES = (
     "of ",
@@ -166,7 +166,7 @@ def _is_statutory_document(doc_title: str, text: str) -> bool:
     sample = "\n".join(part for part in (doc_title, text[:2000]) if part).upper()
     if not sample:
         return False
-    if _CASE_ID_RE.search(sample):
+    if CASE_ID_RE.search(sample):
         return False
     if any(marker in sample for marker in ("COURT OF", "ORDER WITH REASONS", "CLAIM NO", "CASE NO")):
         return False

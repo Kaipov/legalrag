@@ -4,6 +4,7 @@ import json
 
 from src.resolve.compare import (
     resolve_date_of_issue_compare,
+    resolve_judge_timeline_change,
     resolve_judge_compare,
     resolve_monetary_claim_compare,
     resolve_party_compare,
@@ -205,6 +206,174 @@ def test_resolve_monetary_claim_compare_returns_higher_case(tmp_path) -> None:
     assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2), ("doc-b", 2)]
 
 
+def test_resolve_monetary_claim_compare_falls_back_beyond_page_two_when_needed(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["SCT 160/2025"],
+                "issue_date": "2025-09-09",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [185000],
+                "is_first_page": True,
+                "is_last_page": False,
+                "text": "The Claimant filed a Claim seeking payment in the amount of AED 185,000.",
+            },
+            {
+                "doc_id": "doc-a",
+                "page_num": 2,
+                "case_ids": ["SCT 160/2025"],
+                "issue_date": "2025-09-09",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "Introduction and procedural history only.",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 2,
+                "case_ids": ["SCT 169/2025"],
+                "issue_date": "2025-12-24",
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "money_values": [391123.45],
+                "is_first_page": False,
+                "is_last_page": False,
+                "text": "The Claimant filed a Claim seeking payment in the amount of AED 391,123.45.",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="monetary_claim_compare",
+        answer_type="name",
+        case_ids=("SCT 160/2025", "SCT 169/2025"),
+        page_hint="page_2",
+        compare_op="max_number",
+        target_field="money_value",
+    )
+
+    resolution = resolve_monetary_claim_compare(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer == "SCT 169/2025"
+    assert resolution.facts["amounts"] == {"SCT 160/2025": 185000.0, "SCT 169/2025": 391123.45}
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 1), ("doc-b", 2)]
+
+
+def test_resolve_judge_timeline_change_detects_single_case_judge_change(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["TCD 001/2023"],
+                "issue_date": None,
+                "judges": ["Justice Maha Al Mheiri"],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "text": "CASE MANAGEMENT ORDER OF H.E. JUSTICE MAHA AL MHEIRI",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 1,
+                "case_ids": ["TCD 001/2023"],
+                "issue_date": None,
+                "judges": ["Justice Wayne Martin"],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "text": "JUDGMENT OF H.E. JUSTICE WAYNE MARTIN",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="judge_timeline_change",
+        answer_type="boolean",
+        case_ids=("TCD 001/2023",),
+        page_hint="front",
+        target_field="judge",
+    )
+
+    resolution = resolve_judge_timeline_change(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer is True
+    assert {tuple(panel) for panel in resolution.facts["judge_panels"]} == {
+        ("Justice Maha Al Mheiri",),
+        ("Justice Wayne Martin",),
+    }
+    assert {(page.doc_id, page.page_num) for page in resolution.evidence_pages} == {("doc-a", 1), ("doc-b", 1)}
+
+
+def test_resolve_judge_timeline_change_ignores_noise_suffixes_in_same_panel(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["CA 005/2025"],
+                "issue_date": None,
+                "judges": [
+                    "Chief Justice Wayne Martin",
+                    "Justice Rene Le Miere",
+                    "Justice Sir Peter Gross (the Hearing)",
+                ],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "text": "Appeal hearing held before H.E. Chief Justice Wayne Martin, H.E. Justice Rene Le Miere and H.E. Justice Sir Peter Gross (the Hearing).",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 1,
+                "case_ids": ["CA 005/2025"],
+                "issue_date": None,
+                "judges": [
+                    "Chief Justice Wayne Martin",
+                    "Justice Sir Peter Gross",
+                    "Justice Rene Le Miere",
+                ],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "text": "BEFORE H.E. CHIEF JUSTICE WAYNE MARTIN, H.E. JUSTICE SIR PETER GROSS AND H.E. JUSTICE RENE LE MIERE",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="judge_timeline_change",
+        answer_type="boolean",
+        case_ids=("CA 005/2025",),
+        page_hint="front",
+        target_field="judge",
+    )
+
+    resolution = resolve_judge_timeline_change(plan, store)
+
+    assert resolution is not None
+    assert resolution.answer is False
+    assert len(resolution.facts["judge_panels"]) == 1
+    assert set(resolution.facts["judge_panels"][0]) == {
+        "Chief Justice Wayne Martin",
+        "Justice Rene Le Miere",
+        "Justice Sir Peter Gross (the Hearing)",
+    }
+
 
 def test_resolve_page_local_lookup_returns_money_value(tmp_path) -> None:
     store = _write_metadata(
@@ -324,6 +493,48 @@ def test_resolve_page_local_lookup_returns_claim_number(tmp_path) -> None:
     assert resolution is not None
     assert resolution.answer == "ENF-316-2023/2"
     assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 2)]
+
+
+def test_resolve_page_local_lookup_counts_unique_initiating_parties_on_first_page(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": ["CFI 092/2024"],
+                "issue_date": None,
+                "judges": [],
+                "parties": [
+                    "Claimant: MAG Development Services Limited",
+                    "Defendant: The Collection Club Restaurant Limited",
+                    "Defendant: Laurent Buisine",
+                ],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "Example",
+                "text": "BETWEEN MAG Development Services Limited Claimant and The Collection Club Restaurant Limited, Laurent Buisine Defendants",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="page_local_lookup",
+        answer_type="number",
+        case_ids=("CFI 092/2024",),
+        page_hint="first",
+        target_field="party",
+    )
+
+    resolution = resolve_page_local_lookup(
+        plan,
+        store,
+        question_text="How many unique parties initiated the proceedings in case CFI 092/2024?",
+    )
+
+    assert resolution is not None
+    assert resolution.answer == 1
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 1)]
 
 
 def test_resolve_page_local_lookup_prefers_explicit_date_of_issue_page_over_first_page_metadata(tmp_path) -> None:
@@ -534,6 +745,57 @@ def test_resolve_title_page_law_number_without_case_id_uses_document_title_query
     assert resolution.answer == 2
     assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 1)]
 
+
+
+def test_resolve_title_page_law_number_uses_quoted_document_title_query(tmp_path) -> None:
+    store = _write_metadata(
+        tmp_path,
+        [
+            {
+                "doc_id": "doc-a",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "Real Property",
+                "text": "PROPOSED AMENDMENTS TO THE REAL PROPERTY LAW DIFC LAW NO. 4 OF 2007 AND REGULATIONS",
+            },
+            {
+                "doc_id": "doc-b",
+                "page_num": 1,
+                "case_ids": [],
+                "issue_date": None,
+                "judges": [],
+                "parties": [],
+                "claim_numbers": [],
+                "is_first_page": True,
+                "is_last_page": False,
+                "doc_title": "Different Law",
+                "text": "PROPOSED AMENDMENTS TO THE STRATA TITLE LAW DIFC LAW NO. 5 OF 2007 AND REGULATIONS",
+            },
+        ],
+    )
+    plan = QuestionPlan(
+        mode="title_page_metadata",
+        answer_type="name",
+        case_ids=(),
+        page_hint="first",
+        target_field="law_number",
+    )
+
+    resolution = resolve_page_local_lookup(
+        plan,
+        store,
+        question_text='What existing law is the basis for the amendments proposed in "PROPOSED AMENDMENTS TO THE REAL PROPERTY LAW DIFC LAW NO. 4 OF 2007 AND REGULATIONS"?',
+    )
+
+    assert resolution is not None
+    assert resolution.answer == "DIFC Law No. 4 of 2007"
+    assert [(page.doc_id, page.page_num) for page in resolution.evidence_pages] == [("doc-a", 1)]
 
 
 def test_resolve_last_page_outcome_returns_order_clauses_across_pages(tmp_path) -> None:

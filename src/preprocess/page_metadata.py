@@ -7,12 +7,12 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from src.case_ids import extract_case_ids as _shared_extract_case_ids, normalize_case_id as _shared_normalize_case_id
 from src.config import ARTICLE_PAGE_MAP_JSON, CASE_METADATA_JSON, PAGE_METADATA_JSONL, PAGES_JSONL
 from src.preprocess.chunk import _detect_doc_title
 
 logger = logging.getLogger(__name__)
 
-_CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
 _ARTICLE_REF_RE = re.compile(r"\bArticle\s+\d+[A-Z]?(?:\(\d+[A-Z]?\)|\([a-z]\))*", re.IGNORECASE)
 _CLAIM_NUMBER_RE = re.compile(
     r"\b(?:Claim\s+No\.?|Case\s+No\.?|Claim\s+number|claim number)\s*[:\-]?\s*([A-Z]{2,5}[- ]?\d+[-/]\d+(?:/\d+)?)",
@@ -27,6 +27,25 @@ _PARTY_LINE_RE = re.compile(
 _BEFORE_LINE_RE = re.compile(r"^\s*Before\s*[:\-]?\s*(.+?)\s*$", re.IGNORECASE)
 _JUSTICE_NAME_RE = re.compile(
     r"\b(?:Chief\s+Justice|Deputy\s+Chief\s+Justice|Justice|Judge)\s+[A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,5}"
+)
+_JUDGE_TITLE_RE = re.compile(r"\b(?:Chief\s+Justice|Deputy\s+Chief\s+Justice|Justice|Judge)\b", re.IGNORECASE)
+_JUDGE_HEADING_RE = re.compile(
+    r"(?:^|\n)\s*(?:CASE MANAGEMENT ORDER OF|JUDGMENT OF|AMENDED JUDGMENT OF|ORDER WITH REASONS OF|ORDER OF)\s+"
+    r"(.+?)(?=(?:\n|(?:\s+(?:UPON|AND UPON|TRIAL\b|HEARING\b|COUNSEL\b|JUDGMENT\s+\d|INTRODUCTION\b|REASONS\b|BETWEEN\b|IN THE COURT\b|IT IS HEREBY\b)))|$)",
+    re.IGNORECASE | re.DOTALL,
+)
+_JUDGE_INLINE_HEADING_RE = re.compile(
+    r"\b(?:CASE MANAGEMENT ORDER OF|JUDGMENT OF|AMENDED JUDGMENT OF|ORDER WITH REASONS OF|ORDER OF)\s+"
+    r"(.+?)(?=(?:\s+(?:UPON|AND UPON|TRIAL\b|HEARING\b|COUNSEL\b|JUDGMENT\s+\d|INTRODUCTION\b|REASONS\b|BETWEEN\b|IN THE COURT\b|IT IS HEREBY\b))|$)",
+    re.IGNORECASE,
+)
+_JUDGE_BEFORE_BLOCK_RE = re.compile(
+    r"(?:^|\n)\s*BEFORE\s+(.+?)(?=(?:\nBETWEEN|\nREASONS\b|\nINTRODUCTION\b|\nORDER\b|\nUPON\b|$))",
+    re.IGNORECASE | re.DOTALL,
+)
+_JUDGE_HELD_BEFORE_RE = re.compile(
+    r"\bheld before\s+(.+?)(?=\s*\(|\s+(?:IT IS HEREBY\b|FOR REASONS\b|REASONS\b|INTRODUCTION\b)|$)",
+    re.IGNORECASE,
 )
 _CAPTION_ROLE_RE = re.compile(
     r"^(Claimant|Defendant|Applicant|Respondent|Appellant|Petitioner|Plaintiff|Claimants|Defendants|Applicants|Respondents|Appellants|Petitioners|Plaintiffs)(?:/[A-Za-z]+)?$",
@@ -89,12 +108,12 @@ def _dedupe_preserve_order(values: list[Any]) -> list[Any]:
 
 
 def normalize_case_id(raw_value: str) -> str:
-    return " ".join(str(raw_value or "").upper().split())
+    return _shared_normalize_case_id(raw_value)
 
 
 
 def extract_case_ids(text: str) -> list[str]:
-    return _dedupe_preserve_order([normalize_case_id(match.group(0)) for match in _CASE_ID_RE.finditer(text or "")])
+    return _dedupe_preserve_order(_shared_extract_case_ids(text))
 
 
 
@@ -162,13 +181,29 @@ def extract_claim_numbers(text: str) -> list[str]:
 
 def _normalize_judge_name(value: str) -> str | None:
     normalized = _normalize_space(re.sub(r"\bH\.?\s*E\.?\b", "", str(value or ""), flags=re.IGNORECASE))
+    title_match = _JUDGE_TITLE_RE.search(normalized)
+    if title_match is not None:
+        normalized = normalized[title_match.start() :]
+    normalized = re.sub(r"\s*\(.*$", "", normalized)
+    normalized = re.sub(
+        r"\b(?:dated|on|upon|and upon|for(?: the)?|at(?: the)?)\b.*$",
+        "",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    normalized = re.sub(r"\bof\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}\b.*$", "", normalized, flags=re.IGNORECASE)
     normalized = normalized.strip(" ,;:-")
+    normalized = re.sub(r"^[^A-Za-z]+", "", normalized)
     if not normalized:
         return None
     if not re.search(r"\b(chief justice|deputy chief justice|justice|judge)\b", normalized, re.IGNORECASE):
         return None
     if "assistant registrar" in normalized.lower():
         return None
+    if normalized == normalized.upper():
+        normalized = normalized.title()
+        normalized = re.sub(r"\bKc\b", "KC", normalized)
+        normalized = re.sub(r"\bAc\b", "AC", normalized)
     return normalized
 
 
@@ -191,24 +226,33 @@ def extract_judges(text: str) -> list[str]:
     lines = [line.strip() for line in str(text or "").splitlines() if line.strip()]
     values: list[str] = []
     joined_head = "\n".join(lines[:20])
+    flat_head = _normalize_space(" ".join(lines[:20]))
 
     for line in lines[:12]:
         before_match = _BEFORE_LINE_RE.match(line)
         if before_match:
             values.extend(_split_judge_blob(before_match.group(1)))
 
-    for pattern in (
-        re.compile(r"(?:^|\n)\s*BEFORE\s+(.+?)(?=(?:\nBETWEEN|\nORDER|\nUPON|$))", re.IGNORECASE | re.DOTALL),
-        re.compile(r"held before\s+(.+?)(?=\s*\(|$)", re.IGNORECASE),
-        re.compile(r"ORDER WITH REASONS OF\s+(.+?)(?=\n|$)", re.IGNORECASE),
+    for pattern, search_blob in (
+        (_JUDGE_BEFORE_BLOCK_RE, joined_head),
+        (_JUDGE_HELD_BEFORE_RE, flat_head),
+        (_JUDGE_HEADING_RE, joined_head),
     ):
-        for match in pattern.finditer(joined_head):
+        for match in pattern.finditer(search_blob):
             values.extend(_split_judge_blob(match.group(1)))
 
-    for match in _JUSTICE_NAME_RE.finditer(joined_head):
-        candidate = _normalize_judge_name(match.group(0))
-        if candidate:
-            values.append(candidate)
+    if not values:
+        for match in _JUDGE_INLINE_HEADING_RE.finditer(flat_head):
+            inline_values = _split_judge_blob(match.group(1))
+            if inline_values:
+                values.extend(inline_values)
+                break
+
+    if not values:
+        for match in _JUSTICE_NAME_RE.finditer(flat_head):
+            candidate = _normalize_judge_name(match.group(0))
+            if candidate:
+                values.append(candidate)
 
     return _dedupe_preserve_order(values)
 

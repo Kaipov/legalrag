@@ -23,6 +23,7 @@ _CLAIM_AMOUNT_SIGNAL_RE = re.compile(
 _JUDGE_CONTEXT_CUTOFF_RE = re.compile(r"\b(?:dated|and upon|upon)\b.*$", re.IGNORECASE)
 _PARTY_SIGNAL_RE = re.compile(r"\b(?:claimant|defendant|applicant|respondent|party|parties)\b", re.IGNORECASE)
 _JUDGE_SIGNAL_RE = re.compile(r"\b(?:before|justice|judge|order with reasons of|judgment of|amended judgment of)\b", re.IGNORECASE)
+_JUDGE_TITLE_RE = re.compile(r"\b(?:chief justice|deputy chief justice|justice|judge)\b", re.IGNORECASE)
 
 
 def _normalize_compare_value(value: str, *, field: str) -> str:
@@ -32,6 +33,18 @@ def _normalize_compare_value(value: str, *, field: str) -> str:
         normalized = normalized.split(":", 1)[1].strip()
     if field == "judges":
         normalized = re.sub(r"\bh\.?\s*e\.?\b", "", normalized, flags=re.IGNORECASE)
+        title_match = _JUDGE_TITLE_RE.search(normalized)
+        if title_match is not None:
+            normalized = normalized[title_match.start() :]
+        normalized = re.sub(r"\s*\(.*$", "", normalized)
+        normalized = re.sub(
+            r"\b(?:dated|and upon|upon|for(?: the)?|at(?: the)?|on)\b.*$",
+            "",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(r"\bof\s+\d{1,2}\s+[a-z]+\s+\d{4}\b.*$", "", normalized, flags=re.IGNORECASE)
+        normalized = re.sub(r"\b(?:chief justice|deputy chief justice|justice|judge)\b", "", normalized)
         normalized = _JUDGE_CONTEXT_CUTOFF_RE.sub("", normalized)
     normalized = re.sub(r"^[^a-z0-9]+", "", normalized)
     normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
@@ -197,6 +210,46 @@ def _extract_claim_amount(record: dict) -> float | None:
     return fallback_values[0] if len(fallback_values) == 1 else max(fallback_values)
 
 
+def _iter_case_records_with_fallback(
+    store: PageMetadataStore,
+    case_id: str,
+    *,
+    primary_page_hint: str,
+):
+    seen_page_keys: set[tuple[str, int]] = set()
+    for page_hint in _dedupe_preserve_order([primary_page_hint, "front", "any"]):
+        for record in store.get_case_records(case_id, page_hint=page_hint):
+            page_key = (str(record.get("doc_id") or ""), int(record.get("page_num") or 0))
+            if page_key in seen_page_keys:
+                continue
+            seen_page_keys.add(page_key)
+            yield record
+
+
+def _dedupe_preserve_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for value in values:
+        normalized = str(value or "").strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        ordered.append(normalized)
+    return ordered
+
+
+def _append_unique_page(
+    evidence_pages: list[EvidencePage],
+    seen_page_keys: set[tuple[str, int]],
+    page: EvidencePage,
+) -> None:
+    page_key = (page.doc_id, page.page_num)
+    if not page.doc_id or page.page_num <= 0 or page_key in seen_page_keys:
+        return
+    seen_page_keys.add(page_key)
+    evidence_pages.append(page)
+
+
 def resolve_date_of_issue_compare(plan: QuestionPlan, store: PageMetadataStore) -> Resolution | None:
     if len(plan.case_ids) < 2:
         return None
@@ -247,6 +300,77 @@ def resolve_party_compare(plan: QuestionPlan, store: PageMetadataStore) -> Resol
     return _resolve_overlap_compare(plan, store, field="parties", method="party_compare")
 
 
+def resolve_judge_timeline_change(plan: QuestionPlan, store: PageMetadataStore) -> Resolution | None:
+    if len(plan.case_ids) != 1:
+        return None
+
+    case_id = plan.case_ids[0]
+    panel_records: dict[tuple[str, ...], tuple[list[str], EvidencePage, tuple[int, int]]] = {}
+    records = store.get_case_records(
+        case_id,
+        page_hint="front" if plan.page_hint in {"first", "front"} else plan.page_hint,
+    )
+    for record in records:
+        raw_values_by_key: dict[str, str] = {}
+        for raw_value in record.get("judges", []) or []:
+            normalized = _normalize_compare_value(str(raw_value), field="judges")
+            if not normalized:
+                continue
+            raw_values_by_key.setdefault(normalized, str(raw_value))
+        if not raw_values_by_key:
+            continue
+
+        panel_key = tuple(sorted(raw_values_by_key))
+        panel_values = [raw_values_by_key[key] for key in panel_key]
+        evidence_page = EvidencePage(
+            doc_id=str(record.get("doc_id") or ""),
+            page_num=int(record.get("page_num") or 0),
+        )
+        panel_rank = _compare_record_rank(record, field="judges")
+        current = panel_records.get(panel_key)
+        if current is not None and panel_rank <= current[2]:
+            continue
+        panel_records[panel_key] = (panel_values, evidence_page, panel_rank)
+
+    if not panel_records:
+        return None
+
+    ordered_panels = sorted(
+        panel_records.items(),
+        key=lambda item: item[1][2],
+        reverse=True,
+    )
+    answer_changed = len(ordered_panels) > 1
+    evidence_pages: list[EvidencePage] = []
+    seen_page_keys: set[tuple[str, int]] = set()
+
+    if answer_changed:
+        for _panel_key, (_panel_values, evidence_page, _panel_rank) in ordered_panels[:2]:
+            _append_unique_page(evidence_pages, seen_page_keys, evidence_page)
+    elif ordered_panels:
+        _append_unique_page(evidence_pages, seen_page_keys, ordered_panels[0][1][1])
+
+    if plan.answer_type == "boolean":
+        answer = answer_changed
+    elif plan.answer_type == "names":
+        ordered_names = _dedupe_preserve_order(
+            [value for _panel_key, (panel_values, _evidence_page, _panel_rank) in ordered_panels for value in panel_values]
+        )
+        answer = ordered_names
+    elif plan.answer_type == "name" and ordered_panels:
+        answer = ordered_panels[0][1][0][0]
+    else:
+        return None
+
+    return Resolution(
+        answer=answer,
+        evidence_pages=evidence_pages,
+        confidence=0.99,
+        method="judge_timeline_change",
+        facts={"judge_panels": [panel_values for _panel_key, (panel_values, _evidence_page, _panel_rank) in ordered_panels]},
+    )
+
+
 def resolve_monetary_claim_compare(plan: QuestionPlan, store: PageMetadataStore) -> Resolution | None:
     if len(plan.case_ids) < 2:
         return None
@@ -254,7 +378,7 @@ def resolve_monetary_claim_compare(plan: QuestionPlan, store: PageMetadataStore)
     resolved_amounts: list[tuple[str, float, EvidencePage]] = []
     for case_id in plan.case_ids[:2]:
         selected_record = None
-        for record in store.get_case_records(case_id, page_hint=plan.page_hint):
+        for record in _iter_case_records_with_fallback(store, case_id, primary_page_hint=plan.page_hint):
             claim_amount = _extract_claim_amount(record)
             if claim_amount is None:
                 continue

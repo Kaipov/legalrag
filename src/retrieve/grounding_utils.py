@@ -4,10 +4,10 @@ from dataclasses import dataclass
 import re
 from typing import Any, Iterable
 
+from src.case_ids import extract_case_ids as _extract_case_id_list
 from src.retrieve.lexical import tokenize_legal_text
 
 _ARTICLE_REF_RE = re.compile(r"\bArticle\s+\d+[A-Z]?(?:\(\d+[A-Z]?\)|\([a-z]\))*", re.IGNORECASE)
-_CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
 _LAW_NUMBER_RE = re.compile(r"\b(?:DIFC|DFSA)\s+Law\s+No\.?\s+\d+\s+of\s+\d{4}\b", re.IGNORECASE)
 _LAW_TITLE_RE = re.compile(
     r"\b(?P<title>(?:(?:[A-Z][A-Za-z&/\-]*|DIFC|DFSA)\s+){1,6}(?:Law|Regulation|Regulations|Rules?))(?:\s+\d{4})?\b"
@@ -123,7 +123,7 @@ def extract_question_anchors(question_text: str) -> QuestionAnchors:
     raw_text = str(question_text or "")
     article_refs = _dedupe_preserve_order(match.group(0) for match in _ARTICLE_REF_RE.finditer(raw_text))
     quoted_sections = _dedupe_preserve_order(match.group("value") for match in _QUOTED_SECTION_RE.finditer(raw_text))
-    case_ids = _dedupe_preserve_order(" ".join(match.group(0).upper().split()) for match in _CASE_ID_RE.finditer(raw_text))
+    case_ids = tuple(_extract_case_id_list(raw_text))
     law_number = _extract_law_number_from_text(raw_text)
     law_title_mentions = _extract_law_titles(raw_text)
     lexical_tokens = _dedupe_preserve_order(tokenize_legal_text(raw_text))

@@ -183,3 +183,11 @@ def test_classify_article_page_match_prefers_clause_definition_page_over_referen
         score_grounding_page(continuation_page, anchors, "12", GroundingIntent(kind="article_ref", article_refs=anchors.article_refs), set(), target_law_doc_id="doc-a")
         > score_grounding_page(citation_page, anchors, "12", GroundingIntent(kind="article_ref", article_refs=anchors.article_refs), set(), target_law_doc_id="doc-a")
     )
+
+
+def test_extract_question_anchors_normalizes_hyphenated_case_ids() -> None:
+    anchors = extract_question_anchors(
+        "Did cases ENF-022-2023 and TCD 003/2022 have any judges in common?"
+    )
+
+    assert anchors.case_ids == ("ENF 022/2023", "TCD 003/2022")
