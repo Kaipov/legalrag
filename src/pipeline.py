@@ -441,6 +441,112 @@ def _generic_selection_score(
     return score
 
 
+def _selection_mode(intent: GroundingIntent | None) -> str:
+    if intent is None:
+        return "default"
+
+    mode = str(getattr(intent, "selection_mode", "") or "").strip().lower()
+    if mode and mode != "default":
+        return mode
+
+    if intent.kind in {"title_page", "date_of_issue"}:
+        return "frontmatter"
+    if intent.is_compare:
+        return "compare_balanced"
+    return "default"
+
+
+def _intent_selection_score(
+    chunk_with_score: tuple[dict[str, Any], float],
+    *,
+    question_text: str | None,
+    answer_type: str,
+    intent: GroundingIntent,
+    plan: QuestionPlan | None,
+    rank_index: int,
+) -> float:
+    chunk, retrieval_score = chunk_with_score
+    chunk_tokens, chunk_roots, lowered_blob = _chunk_selection_terms(chunk)
+    question_terms, question_roots = _question_selection_terms(question_text or "")
+    selection_mode = _selection_mode(intent)
+
+    exact_overlap = len(question_terms & chunk_tokens)
+    root_overlap = len(question_roots & chunk_roots)
+    score = float(retrieval_score) - (rank_index * 0.01)
+    score += exact_overlap * 0.5
+    score += root_overlap * 0.7
+    score += _page_hint_bonus(chunk, plan)
+    score += _generic_target_field_bonus(chunk, plan, lowered_blob)
+
+    phrase_hits = sum(1 for phrase in intent.keyphrases if phrase and phrase in lowered_blob)
+    score += min(3, phrase_hits) * 0.9
+
+    if intent.case_ids:
+        case_hits = sum(1 for case_id in intent.case_ids if case_id and case_id in lowered_blob.upper())
+        score += min(2, case_hits) * 1.4
+
+    pages = _chunk_page_numbers(chunk)
+    first_page = pages[0] if pages else 99
+    if plan is None:
+        if selection_mode == "frontmatter":
+            if first_page <= 1:
+                score += 3.5
+            elif first_page == 2:
+                score += 3.0
+            elif first_page == 3:
+                score += 2.0
+            elif first_page == 4:
+                score += 1.0
+        elif selection_mode == "compare_balanced":
+            if first_page <= 1:
+                score += 3.0
+            elif first_page == 2:
+                score += 2.0
+            elif first_page == 3:
+                score += 0.75
+
+    if selection_mode == "frontmatter":
+        score -= _front_matter_penalty(lowered_blob)
+        if first_page > 4:
+            score -= 4.0
+        elif first_page == 4:
+            score -= 1.5
+        elif first_page == 3:
+            score -= 1.5
+    elif selection_mode == "compare_balanced":
+        score -= _front_matter_penalty(lowered_blob) * 0.35
+        if first_page > 4:
+            score -= 2.0
+        if intent.kind == "judge_compare":
+            score += min(3.5, 1.0 * len(_JUDGE_SIGNAL_RE.findall(lowered_blob)))
+        if intent.kind == "party_compare":
+            score += min(3.5, 1.0 * len(_PARTY_SIGNAL_RE.findall(lowered_blob)))
+
+    if str(answer_type or "").lower() in {"number", "date"} and "contents" in lowered_blob[:240]:
+        score -= 1.0
+    return score
+
+
+def _dedupe_chunks_by_page(
+    retrieved_chunks: list[tuple[dict, float]],
+) -> list[tuple[dict, float]]:
+    deduped: list[tuple[dict, float]] = []
+    seen_pages: set[tuple[str, int]] = set()
+
+    for chunk_with_score in retrieved_chunks:
+        chunk = chunk_with_score[0]
+        doc_id = str(chunk.get("doc_id") or "").strip()
+        pages = _chunk_page_numbers(chunk)
+        if pages:
+            page_key = (doc_id, pages[0])
+            if page_key in seen_pages:
+                continue
+            seen_pages.add(page_key)
+        deduped.append(chunk_with_score)
+
+    return deduped
+
+
 def _select_case_coverage_chunks(
     retrieved_chunks: list[tuple[dict, float]],
     case_ids: tuple[str, ...],
@@ -472,19 +578,35 @@ def _order_generation_candidates(
     intent: GroundingIntent | None = None,
     plan: QuestionPlan | None = None,
 ) -> list[tuple[dict, float]]:
-    if not retrieved_chunks or not question_text or intent is None or intent.kind != "generic":
+    if not retrieved_chunks or intent is None:
+        return list(retrieved_chunks)
+
+    selection_mode = _selection_mode(intent)
+    if selection_mode == "default" and intent.kind != "generic":
+        return list(retrieved_chunks)
+    if intent.kind == "generic" and not question_text:
         return list(retrieved_chunks)
 
     scored: list[tuple[float, float, int, tuple[dict, float]]] = []
     for index, chunk_with_score in enumerate(retrieved_chunks):
-        selection_score = _generic_selection_score(
-            chunk_with_score,
-            question_text=question_text,
-            answer_type=answer_type,
-            intent=intent,
-            plan=plan,
-            rank_index=index,
-        )
+        if intent.kind == "generic":
+            selection_score = _generic_selection_score(
+                chunk_with_score,
+                question_text=question_text,
+                answer_type=answer_type,
+                intent=intent,
+                plan=plan,
+                rank_index=index,
+            )
+        else:
+            selection_score = _intent_selection_score(
+                chunk_with_score,
+                question_text=question_text,
+                answer_type=answer_type,
+                intent=intent,
+                plan=plan,
+                rank_index=index,
+            )
         scored.append((selection_score, float(chunk_with_score[1]), index, chunk_with_score))
 
     scored.sort(key=lambda item: (-item[0], -item[1], item[2]))
@@ -520,6 +642,75 @@ def _select_compare_case_coverage_chunks(
         selected.append(best_choice[1])
         seen_chunk_keys.add(best_choice[2])
         if len(selected) >= top_k:
+            break
+
+    return selected
+
+
+def _select_balanced_compare_chunks(
+    retrieved_chunks: list[tuple[dict, float]],
+    case_ids: tuple[str, ...],
+    top_k: int,
+) -> list[tuple[dict, float]]:
+    if top_k <= 0 or not retrieved_chunks or not case_ids:
+        return []
+
+    deduped_chunks = _dedupe_chunks_by_page(retrieved_chunks)
+    case_buckets: dict[str, list[tuple[dict, float]]] = {}
+    for case_id in case_ids:
+        case_buckets[case_id] = [
+            chunk_with_score
+            for chunk_with_score in deduped_chunks
+            if _chunk_matches_case_id(chunk_with_score[0], case_id)
+        ]
+
+    selected: list[tuple[dict, float]] = []
+    seen_chunk_keys: set[str] = set()
+    seen_doc_ids_by_case: dict[str, set[str]] = {case_id: set() for case_id in case_ids}
+
+    def _pick_for_case(case_id: str, *, prefer_new_doc: bool) -> tuple[dict, float] | None:
+        fallback: tuple[dict, float] | None = None
+        for chunk_with_score in case_buckets.get(case_id, []):
+            chunk = chunk_with_score[0]
+            chunk_key = _chunk_identity(chunk_with_score)
+            if chunk_key in seen_chunk_keys:
+                continue
+
+            doc_id = str(chunk.get("doc_id") or "").strip()
+            if prefer_new_doc and doc_id and doc_id in seen_doc_ids_by_case[case_id]:
+                if fallback is None:
+                    fallback = chunk_with_score
+                continue
+            return chunk_with_score
+        return fallback
+
+    for case_id in case_ids:
+        choice = _pick_for_case(case_id, prefer_new_doc=False)
+        if choice is None:
+            continue
+        selected.append(choice)
+        seen_chunk_keys.add(_chunk_identity(choice))
+        doc_id = str(choice[0].get("doc_id") or "").strip()
+        if doc_id:
+            seen_doc_ids_by_case[case_id].add(doc_id)
+        if len(selected) >= top_k:
+            return selected
+
+    while len(selected) < top_k:
+        progress = False
+        for case_id in case_ids:
+            choice = _pick_for_case(case_id, prefer_new_doc=True)
+            if choice is None:
+                continue
+            selected.append(choice)
+            seen_chunk_keys.add(_chunk_identity(choice))
+            doc_id = str(choice[0].get("doc_id") or "").strip()
+            if doc_id:
+                seen_doc_ids_by_case[case_id].add(doc_id)
+            progress = True
+            if len(selected) >= top_k:
+                break
+        if not progress:
             break
 
     return selected
@@ -642,6 +833,7 @@ def _select_generation_chunks(
     if top_k <= 0 or not retrieved_chunks:
         return []
 
+    selection_mode = _selection_mode(intent)
     ordered_chunks = _order_generation_candidates(
         retrieved_chunks,
         question_text=question_text,
@@ -649,11 +841,27 @@ def _select_generation_chunks(
         intent=intent,
         plan=plan,
     )
+    if selection_mode == "frontmatter":
+        ordered_chunks = _dedupe_chunks_by_page(ordered_chunks)
     selected: list[tuple[dict, float]] = []
     seen_chunks: set[str] = set()
     seen_docs: set[str] = set()
 
-    if intent is not None and intent.is_compare and intent.case_ids:
+    if intent is not None and selection_mode == "compare_balanced" and intent.case_ids:
+        for chunk_with_score in _select_balanced_compare_chunks(ordered_chunks, intent.case_ids, top_k):
+            chunk = chunk_with_score[0]
+            chunk_key = _chunk_identity(chunk_with_score)
+            if chunk_key in seen_chunks:
+                continue
+            selected.append(chunk_with_score)
+            seen_chunks.add(chunk_key)
+            doc_id = str(chunk.get("doc_id") or "").strip()
+            if doc_id:
+                seen_docs.add(doc_id)
+            if len(selected) >= top_k:
+                return selected
+
+    elif intent is not None and intent.is_compare and intent.case_ids:
         for chunk_with_score in _select_compare_case_coverage_chunks(ordered_chunks, intent.case_ids, top_k):
             chunk = chunk_with_score[0]
             chunk_key = _chunk_identity(chunk_with_score)

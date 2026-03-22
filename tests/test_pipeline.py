@@ -34,6 +34,35 @@ def test_select_generation_chunks_prefers_unique_docs_when_requested() -> None:
     assert selected == [chunks[0], chunks[2]]
 
 
+def test_select_generation_chunks_frontmatter_prefers_best_page_representative() -> None:
+    chunks = [
+        ({"chunk_id": "contents", "doc_id": "doc-a", "page_numbers": [2], "text": "DIFC TRUST LAW table of contents"}, 0.99),
+        ({"chunk_id": "page1-weak", "doc_id": "doc-a", "page_numbers": [1], "text": "DIFC TRUST LAW title page"}, 0.98),
+        ({"chunk_id": "page1-best", "doc_id": "doc-a", "page_numbers": [1], "text": "DIFC TRUST LAW title page official law number Law No. 4 of 2018"}, 0.95),
+        ({"chunk_id": "page3", "doc_id": "doc-a", "page_numbers": [3], "text": "operative provisions"}, 0.94),
+    ]
+    intent = GroundingIntent(kind="title_page", selection_mode="frontmatter", case_ids=("TRUST LAW",))
+    plan = QuestionPlan(
+        mode="title_page_metadata",
+        answer_type="number",
+        case_ids=("TRUST LAW",),
+        page_hint="first",
+        target_field="law_number",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="What official law number is stated on the cover page of the DIFC Trust Law?",
+        answer_type="number",
+        plan=plan,
+    )
+
+    assert selected[0] == chunks[2]
+    assert chunks[1] not in selected
+
+
 def test_select_generation_chunks_compare_prefers_case_coverage() -> None:
     chunks = [
         ({"chunk_id": "body-a", "doc_id": "doc-a", "page_numbers": [3], "text": "ARB 034/2025 procedural history"}, 0.98),
@@ -49,6 +78,40 @@ def test_select_generation_chunks_compare_prefers_case_coverage() -> None:
     selected = pipeline_mod._select_generation_chunks(chunks, 2, intent=intent)
 
     assert selected == [chunks[2], chunks[1]]
+
+
+def test_select_generation_chunks_compare_balances_case_slots() -> None:
+    chunks = [
+        ({"chunk_id": "a-anchor", "doc_id": "doc-a1", "page_numbers": [1], "text": "CA 005/2025 heard before Justice Wayne Martin"}, 0.99),
+        ({"chunk_id": "a-support", "doc_id": "doc-a2", "page_numbers": [2], "text": "CA 005/2025 Justice Wayne Martin appeared again"}, 0.98),
+        ({"chunk_id": "b-anchor", "doc_id": "doc-b1", "page_numbers": [1], "text": "TCD 001/2024 heard before Justice Wayne Martin"}, 0.97),
+        ({"chunk_id": "b-support", "doc_id": "doc-b2", "page_numbers": [2], "text": "TCD 001/2024 Justice Wayne Martin on the hearing"}, 0.96),
+    ]
+    intent = GroundingIntent(
+        kind="judge_compare",
+        selection_mode="compare_balanced",
+        case_ids=("CA 005/2025", "TCD 001/2024"),
+        prefer_unique_docs=True,
+    )
+    plan = QuestionPlan(
+        mode="judge_compare",
+        answer_type="boolean",
+        case_ids=("CA 005/2025", "TCD 001/2024"),
+        page_hint="front",
+        compare_op="set_overlap",
+        target_field="judge",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        4,
+        intent=intent,
+        question_text="Considering all documents across case CA 005/2025 and case TCD 001/2024, was there any judge who appeared in both cases?",
+        answer_type="boolean",
+        plan=plan,
+    )
+
+    assert selected == [chunks[0], chunks[2], chunks[1], chunks[3]]
 
 
 def test_select_generation_chunks_prefers_chunks_from_case_matched_doc_for_single_case_questions() -> None:

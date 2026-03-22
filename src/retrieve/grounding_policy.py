@@ -11,9 +11,11 @@ from src.retrieve.grounding_utils import extract_question_anchors
 class GroundingIntent:
     kind: str
     page_focus: str = "any"
+    selection_mode: str = "default"
     keyphrases: tuple[str, ...] = ()
     case_ids: tuple[str, ...] = ()
     prefer_unique_docs: bool = False
+    retrieval_top_k: int | None = None
     generation_top_k: int | None = None
     grounding_chunk_top_k: int | None = None
     max_pages_per_chunk: int | None = None
@@ -81,9 +83,11 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
                 return GroundingIntent(
                     kind="judge_compare",
                     page_focus="front",
+                    selection_mode="compare_balanced",
                     keyphrases=("before", "justice", "judge", "hearing"),
                     case_ids=case_ids,
                     prefer_unique_docs=True,
+                    retrieval_top_k=20,
                     generation_top_k=4,
                     grounding_chunk_top_k=4,
                     max_pages_per_chunk=2,
@@ -96,9 +100,11 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
                 return GroundingIntent(
                     kind="party_compare",
                     page_focus="first",
+                    selection_mode="compare_balanced",
                     keyphrases=("claimant", "defendant", "applicant", "respondent", "party", "parties"),
                     case_ids=case_ids,
                     prefer_unique_docs=True,
+                    retrieval_top_k=20,
                     generation_top_k=4,
                     grounding_chunk_top_k=4,
                     max_pages_per_chunk=2,
@@ -116,9 +122,11 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
         return GroundingIntent(
             kind="title_page",
             page_focus="front",
+            selection_mode="frontmatter",
             keyphrases=("claimant", "defendant", "applicant", "respondent", "claim no", "case no", "title", "caption"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=3,
             grounding_chunk_top_k=3 if asks_for_case_file_coverage else 2,
             max_pages_per_chunk=2,
@@ -151,9 +159,11 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
         return GroundingIntent(
             kind="date_of_issue",
             page_focus="front",
+            selection_mode="frontmatter",
             keyphrases=("date of issue", "issued on", "issued", "date"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=3,
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
@@ -179,9 +189,11 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
         return GroundingIntent(
             kind="judge_compare",
             page_focus="front",
+            selection_mode="compare_balanced",
             keyphrases=("before", "justice", "judge", "hearing"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=4,
             grounding_chunk_top_k=4 if asks_for_case_file_coverage else 3,
             max_pages_per_chunk=2,
@@ -195,9 +207,11 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
         return GroundingIntent(
             kind="party_compare",
             page_focus="first",
+            selection_mode="compare_balanced",
             keyphrases=("claimant", "defendant", "applicant", "respondent", "party", "parties"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=4,
             grounding_chunk_top_k=4 if asks_for_case_file_coverage else 3,
             max_pages_per_chunk=2,

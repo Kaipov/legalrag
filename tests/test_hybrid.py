@@ -58,6 +58,44 @@ def test_hybrid_retriever_applies_intent_bias_without_reranker(tmp_path, monkeyp
     assert [chunk["chunk_id"] for chunk, _score in results] == ["b"]
 
 
+def test_hybrid_retriever_uses_intent_specific_retrieval_depth(tmp_path, monkeypatch) -> None:
+    chunks_path = tmp_path / "chunks.jsonl"
+    with chunks_path.open("w", encoding="utf-8") as handle:
+        for index in range(25):
+            chunk = {
+                "chunk_id": f"chunk-{index}",
+                "doc_id": f"doc-{index}",
+                "page_numbers": [index + 1],
+                "section_path": f"Section {index}",
+                "doc_title": f"Doc {index}",
+                "text": f"text {index}",
+            }
+            handle.write(json.dumps(chunk) + "\n")
+
+    class _DeepFakeBM25Searcher:
+        def search(self, query: str, top_k: int = 30):
+            return [(f"chunk-{index}", float(30 - index)) for index in range(25)]
+
+    class _DeepFakeSemanticSearcher:
+        def search(self, query: str, top_k: int = 30):
+            return [(f"chunk-{index}", float(25 - index)) for index in range(25)]
+
+    monkeypatch.setattr(hybrid_mod, "BM25Searcher", lambda: _DeepFakeBM25Searcher())
+    monkeypatch.setattr(hybrid_mod, "SemanticSearcher", lambda: _DeepFakeSemanticSearcher())
+    monkeypatch.setattr(hybrid_mod, "build_reranker", lambda: None)
+
+    retriever = hybrid_mod.HybridRetriever(chunks_path=chunks_path, enable_reranker=False)
+    generic_results = retriever.retrieve("test query", intent=GroundingIntent(kind="generic"))
+    deep_results = retriever.retrieve(
+        "test query",
+        intent=GroundingIntent(kind="date_of_issue", retrieval_top_k=20),
+    )
+
+    assert len(generic_results) == hybrid_mod.RERANK_TOP_K
+    assert len(deep_results) == 20
+    assert [chunk["chunk_id"] for chunk, _score in deep_results[:3]] == ["chunk-0", "chunk-1", "chunk-2"]
+
+
 def test_hybrid_retriever_uses_reranker_when_enabled(tmp_path, monkeypatch) -> None:
     chunks_path = tmp_path / "chunks.jsonl"
     _write_chunks(chunks_path)

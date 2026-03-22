@@ -93,8 +93,11 @@ class HybridRetriever:
         Returns list of (chunk_dict, score) sorted by relevance.
         Score is the cross-encoder logit when reranker is enabled, otherwise the RRF score.
         """
-        rerank_top_k = rerank_top_k or RERANK_TOP_K
-        candidates = self._get_rrf_candidates(query)
+        requested_top_k = rerank_top_k or RERANK_TOP_K
+        intent_top_k = int(getattr(intent, "retrieval_top_k", 0) or 0)
+        output_top_k = max(requested_top_k, intent_top_k)
+        candidate_top_k = max(RERANK_CANDIDATES, output_top_k)
+        candidates = self._get_rrf_candidates(query, top_k=candidate_top_k)
         candidates = self._apply_intent_bias(candidates, intent)
 
         if not candidates:
@@ -102,17 +105,17 @@ class HybridRetriever:
             return []
 
         if not self._should_rerank(intent):
-            return candidates[:rerank_top_k]
+            return candidates[:output_top_k]
 
         try:
             reranked = self.reranker.rerank(
                 query,
                 [chunk for chunk, _score in candidates],
-                top_k=rerank_top_k,
+                top_k=output_top_k,
             )
         except Exception as exc:
             logger.warning("Reranker failed for query '%s...': %s. Falling back to baseline retrieval.", query[:80], exc)
-            return candidates[:rerank_top_k]
+            return candidates[:output_top_k]
         return reranked
 
     def retrieve_without_rerank(
@@ -121,16 +124,17 @@ class HybridRetriever:
         top_k: int = 15,
     ) -> list[tuple[dict, float]]:
         """Retrieval without reranking (faster, for testing or fallback)."""
-        return self._get_rrf_candidates(query)[:top_k]
+        return self._get_rrf_candidates(query, top_k=top_k)[:top_k]
 
-    def _get_rrf_candidates(self, query: str) -> list[tuple[dict, float]]:
+    def _get_rrf_candidates(self, query: str, top_k: int | None = None) -> list[tuple[dict, float]]:
         """Return top fusion candidates as (chunk_dict, rrf_score)."""
         bm25_results = self.bm25.search(query, top_k=BM25_TOP_K)
         semantic_results = self.semantic.search(query, top_k=SEMANTIC_TOP_K)
         rrf_ranked = self._rrf_fusion(bm25_results, semantic_results)
+        limit = max(1, top_k or RERANK_CANDIDATES)
 
         candidates = []
-        for chunk_id, rrf_score in rrf_ranked[:RERANK_CANDIDATES]:
+        for chunk_id, rrf_score in rrf_ranked[:limit]:
             chunk = self.chunks_by_id.get(chunk_id)
             if chunk is not None:
                 candidates.append((chunk, float(rrf_score)))

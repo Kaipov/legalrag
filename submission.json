@@ -1,14 +1,14 @@
 {
-  "architecture_summary": "Hybrid RAG: pdfplumber+PaddleOCR extraction, structure-aware chunking, BM25+gemini-embedding-2-preview hybrid search with RRF fusion over 512-token embedding-aware chunks, reranker disabled, gpt-5.4-mini streaming generation over adaptive top-k chunks (up to 4), answer-aware grounding from cited source blocks, 3-tier null detection.",
+  "architecture_summary": "Hybrid RAG: pdfplumber+PaddleOCR extraction, structure-aware chunking, BM25+gemini-embedding-2-preview hybrid search with RRF fusion over 512-token embedding-aware chunks, Voyage rerank-2.5 API rerank (article_ref), gpt-4.1-mini streaming generation over adaptive top-k chunks (up to 4), answer-aware grounding from cited source blocks, 3-tier null detection.",
   "answers": [
     {
       "question_id": "30ab0e56ee0c43b5bf94fd9657c7f7ac24f0e7be29ced2933437f7a234713cd7",
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 2589,
-          "tpot_ms": 4,
-          "total_time_ms": 3247
+          "ttft_ms": 2885,
+          "tpot_ms": 10,
+          "total_time_ms": 3620
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -21,10 +21,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 2149,
+          "input_tokens": 1875,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -113,12 +113,12 @@
     },
     {
       "question_id": "bce4c288236518dfd08f6bac5a75c75ea79b1250347c4b998252fa9d7265a7c3",
-      "answer": "Partners are liable jointly and severally for all debts and obligations of the General Partnership incurred while they are partners.",
+      "answer": "Partners are jointly and severally liable with other Partners for all debts and obligations of the General Partnership incurred while they are Partners.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1327,
-          "tpot_ms": 5,
-          "total_time_ms": 1990
+          "ttft_ms": 1397,
+          "tpot_ms": 9,
+          "total_time_ms": 2157
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -132,47 +132,47 @@
           ]
         },
         "usage": {
-          "input_tokens": 1766,
-          "output_tokens": 30
+          "input_tokens": 1920,
+          "output_tokens": 33
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "6863a7f4a5e76694620518758411bc743142897fa8077f2a73701b89fa2d0b0f",
-      "answer": "The maximum fine is USD 1,500 for failing to provide a copy of an assignment of rights.",
+      "answer": "The maximum fine for failing to provide a copy of an assignment of rights within 30 days is USD 1,500.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1319,
-          "tpot_ms": 5,
-          "total_time_ms": 1937
+          "ttft_ms": 1154,
+          "tpot_ms": 10,
+          "total_time_ms": 1989
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
               "page_numbers": [
-                45,
+                6,
                 46
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1664,
-          "output_tokens": 29
+          "input_tokens": 1907,
+          "output_tokens": 35
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "150d4428704ea7ce7452509bda9c25f4d242b2395114ed0ed59388b87660f218",
-      "answer": "The Board of Directors of the DIFCA appoints and may dismiss the Registrar, after consulting the President.",
+      "answer": "The Board of Directors of the DIFCA is responsible for appointing and dismissing the Registrar, after consulting the President.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1145,
-          "tpot_ms": 5,
-          "total_time_ms": 1789
+          "ttft_ms": 1022,
+          "tpot_ms": 11,
+          "total_time_ms": 1898
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -186,10 +186,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 2115,
-          "output_tokens": 29
+          "input_tokens": 2578,
+          "output_tokens": 32
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -229,9 +229,9 @@
       "answer": "SCT 295/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -258,12 +258,12 @@
     },
     {
       "question_id": "436c12cc4eb26087bd1540f5d47825712632e90b4d5b2bca6c52e3b26151f874",
-      "answer": "The application for permission to appeal was dismissed.",
+      "answer": "The Permission to Appeal Application in case CFI 057/2025 was refused. The Defendant must pay the Claimant’s costs of the application.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1077,
-          "tpot_ms": 2,
-          "total_time_ms": 1594
+          "ttft_ms": 1008,
+          "tpot_ms": 13,
+          "total_time_ms": 2014
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -275,7 +275,7 @@
               ]
             },
             {
-              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
+              "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
               "page_numbers": [
                 1
               ]
@@ -283,10 +283,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1861,
-          "output_tokens": 17
+          "input_tokens": 2536,
+          "output_tokens": 40
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -294,9 +294,9 @@
       "answer": "SCT 169/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 2,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 2
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -460,9 +460,9 @@
       "answer": "CFI 010/2024",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 2,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 2
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -489,24 +489,23 @@
     },
     {
       "question_id": "fcabd6aa14e2df4b7ca00fa516a70eba6de58b74dfde30270e3fe3eec6d1da7a",
-      "answer": "DIFC Law No. 2 of 2022 amended the Common Reporting Standard Law, Employment Law, Limited Liability Partnership Law, and General Partnership Law.",
+      "answer": "DIFC Law No. 2 of 2022 amended the Employment Law, Foundations Law, Trust Law, and the Law on the Application of Civil and Commercial Laws in the DIFC.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1348,
-          "tpot_ms": 4,
-          "total_time_ms": 2001
+          "ttft_ms": 1119,
+          "tpot_ms": 12,
+          "total_time_ms": 2270
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
-                1,
-                37
+                1
               ]
             },
             {
-              "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
+              "doc_id": "4e387152960c1029b3711cacb05b287b13c977bc61f2558059a62b7b427a62eb",
               "page_numbers": [
                 1
               ]
@@ -514,10 +513,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 996,
-          "output_tokens": 45
+          "input_tokens": 1467,
+          "output_tokens": 52
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -525,9 +524,9 @@
       "answer": 7,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1066,
-          "tpot_ms": 3,
-          "total_time_ms": 1646
+          "ttft_ms": 1661,
+          "tpot_ms": 21,
+          "total_time_ms": 2415
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -543,7 +542,7 @@
           "input_tokens": 853,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -551,9 +550,9 @@
       "answer": "ONORA",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1360,
-          "tpot_ms": 4,
-          "total_time_ms": 1863
+          "ttft_ms": 1032,
+          "tpot_ms": 9,
+          "total_time_ms": 1580
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -567,10 +566,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1110,
+          "input_tokens": 1134,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -578,9 +577,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 882,
-          "tpot_ms": 4,
-          "total_time_ms": 1465
+          "ttft_ms": 1620,
+          "tpot_ms": 18,
+          "total_time_ms": 2233
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -593,10 +592,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1048,
+          "input_tokens": 1141,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -613,7 +612,7 @@
             {
               "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
               "page_numbers": [
-                1
+                2
               ]
             },
             {
@@ -648,9 +647,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1112,
-          "tpot_ms": 4,
-          "total_time_ms": 1737
+          "ttft_ms": 1240,
+          "tpot_ms": 11,
+          "total_time_ms": 1881
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -663,20 +662,20 @@
           ]
         },
         "usage": {
-          "input_tokens": 1783,
-          "output_tokens": 9
+          "input_tokens": 1805,
+          "output_tokens": 11
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "ad7357a7eb955085f6438dfcaf44324de7fcf88da86c846242e173eacdeebfda",
-      "answer": "The Permission to Appeal Application was refused.",
+      "answer": "The Permission to Appeal Application was refused and the request for an adjournment of the Hearing was also refused. There was no order as to costs.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1224,
-          "tpot_ms": 7,
-          "total_time_ms": 1805
+          "ttft_ms": 1038,
+          "tpot_ms": 14,
+          "total_time_ms": 2084
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -686,20 +685,14 @@
                 1,
                 2
               ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 2247,
-          "output_tokens": 16
+          "input_tokens": 2050,
+          "output_tokens": 42
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -736,12 +729,12 @@
     },
     {
       "question_id": "9596fb754439e6752034890c1272a2df7c0f9000db7d186db21aa232a253fca4",
-      "answer": "The effective date is 31 December 2016 for Pre-existing Accounts and 1 January 2017 for New Accounts.",
+      "answer": "The effective date for due diligence requirements for Pre-existing Accounts is 31 December 2016. The effective date for New Accounts is 1 January 2017.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1155,
-          "tpot_ms": 5,
-          "total_time_ms": 1799
+          "ttft_ms": 1124,
+          "tpot_ms": 11,
+          "total_time_ms": 2031
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -755,20 +748,20 @@
           ]
         },
         "usage": {
-          "input_tokens": 1555,
-          "output_tokens": 33
+          "input_tokens": 1624,
+          "output_tokens": 41
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "9f48d8eca6d10cf26f60226078f0d9cb32d3aa2fd25c90c312549cb6265ebd84",
-      "answer": "This Law was made by the Ruler of Dubai.",
+      "answer": "The Personal Property Law 2005 was made by the Ruler of Dubai.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1141,
-          "tpot_ms": 5,
-          "total_time_ms": 1808
+          "ttft_ms": 1328,
+          "tpot_ms": 9,
+          "total_time_ms": 2115
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -776,16 +769,16 @@
               "doc_id": "536bbce854b9406cc22697e04fcdabd645e030c0e55b918252643b00e0b2b25f",
               "page_numbers": [
                 3,
-                20
+                18
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1724,
-          "output_tokens": 19
+          "input_tokens": 1486,
+          "output_tokens": 24
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -793,17 +786,17 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1216,
-          "tpot_ms": 1,
-          "total_time_ms": 1720
+          "ttft_ms": 1026,
+          "tpot_ms": 8,
+          "total_time_ms": 1650
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "58eae81bf668e7f6c58619f419a49b5e35e2e5c9c7475475ace28ec562580545",
               "page_numbers": [
-                2,
-                3
+                3,
+                4
               ]
             }
           ]
@@ -812,7 +805,7 @@
           "input_tokens": 1777,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -820,9 +813,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1058,
-          "tpot_ms": 1,
-          "total_time_ms": 1594
+          "ttft_ms": 1663,
+          "tpot_ms": 21,
+          "total_time_ms": 2380
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -838,7 +831,7 @@
           "input_tokens": 1128,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -872,26 +865,26 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1062,
-          "tpot_ms": 5,
-          "total_time_ms": 1540
+          "ttft_ms": 868,
+          "tpot_ms": 9,
+          "total_time_ms": 1421
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "ff746f7b583490a80ba104361c0a82a1ebbf7ed9097cd03dc49d744cb5057761",
               "page_numbers": [
-                1,
-                3
+                4,
+                7
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1580,
-          "output_tokens": 9
+          "input_tokens": 1533,
+          "output_tokens": 11
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -899,9 +892,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 999,
-          "tpot_ms": 5,
-          "total_time_ms": 1756
+          "ttft_ms": 1457,
+          "tpot_ms": 14,
+          "total_time_ms": 2182
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -914,10 +907,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 2071,
+          "input_tokens": 2088,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -954,12 +947,12 @@
     },
     {
       "question_id": "f29159d38bf494e330b32f03507df593d5869a129796a3b7f6efe14fd1b1a0a5",
-      "answer": "An Employer must keep records of the Employee’s remuneration, gross and net where applicable, and the applicable pay period.",
+      "answer": "Article 16(1)(c) requires an Employer to keep records of the Employee's Remuneration, both gross and net where applicable, and the applicable Pay Period.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1379,
-          "tpot_ms": 5,
-          "total_time_ms": 1987
+          "ttft_ms": 1310,
+          "tpot_ms": 9,
+          "total_time_ms": 2151
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -967,16 +960,16 @@
               "doc_id": "33bc02044716acdfedb164b065bdaec098aaadcae863c591f9931c88e7307d16",
               "page_numbers": [
                 8,
-                11
+                9
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 2154,
-          "output_tokens": 31
+          "input_tokens": 1666,
+          "output_tokens": 43
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1055,9 +1048,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1318,
-          "tpot_ms": 3,
-          "total_time_ms": 1843
+          "ttft_ms": 1246,
+          "tpot_ms": 8,
+          "total_time_ms": 1828
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1070,10 +1063,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1390,
+          "input_tokens": 1524,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1081,9 +1074,9 @@
       "answer": 15,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1409,
-          "tpot_ms": 5,
-          "total_time_ms": 2047
+          "ttft_ms": 1536,
+          "tpot_ms": 20,
+          "total_time_ms": 2370
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1099,7 +1092,7 @@
           "input_tokens": 1223,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1107,9 +1100,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1134,
-          "tpot_ms": 4,
-          "total_time_ms": 1826
+          "ttft_ms": 1390,
+          "tpot_ms": 11,
+          "total_time_ms": 2015
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1125,7 +1118,7 @@
           "input_tokens": 2061,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1194,12 +1187,12 @@
     },
     {
       "question_id": "a341025df493b0e6a962fa637e3df6fe053c3de28cb2f5c8eb0814067af32b95",
-      "answer": "Records under Article 12(4) are retained for six years after reporting, and General Partnership records under Article 18(2)(b) for at least six years from creation.",
+      "answer": "Records under Article 12(4) of the Common Reporting Standard Law must be retained for six years after reporting. Records under Article 18(2)(b) of the General Partnership Law must be preserved for at least six years from creation.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1005,
-          "tpot_ms": 4,
-          "total_time_ms": 1761
+          "ttft_ms": 857,
+          "tpot_ms": 11,
+          "total_time_ms": 1990
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1219,10 +1212,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1664,
-          "output_tokens": 47
+          "input_tokens": 1716,
+          "output_tokens": 59
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1230,16 +1223,16 @@
       "answer": "ENF 269/2023",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                2
+                1
               ]
             },
             {
@@ -1277,7 +1270,8 @@
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                1
+                1,
+                2
               ]
             }
           ]
@@ -1296,9 +1290,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1017,
-          "tpot_ms": 5,
-          "total_time_ms": 1694
+          "ttft_ms": 1119,
+          "tpot_ms": 13,
+          "total_time_ms": 1738
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1312,43 +1306,43 @@
           ]
         },
         "usage": {
-          "input_tokens": 1159,
+          "input_tokens": 953,
           "output_tokens": 11
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "b982f3b308042c0eb23dfe264a56ab53866fbea5d3981c4bfcf3ffb6de22054e",
-      "answer": "The application was dismissed.",
+      "answer": "The Defendant’s Application for immediate judgment and/or strike out was dismissed. The Applicant was ordered to pay 80% of the Respondent’s costs totaling USD 155,879.50.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1247,
-          "tpot_ms": 3,
-          "total_time_ms": 1755
+          "ttft_ms": 980,
+          "tpot_ms": 9,
+          "total_time_ms": 1885
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
               "page_numbers": [
-                1
+                1,
+                2
               ]
             },
             {
-              "doc_id": "443e04bc1a78940b3fcd5438d24b6c5f182a276d354a3108e738b193675de032",
+              "doc_id": "437568a801115019fe8278385c0484bdf07ab86f9a499ecaba2b7969b37c764b",
               "page_numbers": [
-                1,
-                2
+                7
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1935,
-          "output_tokens": 13
+          "input_tokens": 2497,
+          "output_tokens": 48
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1358,9 +1352,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1001,
-          "tpot_ms": 2,
-          "total_time_ms": 1485
+          "ttft_ms": 996,
+          "tpot_ms": 30,
+          "total_time_ms": 1791
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1374,10 +1368,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1403,
+          "input_tokens": 1186,
           "output_tokens": 11
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1385,9 +1379,9 @@
       "answer": 30,
       "telemetry": {
         "timing": {
-          "ttft_ms": 988,
-          "tpot_ms": 7,
-          "total_time_ms": 1627
+          "ttft_ms": 1414,
+          "tpot_ms": 20,
+          "total_time_ms": 2178
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1403,7 +1397,7 @@
           "input_tokens": 1300,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1411,9 +1405,9 @@
       "answer": 12,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1094,
-          "tpot_ms": 4,
-          "total_time_ms": 1680
+          "ttft_ms": 1369,
+          "tpot_ms": 29,
+          "total_time_ms": 2182
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1429,7 +1423,7 @@
           "input_tokens": 1264,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1437,9 +1431,9 @@
       "answer": "SCT 295/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 4,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 4
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1469,9 +1463,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1106,
-          "tpot_ms": 7,
-          "total_time_ms": 1757
+          "ttft_ms": 1461,
+          "tpot_ms": 19,
+          "total_time_ms": 2089
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1484,10 +1478,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1581,
+          "input_tokens": 1400,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1495,18 +1489,12 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
-            {
-              "doc_id": "03b621728fe29eb6113fcdb57f6458d793fd2d5c5b833ae26d40f04a29c85359",
-              "page_numbers": [
-                1
-              ]
-            },
             {
               "doc_id": "0471e83c1ea18086cfb6b3ff51da6f22b0efee337f10315b2593f782297ccb84",
               "page_numbers": [
@@ -1533,9 +1521,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1182,
-          "tpot_ms": 38,
-          "total_time_ms": 2461
+          "ttft_ms": 1473,
+          "tpot_ms": 21,
+          "total_time_ms": 2164
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1548,10 +1536,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 3200,
-          "output_tokens": 20
+          "input_tokens": 1069,
+          "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1587,9 +1575,9 @@
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1023,
-          "tpot_ms": 8,
-          "total_time_ms": 1645
+          "ttft_ms": 1115,
+          "tpot_ms": 11,
+          "total_time_ms": 1612
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1602,10 +1590,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1204,
+          "input_tokens": 1613,
           "output_tokens": 19
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1613,9 +1601,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1064,
-          "tpot_ms": 2,
-          "total_time_ms": 1713
+          "ttft_ms": 1507,
+          "tpot_ms": 19,
+          "total_time_ms": 2075
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1628,10 +1616,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 766,
+          "input_tokens": 780,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1639,9 +1627,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1162,
-          "tpot_ms": 6,
-          "total_time_ms": 1807
+          "ttft_ms": 1569,
+          "tpot_ms": 18,
+          "total_time_ms": 2303
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1657,17 +1645,17 @@
           "input_tokens": 903,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "87a1294f4e8414adaf49579d914252f4c7a9e90c54a452b5a420bed4934ce335",
-      "answer": "It must provide an English translation upon request to the Relevant Authority.",
+      "answer": "A Reporting Financial Institution must provide an English translation of records obtained or created in a language other than English upon request to the Relevant Authority.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1112,
-          "tpot_ms": 2,
-          "total_time_ms": 1646
+          "ttft_ms": 1050,
+          "tpot_ms": 12,
+          "total_time_ms": 1968
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1681,29 +1669,43 @@
           ]
         },
         "usage": {
-          "input_tokens": 1779,
-          "output_tokens": 21
+          "input_tokens": 2131,
+          "output_tokens": 35
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "b2fcc22c0bfc27e799fec5df74c911114a91f83d0aa2995729390d6c8cb80c1a",
-      "answer": "The provided DIFC documents do not state the enactment date of the DIFC Personal Property Law 2005.",
+      "answer": "The DIFC Personal Property Law 2005 was enacted on the date specified in the Enactment Notice in respect of this Law. The exact date is not provided in the context.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1736,
-          "tpot_ms": 1,
-          "total_time_ms": 1750
+          "ttft_ms": 1110,
+          "tpot_ms": 10,
+          "total_time_ms": 2107
         },
         "retrieval": {
-          "retrieved_chunk_pages": []
+          "retrieved_chunk_pages": [
+            {
+              "doc_id": "536bbce854b9406cc22697e04fcdabd645e030c0e55b918252643b00e0b2b25f",
+              "page_numbers": [
+                2,
+                3
+              ]
+            },
+            {
+              "doc_id": "4e387152960c1029b3711cacb05b287b13c977bc61f2558059a62b7b427a62eb",
+              "page_numbers": [
+                4
+              ]
+            }
+          ]
         },
         "usage": {
-          "input_tokens": 1718,
-          "output_tokens": 10
+          "input_tokens": 1796,
+          "output_tokens": 47
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1739,9 +1741,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1783,9 +1785,9 @@
       "answer": "The provided DIFC documents do not contain information showing whether Miranda rights were properly administered in case ENF 269/2023.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 453,
+          "ttft_ms": 433,
           "tpot_ms": 0,
-          "total_time_ms": 453
+          "total_time_ms": 433
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -1794,17 +1796,17 @@
           "input_tokens": 0,
           "output_tokens": 0
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "98d473221f50a845466544b43d6bb52b0497893aade63a8659db228459c271b4",
-      "answer": "The consolidated version was published in November 2024.",
+      "answer": "The consolidated version of the Law on the Application of Civil and Commercial Laws in the DIFC was published in November 2024.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1021,
-          "tpot_ms": 3,
-          "total_time_ms": 1664
+          "ttft_ms": 1314,
+          "tpot_ms": 11,
+          "total_time_ms": 2163
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1814,20 +1816,14 @@
                 1,
                 3
               ]
-            },
-            {
-              "doc_id": "22442c5ee999e2519c68de908be511875a84f2b810ed540c2dcfcbcc65031434",
-              "page_numbers": [
-                1
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1721,
-          "output_tokens": 19
+          "input_tokens": 2210,
+          "output_tokens": 34
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1835,9 +1831,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1009,
-          "tpot_ms": 9,
-          "total_time_ms": 1662
+          "ttft_ms": 954,
+          "tpot_ms": 6,
+          "total_time_ms": 1343
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1851,20 +1847,20 @@
           ]
         },
         "usage": {
-          "input_tokens": 1342,
-          "output_tokens": 13
+          "input_tokens": 1407,
+          "output_tokens": 11
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "30167c4bda50157907608b180c50e4e49902b0cb6bd09b6461b6c7cb75961a1b",
-      "answer": "The Application is dismissed, and the Claimant shall bear its own costs of the Application.",
+      "answer": "The court dismissed the Claimant’s Application for a Default Costs Certificate. The Claimant shall bear its own costs of the Application.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 987,
-          "tpot_ms": 5,
-          "total_time_ms": 1581
+          "ttft_ms": 950,
+          "tpot_ms": 14,
+          "total_time_ms": 1761
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1876,18 +1872,18 @@
               ]
             },
             {
-              "doc_id": "6248961b681ea0deb189f354be0c8286f35974dcdb211c13c921c3dd0e566a6e",
+              "doc_id": "d32e76d495ac7d855d805fb71682b98d254520e3799aa4529ebc983212648335",
               "page_numbers": [
-                3
+                9
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 2068,
-          "output_tokens": 26
+          "input_tokens": 1779,
+          "output_tokens": 34
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1895,16 +1891,16 @@
       "answer": "ENF 269/2023",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                2
+                1
               ]
             },
             {
@@ -1927,9 +1923,9 @@
       "answer": "Confirmation Statement",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1065,
-          "tpot_ms": 4,
-          "total_time_ms": 1728
+          "ttft_ms": 1280,
+          "tpot_ms": 11,
+          "total_time_ms": 1959
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1942,10 +1938,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1287,
+          "input_tokens": 1244,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1953,9 +1949,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1069,
-          "tpot_ms": 1,
-          "total_time_ms": 1681
+          "ttft_ms": 1271,
+          "tpot_ms": 8,
+          "total_time_ms": 1928
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -1968,10 +1964,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1982,
+          "input_tokens": 2088,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -1979,9 +1975,9 @@
       "answer": "CA 004/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2008,35 +2004,29 @@
     },
     {
       "question_id": "52e9e31a6d7a80a597147115b3d38065da495a41e7c11e797d0a190c9a580bcf",
-      "answer": "The permission to appeal application was refused, and each party bore its own costs.",
+      "answer": "The Permission to Appeal Application was refused. There shall be no order as to costs.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 980,
-          "tpot_ms": 5,
-          "total_time_ms": 1592
+          "ttft_ms": 995,
+          "tpot_ms": 9,
+          "total_time_ms": 1672
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
               "doc_id": "09660f78c26cd56c08c7253ed21ba01fb246092f482ccd8acd8e6f9b6fd2d917",
               "page_numbers": [
-                11,
-                12
-              ]
-            },
-            {
-              "doc_id": "f4c4d051d514270964adcf58e124569e396602340b7d9172671759de10a95897",
-              "page_numbers": [
-                4
+                2,
+                8
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1823,
-          "output_tokens": 24
+          "input_tokens": 2260,
+          "output_tokens": 29
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2044,9 +2034,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2059,7 +2049,7 @@
             {
               "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
               "page_numbers": [
-                1
+                2
               ]
             },
             {
@@ -2154,9 +2144,9 @@
       "answer": "CFI 057/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 2,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 2
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2186,9 +2176,9 @@
       "answer": false,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1130,
-          "tpot_ms": 5,
-          "total_time_ms": 1708
+          "ttft_ms": 1370,
+          "tpot_ms": 16,
+          "total_time_ms": 1845
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2201,10 +2191,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1683,
+          "input_tokens": 1659,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2212,9 +2202,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 990,
-          "tpot_ms": 6,
-          "total_time_ms": 1866
+          "ttft_ms": 1234,
+          "tpot_ms": 9,
+          "total_time_ms": 1871
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2227,10 +2217,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 2318,
+          "input_tokens": 2140,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2307,35 +2297,35 @@
     },
     {
       "question_id": "1097af38db84c4d507357bfbdcbbcc1de60a0ccb10752bad8091a75b8f53eb5c",
-      "answer": "Both must preserve their accounting records for at least six (6) years from creation.",
+      "answer": "A DIFC-incorporated General Partnership must preserve its accounting records for at least six years. A DIFC-incorporated Limited Liability Partnership must also preserve its accounting records for at least six years.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1066,
-          "tpot_ms": 6,
-          "total_time_ms": 1669
+          "ttft_ms": 1017,
+          "tpot_ms": 9,
+          "total_time_ms": 1921
         },
         "retrieval": {
           "retrieved_chunk_pages": [
+            {
+              "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
+              "page_numbers": [
+                13
+              ]
+            },
             {
               "doc_id": "302a0bd8d67775e8dc5960ecec7879be566300d8b32c4b0153ba15ebdb279425",
               "page_numbers": [
                 6,
                 7
               ]
-            },
-            {
-              "doc_id": "b82ac8228e051d96bf8d706d3251893ebff1c9457b066fce3b7cb99af956f2a7",
-              "page_numbers": [
-                13
-              ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 1870,
-          "output_tokens": 27
+          "input_tokens": 2001,
+          "output_tokens": 50
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2343,9 +2333,9 @@
       "answer": "The provided DIFC documents do not contain information about any jury decision in case ENF 269/2023.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 273,
+          "ttft_ms": 464,
           "tpot_ms": 0,
-          "total_time_ms": 273
+          "total_time_ms": 464
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2354,7 +2344,7 @@
           "input_tokens": 0,
           "output_tokens": 0
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2362,9 +2352,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 975,
-          "tpot_ms": 3,
-          "total_time_ms": 1579
+          "ttft_ms": 1456,
+          "tpot_ms": 17,
+          "total_time_ms": 2124
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2377,10 +2367,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 896,
+          "input_tokens": 828,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2420,9 +2410,9 @@
       "answer": 30,
       "telemetry": {
         "timing": {
-          "ttft_ms": 989,
-          "tpot_ms": 4,
-          "total_time_ms": 1624
+          "ttft_ms": 1506,
+          "tpot_ms": 13,
+          "total_time_ms": 2188
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2438,7 +2428,7 @@
           "input_tokens": 1259,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2446,9 +2436,9 @@
       "answer": "SCT 295/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 2,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 2
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2514,7 +2504,7 @@
             {
               "doc_id": "1a255edc261961ec64870466a27ac4e25b5ebc2abe298e1b69f8dd2fc27288f6",
               "page_numbers": [
-                1
+                2
               ]
             },
             {
@@ -2577,9 +2567,9 @@
       "answer": "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 441,
+          "ttft_ms": 429,
           "tpot_ms": 0,
-          "total_time_ms": 441
+          "total_time_ms": 429
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2588,7 +2578,7 @@
           "input_tokens": 0,
           "output_tokens": 0
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2623,9 +2613,9 @@
       "answer": 6,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1008,
-          "tpot_ms": 3,
-          "total_time_ms": 1381
+          "ttft_ms": 1509,
+          "tpot_ms": 20,
+          "total_time_ms": 2195
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2638,22 +2628,22 @@
           ]
         },
         "usage": {
-          "input_tokens": 904,
+          "input_tokens": 1013,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "ec0aa6992207b818c06e57dd28b08dad22ba2de3bd9e81a9a222e2fba9814406",
       "answer": [
-        "OLETA"
+        "Oleta"
       ],
       "telemetry": {
         "timing": {
-          "ttft_ms": 1166,
-          "tpot_ms": 3,
-          "total_time_ms": 1504
+          "ttft_ms": 1080,
+          "tpot_ms": 12,
+          "total_time_ms": 1734
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2667,10 +2657,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1172,
-          "output_tokens": 11
+          "input_tokens": 1577,
+          "output_tokens": 15
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2710,9 +2700,9 @@
       "answer": true,
       "telemetry": {
         "timing": {
-          "ttft_ms": 929,
-          "tpot_ms": 7,
-          "total_time_ms": 1600
+          "ttft_ms": 1282,
+          "tpot_ms": 10,
+          "total_time_ms": 1929
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2725,10 +2715,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 2022,
+          "input_tokens": 1746,
           "output_tokens": 9
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2736,31 +2726,31 @@
       "answer": "CFI 057/2025",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1138,
-          "tpot_ms": 10,
-          "total_time_ms": 1774
+          "ttft_ms": 1,
+          "tpot_ms": 0,
+          "total_time_ms": 1
         },
         "retrieval": {
           "retrieved_chunk_pages": [
             {
-              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
+              "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
               "page_numbers": [
-                1
+                2
               ]
             },
             {
-              "doc_id": "1b446e196b4d1752241c8ff689a31ea705e98ad0c16b9d343c303664f72b64a1",
+              "doc_id": "897ab23ed5a70034d3d708d871ad1da8bc7b6608d94b1ca46b5d578d985d3c13",
               "page_numbers": [
-                1
+                2
               ]
             }
           ]
         },
         "usage": {
-          "input_tokens": 979,
-          "output_tokens": 17
+          "input_tokens": 0,
+          "output_tokens": 0
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "deterministic-resolver"
       }
     },
     {
@@ -2768,9 +2758,9 @@
       "answer": "ENF 269/2023",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1,
+          "ttft_ms": 3,
           "tpot_ms": 0,
-          "total_time_ms": 1
+          "total_time_ms": 3
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2783,7 +2773,7 @@
             {
               "doc_id": "5d3df6d69fac3ef91e13ac835b43a35e9e434fbc7e72ea5c01e288d69b66e6a2",
               "page_numbers": [
-                2
+                1
               ]
             }
           ]
@@ -2800,9 +2790,9 @@
       "answer": "The provided DIFC documents do not contain information about parole hearings in case CFI 057/2025.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 498,
+          "ttft_ms": 454,
           "tpot_ms": 0,
-          "total_time_ms": 498
+          "total_time_ms": 454
         },
         "retrieval": {
           "retrieved_chunk_pages": []
@@ -2811,7 +2801,7 @@
           "input_tokens": 0,
           "output_tokens": 0
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2845,9 +2835,9 @@
       "answer": 3,
       "telemetry": {
         "timing": {
-          "ttft_ms": 1058,
-          "tpot_ms": 4,
-          "total_time_ms": 1626
+          "ttft_ms": 1864,
+          "tpot_ms": 18,
+          "total_time_ms": 2570
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2863,17 +2853,17 @@
           "input_tokens": 1299,
           "output_tokens": 10
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "095cb50318776a3b8ef11769cd941775694c194924783ee31109c25e3306600e",
-      "answer": "The DIFCA administers the Employment Law and any Regulations made under it.",
+      "answer": "The DIFCA is responsible for administering the Employment Law and any Regulations made under it.",
       "telemetry": {
         "timing": {
           "ttft_ms": 1043,
-          "tpot_ms": 6,
-          "total_time_ms": 1645
+          "tpot_ms": 10,
+          "total_time_ms": 1736
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2887,10 +2877,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1671,
-          "output_tokens": 23
+          "input_tokens": 1812,
+          "output_tokens": 25
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
@@ -2898,9 +2888,9 @@
       "answer": "The Foundations Law is administered by the Registrar.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1127,
-          "tpot_ms": 5,
-          "total_time_ms": 1715
+          "ttft_ms": 1026,
+          "tpot_ms": 19,
+          "total_time_ms": 1853
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2914,20 +2904,20 @@
           ]
         },
         "usage": {
-          "input_tokens": 1849,
+          "input_tokens": 1691,
           "output_tokens": 17
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     },
     {
       "question_id": "cd69f5dfe06d2e7afac26c7b332ea925987864cc6730f90cce020d34d823abbe",
-      "answer": "The Board of Directors of the DIFCA may make Regulations to facilitate the administration of, or further the objects of, this Law.",
+      "answer": "Article 9(1) allows the Board of Directors of the DIFCA to make Regulations to facilitate the administration of, or further the objects of, the Foundations Law.",
       "telemetry": {
         "timing": {
-          "ttft_ms": 1068,
-          "tpot_ms": 3,
-          "total_time_ms": 1715
+          "ttft_ms": 1345,
+          "tpot_ms": 11,
+          "total_time_ms": 2266
         },
         "retrieval": {
           "retrieved_chunk_pages": [
@@ -2941,10 +2931,10 @@
           ]
         },
         "usage": {
-          "input_tokens": 1600,
-          "output_tokens": 34
+          "input_tokens": 2013,
+          "output_tokens": 42
         },
-        "model_name": "gpt-5.4-mini"
+        "model_name": "gpt-4.1-mini"
       }
     }
   ]
