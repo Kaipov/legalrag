@@ -1,344 +1,165 @@
-# ARLC Competition — Full Specification
+# ARLC Competition Specification
 
-Sources: introductory seminar, Discord Q&A, official starter kit (March 2026).
+Clean reference for the ARLC legal RAG challenge as used by this repository.
 
----
+## Overview
 
-## 1. Overview
+- Competition: ARLC, hosted on `platform.agentic-challenge.ai`
+- Domain: DIFC legal and regulatory documents
+- Language: English
+- Task: answer online questions over a supplied PDF corpus and cite supporting pages
+- Evaluation emphasis: answer quality, grounding quality, telemetry validity, and TTFT
 
-ARLC is an engineering competition for building production-grade legal AI systems.
-Part of Machines Can See / Dubai AI conference. Award ceremony online in April.
-Prize pool: **$32,000**. Finalists get trip to Dubai. **245+ teams registered.**
+## Phases
 
-Key evaluation dimensions:
-- Answer quality (accuracy)
-- Grounding quality (source citations) — **strongest signal, acts as multiplier**
-- Time-to-first-token (TTFT)
+- Warm-up phase:
+  - about 30 documents
+  - 100 questions
+  - up to 10 submissions
+- Final phase:
+  - about 300 documents
+  - 900 questions
+  - 2 submissions
 
-### Repository Snapshot (March 21, 2026)
-- Branch snapshot: `codex/baseline-v8`
-- Generation model under test: `gpt-5.4-mini`
-- Benchmark basis: local regression comparison against `golden_submission.json`
-- Structured proxy: `score=1.0000`, `mismatches=0`
-- Grounding proxy: `macro_fbeta=0.8933`, `macro_jaccard=0.7825`, `exact_page_set_matches=61`, `answer_exact_grounding_bad=2`
-- Free-text proxy: `strong=19`, `mid=5`, `weak=2`, `null_risk=0`
-- Regression gate: `PASS` via `python -m scripts.regression_report --strict`
-- This snapshot is **not** a platform evaluation. The warmup platform score for `golden_submission.json` remains `total_score=0.887146` on March 13, 2026.
+Warm-up and final corpora should be treated as separate datasets. Rebuild the local index when you switch corpora.
 
----
+## Answer Types
 
-## 2. Corpus & Dataset
+Visible `answer_type` values:
+- `number`
+- `boolean`
+- `name`
+- `names`
+- `date`
+- `free_text`
 
-### Corpus
-- Real regulatory documents: DIFC (Dubai International Financial Centre) rules and laws
-- All in English
-- **Heterogeneous PDFs**: digitally-born + scanned documents (may require OCR)
+General rules:
+- `number` accepts integers or floats and is scored with 1 percent tolerance
+- `boolean` is exact match
+- `name` is a single normalized string
+- `names` is a JSON array of strings and is scored with Jaccard overlap
+- `date` must be ISO `YYYY-MM-DD`
+- `free_text` should stay concise and grounded
+- any question may legitimately have `null` as the correct answer
 
-### Phase-specific corpora (IMPORTANT)
-- **Warm-up phase**: ~30 documents, 100 questions
-- **Final phase**: ~300 documents, 900 questions
-- Corpora may partially overlap, but **must be indexed independently**
-- Answer each phase's questions using **only its own corpus**
+For unanswerable questions:
+- answer should be `null` or a null-like answer according to the task schema
+- grounding sources must be empty
 
-### Dataset Construction (5 steps)
-1. Collected DIFC document corpus
-2. Generated questions via LLM
-3. Filtered by: relevance, grounding correctness, semantic relevance
-4. Professional lawyers manually reviewed every Q&A pair
-5. Ran baseline system to ensure benchmark differentiates quality
+## Scoring Formula
 
----
+Official final score:
 
-## 3. Question Types
-
-### By Answer Format (visible in JSON as `answer_type`)
-| Type | Format | Scoring |
-|------|--------|---------|
-| `number` | Integer or float (both valid) | ±1% tolerance |
-| `boolean` | JSON `true`/`false` | Exact match |
-| `name` | Single string (no aliases) | Normalized exact match |
-| `names` | JSON array of strings (no aliases) | Jaccard index |
-| `date` | ISO `YYYY-MM-DD` | Exact match |
-| `free_text` | String ≤280 chars, 1-3 paragraphs | LLM judge (5 criteria) |
-
-- 70% structured (deterministic), 30% free-text
-- **Any type can have `null` as correct answer** (= not in corpus)
-- For unanswerable free_text: return natural-language statement + empty sources
-
-### By Question Category (hidden from participants)
-1. **Single-document** — answer in one document
-2. **Clause analysis** — find and interpret a specific clause (often free-text)
-3. **Multi-document** — compare/synthesize across documents (often free-text)
-4. **Negative questions** — no answer in corpus → correct answer is `null`, sources = []
-5. **Adversarial questions** — designed to trigger hallucination from pretrained knowledge
-6. **Uncertainty questions** — high interpretation ambiguity, need appropriate hedging
-
----
-
-## 4. Scoring Details
-
-### 4.1 Final Formula (OFFICIAL from starter kit)
+```text
+Total = (0.7 * S_det + 0.3 * S_asst) * G * T * F
 ```
-Total = (0.7 × S_det + 0.3 × S_asst) × G × T × F
-```
+
 Where:
-- `S_det` = deterministic score (structured answers accuracy, 0–1)
-- `S_asst` = assistant score (free-text LLM judge mean, 0–1)
-- `G` = grounding score (F-beta retrieval quality, 0–1)
-- `T` = telemetry factor (0.9 if malformed, 1.0 if valid)
-- `F` = TTFT factor (0.85–1.05)
+- `S_det` is the structured-answer score
+- `S_asst` is the free-text assistant score
+- `G` is grounding quality
+- `T` is telemetry validity
+- `F` is the TTFT multiplier
 
-**Platform reports `total_score` as 0–1 value.**
+Repository shorthand often refers to:
+- base QA score = `0.7 * S_det + 0.3 * S_asst`
+- final score = base QA score multiplied by grounding, telemetry, and TTFT factors
 
-### 4.2 Structured Answers (S_det)
-- `name`, `boolean`, `date`: binary (0 or 1), normalized exact match
-- `names`: Jaccard index (|intersection| / |union|)
-- `number`: 1 if within ±1% of gold, else 0
-- `null`: both null → 1; only one null → 0
+## Grounding
 
-### 4.3 Free-text Answers / LLM-as-a-Judge (S_asst)
-5 criteria, each 0 or 1:
-1. **Correctness** — key info present, no factual errors?
-2. **Completeness** — all aspects addressed, key points covered?
-3. **Grounding** — every statement supported by retrieved context?
-4. **Confidence calibration** — appropriate uncertainty expressed?
-5. **Clarity & relevance** — clear, concise, directly addresses question?
+Grounding is the strongest multiplier in the competition.
 
-Score per question = mean of 5 criteria (0–1).
-Submission S_asst = mean across all free-text questions.
+Key properties:
+- evaluated as page-level overlap against a golden set
+- F-beta uses `beta = 2.5`
+- recall matters much more than precision
+- both empty page sets score `1.0`
+- one empty and one non-empty page set scores `0.0`
 
-Judging: ≥2 LLMs judge; if disagreement → arbitration model.
+Practical implication:
+- missing a necessary page is usually worse than citing one extra relevant page
+- but unrelated pages still hurt precision, so citations should remain tight
 
-### 4.4 Grounding Metric (G) — MOST IMPORTANT
-```
-precision = |P ∩ G| / |P|
-recall    = |P ∩ G| / |G|
-F_beta    = (1 + β²) × precision × recall / (β² × precision + recall)
-```
-With β=2.5: **recall ~6× more important than precision**.
+## Telemetry
 
-Edge cases:
-- Both sets empty → **1.0**
-- One empty, other not → **0.0**
+Each answer is expected to include telemetry with:
+- timing:
+  - `ttft_ms`
+  - `tpot_ms`
+  - `total_time_ms`
+- retrieval:
+  - `retrieved_chunk_pages`
+- usage:
+  - `input_tokens`
+  - `output_tokens`
+- `model_name`
 
-**Grounding is a MULTIPLIER — even perfect answers collapse if grounding is low.**
+Important rules:
+- `doc_id` must match the PDF filename used in the corpus
+- `page_numbers` must be 1-based physical PDF page numbers
+- citations should include only pages actually used for the answer
+- malformed telemetry reduces the telemetry factor
 
-Golden set semantics:
-- Golden set = specific pages verified as sufficient for the answer
-- Must identify THE EXACT source (e.g., latest edition if multiple exist)
-- Secondary/related pages NOT in golden set if not required for the answer
+## TTFT
 
-### 4.5 TTFT Factor (F) — OFFICIAL from starter kit
-| TTFT (ms) | Factor |
-|-----------|--------|
-| < 1000 | **1.05** |
-| < 2000 | **1.02** |
-| < 3000 | **1.00** |
-| > 3000 | **0.85–0.99** |
+TTFT is measured from question receipt to the first token of the final answer.
 
-TTFT = time to first token of the **final answer** (not intermediate steps).
-If not streaming: TTFT = total_time_ms.
-Submission F = mean of all per-answer TTFT factors.
+Official multiplier bands from the starter kit:
+- under 1000 ms: `1.05`
+- under 2000 ms: `1.02`
+- under 3000 ms: `1.00`
+- slower runs receive a penalty
 
-### 4.6 Telemetry Factor (T)
-Per-answer telemetry validated:
-- `timing` present, non-negative, ttft_ms ≤ total_time_ms
-- `usage` present, non-negative token counts
-- `retrieval.retrieved_chunk_pages` present and non-empty
-- `doc_id` exists in corpus mapping
+If the model does not stream, TTFT effectively becomes total answer time.
 
-If any fail → **telemetry_factor = 0.9** for that answer.
-Submission T = mean of all telemetry factors.
+## Submission Format
 
----
+Each platform submission includes:
+- `submission.json`
+- `code_archive.zip`
 
-## 5. Submission Format (OFFICIAL)
+The JSON contains:
+- `architecture_summary`
+- `answers`
+- per-answer telemetry
 
-### JSON Structure
-```json
-{
-  "architecture_summary": "Brief description (max 500 chars)",
-  "answers": [
-    {
-      "question_id": "sha256-hash-of-question",
-      "answer": "<number|bool|string|string[]|null>",
-      "telemetry": {
-        "timing": {
-          "ttft_ms": 320,
-          "tpot_ms": 45,
-          "total_time_ms": 1200
-        },
-        "retrieval": {
-          "retrieved_chunk_pages": [
-            {
-              "doc_id": "443e04bc...de032",
-              "page_numbers": [1, 2, 3]
-            }
-          ]
-        },
-        "usage": {
-          "input_tokens": 512,
-          "output_tokens": 128
-        },
-        "model_name": "gpt-4o-mini"
-      }
-    }
-  ]
-}
+The code archive must be reproducible:
+- dependency file
+- README
+- `.env.example`
+- the code needed to reproduce the run
+
+## API Endpoints
+
+Base URL:
+
+```text
+https://platform.agentic-challenge.ai/api/v1
 ```
 
-### Key telemetry rules
-- `doc_id` = PDF filename (SHA-like hash string), NOT human label
-- `page_numbers` = **1-based physical PDF page numbers** (first page = 1)
-- Include **only pages actually used** to generate the answer
-- Extra pages reduce precision → hurt grounding score
-- Use provider-reported token counts when available
-- Unknown `doc_id` → treated as malformed telemetry
-- For unanswerable questions: `retrieved_chunk_pages` = `[]`
+Authentication:
+- `X-API-Key` header
 
-### Submission package
-- `submission.json` — answers + telemetry
-- `code_archive.zip` — reproducible code (max 25 MB)
-- Submitted via `POST /submissions` as multipart form data
+Endpoints:
+- `GET /questions`
+- `GET /documents`
+- `POST /submissions`
+- `GET /submissions/{uuid}/status`
 
-### Submission limits
-- **Warm-up**: 10 submissions total
-- **Final**: 2 submissions total
+## Repository-Specific Rules
 
----
+This repository uses the following local conventions:
+- `golden_submission.json` is the public-set benchmark gate
+- no candidate should be sent to the public warm-up platform until it has been compared against that golden snapshot
+- `data/` and `index/` stay out of git
+- private-stage artifacts such as `submission.*.json`, UUID files, and platform status snapshots should stay local
 
-## 6. API Endpoints
+Warm-up benchmark note:
+- `golden_submission.json` was evaluated on March 13, 2026 at `deterministic = 1.000`, `grounding = 0.954191`, and `total_score = 0.887146`
 
-Base URL: `https://platform.agentic-challenge.ai/api/v1`
-Auth: `X-API-Key` header
+## Practical Guidance
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/questions` | Download questions JSON |
-| GET | `/documents` | Download document corpus ZIP |
-| POST | `/submissions` | Submit JSON + code archive |
-| GET | `/submissions/{uuid}/status` | Check evaluation status |
-
-Question JSON fields: `id` (SHA-256 hash), `question` (text), `answer_type`.
-
----
-
-## 7. Technical Requirements
-
-### Allowed
-- Any programming language (Python preferred)
-- Any public LLM API (OpenAI, Gemini, Anthropic, Groq, OpenRouter, etc.)
-- Vector DBs, retrieval solutions, local storage/indexing
-- Open-source models with local inference
-- Multi-agent pipelines
-- Dev tools (Copilot, Cursor, etc.)
-
-### Required
-- Dependencies file (requirements.txt / pyproject.toml / package.json)
-- README with setup & run instructions
-- `.env.example` listing required API keys (no real secrets in code)
-- Code must run without manual rewriting
-
-### Pre-processing
-- **Documents**: CAN be pre-processed (indexed, vectorized, chunked, OCR'd, etc.)
-- **Questions**: arrive "online" — TTFT measured from question receipt
-- Preprocessing time NOT scored, but must be automated (48h window)
-
----
-
-## 8. Starter Kit Structure
-
-```
-starter_kit/
-├── arlc/                    # Client + helpers package
-│   ├── client.py            # EvaluationClient (download, submit)
-│   ├── config.py            # EnvConfig (env vars)
-│   ├── submission.py        # SubmissionBuilder, SubmissionAnswer
-│   └── telemetry.py         # TelemetryTimer, RetrievalRef, normalize
-├── examples/
-│   ├── llamaindex/          # Naive RAG with LlamaIndex
-│   ├── langchain/           # Naive RAG with LangChain + FAISS
-│   ├── submit.py            # Standalone submission script
-│   └── telemetry_example.py # Telemetry calculation demo
-├── .env.example
-├── openapi.yaml
-├── submission.json          # Example submission
-├── README.md
-├── API.md
-└── EVALUATION.md
-```
-
-### Baseline config (both examples)
-- LLM: `gpt-4o-mini` via OpenRouter
-- Embeddings: `text-embedding-ada-002`
-- Chunk size: 512 tokens, overlap: 50
-- Top-k retrieval: 3
-
----
-
-## 9. Prizes & Special Nominations
-- **1st, 2nd, 3rd place** — by final score
-- **Fastest solution** — best TTFT with reasonable quality
-- **Best grounding** — highest source attribution quality
-- **Best publication** — methodology, insights, error analysis, reproducibility
-
----
-
-## 10. Optimization Priorities (from official EVALUATION.md)
-
-1. **Grounding first** — improve retrieval precision/recall with tight context
-2. **Correct answers** — deterministic accuracy is the base signal
-3. **LLM quality** — free-text judged on 5 criteria
-4. **Telemetry health** — avoid malformed telemetry
-5. **Speed** — TTFT boosts only if everything above is solid
-
----
-
-## 10a. Recommended Pipeline Architecture (from participant_guide)
-
-### Document Ingestion
-- Multi-format PDF handling (digitally-born + scanned with OCR)
-- **Clause-level segmentation** respecting legal document hierarchy
-- Metadata extraction: titles, sections, case numbers, dates
-
-### Indexing Strategy
-- **Structure-aware chunking** (not just fixed token windows)
-- Dense embeddings + re-ranking
-- **Hybrid search**: BM25 + semantic approaches
-
-### Strict Rules
-**Prohibited:**
-- Hardcoding answers
-- Synthetic data leakage
-- Manual log/telemetry editing
-- Private question sharing
-
-**Allowed:**
-- Model ensembles and hybrid pipelines
-- Custom re-rankers
-- Local document preprocessing
-
----
-
-## 10b. Private Phase Strategy (organizer comment)
-
-The 48h window for private dataset is **NOT for experimentation**. Organizer intent:
-- You won't have time for major pipeline changes on 1000 questions
-- Only 2 submissions — no room for tuning to private data
-- The 48h is meant for: running your pipeline, fixing practical breakages (e.g. unusual symbols in docs)
-- You should **also manually verify/relabel** your answers before submitting
-- Pipeline must be **fully ready before Mar 18** — private phase is just execution + minor fixes
-
-**Implication for us:** all R&D, tuning, and architecture work must happen on the warm-up set (100q, 30 docs). By Mar 18 our pipeline must be battle-tested and robust.
-
----
-
-## 11. Resolved Discrepancies
-
-| Topic | Seminar said | Starter kit says | Resolution |
-|-------|-------------|-----------------|------------|
-| TTFT max bonus | 1.25× | 1.05× (at <1s) | **Starter kit is authoritative** |
-| Final formula | QA × G × T × F | (0.7×S_det + 0.3×S_asst) × G × T × F | **Starter kit is authoritative** |
-| Telemetry factor | 0.9 without telemetry | 0.9 per malformed answer, mean across all | **Per-answer, not binary** |
-| Page numbering | TBD | **1-based** (physical PDF pages) | **Confirmed** |
-| Submission format | Informal from seminar | Exact JSON schema with field names | **Starter kit is authoritative** |
+- Grounding is the main multiplier to optimize once structured correctness is decent.
+- Deterministic resolvers are worthwhile for explicit page-local and compare-style questions.
+- OCR robustness matters because the corpus mixes digitally born and scanned PDFs.
+- The final phase is too small in submission count for broad experimentation, so operational reliability matters as much as model quality.
