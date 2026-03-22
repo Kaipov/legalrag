@@ -95,8 +95,16 @@ def test_build_architecture_summary_reflects_reranker_setting(monkeypatch) -> No
     assert "adaptive top-k chunks" in summary_without_reranker
 
     monkeypatch.setattr(run_mod, "ENABLE_RERANKER", True)
-    summary_with_reranker = run_mod.build_architecture_summary()
-    assert "cross-encoder rerank" in summary_with_reranker
+    monkeypatch.setattr(run_mod, "RERANKER_PROVIDER", "local")
+    monkeypatch.setattr(run_mod, "RERANKER_ENABLED_INTENTS", ("all",))
+    summary_with_local_reranker = run_mod.build_architecture_summary()
+    assert "cross-encoder rerank" in summary_with_local_reranker
+
+    monkeypatch.setattr(run_mod, "RERANKER_PROVIDER", "voyage")
+    monkeypatch.setattr(run_mod, "RERANKER_ENABLED_INTENTS", ("article_ref",))
+    summary_with_voyage_reranker = run_mod.build_architecture_summary()
+    assert "Voyage rerank-2.5 API rerank" in summary_with_voyage_reranker
+    assert "(article_ref)" in summary_with_voyage_reranker
 
 def test_build_prompt_adds_outcome_question_rule() -> None:
     chunks = [
@@ -108,3 +116,19 @@ def test_build_prompt_adds_outcome_question_rule() -> None:
 
     assert "OUTCOME QUESTION RULE" in user_content
     assert "Do not answer that the outcome or result is unspecified" in user_content
+
+
+def test_build_prompt_adds_law_scope_rule_for_boolean_law_subject_questions() -> None:
+    chunks = [
+        ({"doc_id": "doc-1", "page_numbers": [1], "section_path": "Section 1", "doc_title": "Title 1", "text": "Text 1"}, 1.0)
+    ]
+
+    messages = build_prompt(
+        "Does the DIFC law numbered DIFC Law No. 7 of 2018 deal with insolvency and preferential debts?",
+        "boolean",
+        chunks,
+    )
+    user_content = messages[1]["content"]
+
+    assert "LAW SCOPE RULE" in user_content
+    assert "Do not answer true based only on passing definitions" in user_content

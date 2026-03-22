@@ -270,6 +270,40 @@ def test_collect_grounding_pages_prunes_compare_results_to_case_coverage(monkeyp
     ]
 
 
+def test_collect_grounding_pages_keeps_multi_doc_title_page_coverage():
+    reranked_chunks = [
+        ({"doc_id": "doc-a", "page_numbers": [1], "text": "Claimant Alpha LLC title page"}, 0.9),
+        ({"doc_id": "doc-b", "page_numbers": [1], "text": "Claimant Alpha LLC title page"}, 0.88),
+        ({"doc_id": "doc-c", "page_numbers": [1], "text": "Claimant Alpha LLC title page"}, 0.86),
+    ]
+    page_texts_by_doc = {
+        "doc-a": {1: "Claimant Alpha LLC"},
+        "doc-b": {1: "Claimant Alpha LLC"},
+        "doc-c": {1: "Claimant Alpha LLC"},
+    }
+    intent = GroundingIntent(
+        kind="title_page",
+        page_focus="first",
+        keyphrases=("claimant",),
+        max_pages_per_doc=1,
+        max_docs=3,
+        max_total_pages=3,
+    )
+
+    assert grounding_mod.collect_grounding_pages(
+        reranked_chunks,
+        question_text="From the header/caption section of each document in case TCD 001/2024, identify all parties listed as Claimant.",
+        answer_text="ARCHITERIORS INTERIOR DESIGN (L.L.C)",
+        page_texts_by_doc=page_texts_by_doc,
+        intent=intent,
+        answer_type="names",
+    ) == [
+        {"doc_id": "doc-a", "page_numbers": [1]},
+        {"doc_id": "doc-b", "page_numbers": [1]},
+        {"doc_id": "doc-c", "page_numbers": [1]},
+    ]
+
+
 def test_collect_grounding_pages_generic_structured_keeps_single_doc_without_multi_doc_signal():
     reranked_chunks = [
         ({"doc_id": "doc-a", "page_numbers": [2], "text": "alpha answer", "__is_cited__": True}, 0.9),

@@ -39,6 +39,7 @@ _STATUTORY_TITLE_RE = re.compile(r"\b(LAW|REGULATION|RULES?)\b", re.IGNORECASE)
 
 BM25_TITLE_WEIGHT = 3
 BM25_SECTION_WEIGHT = 2
+BM25_METADATA_WEIGHT = 2
 
 
 def _normalize_text(text: str) -> str:
@@ -137,6 +138,43 @@ def tokenize_legal_text(text: str, *, doc_title: str = "") -> list[str]:
     return tokens
 
 
+def _metadata_text(chunk: dict) -> str:
+    values: list[str] = []
+    seen: set[str] = set()
+
+    for field_name in (
+        "case_ids",
+        "doc_case_ids",
+        "claim_numbers",
+        "doc_claim_numbers",
+        "article_refs",
+        "judges",
+        "parties",
+        "order_signals",
+        "money_values",
+    ):
+        raw_value = chunk.get(field_name)
+        if isinstance(raw_value, (list, tuple, set)):
+            raw_values = raw_value
+        elif raw_value is None:
+            raw_values = []
+        else:
+            raw_values = [raw_value]
+
+        for value in raw_values:
+            normalized = _normalize_text(value)
+            if not normalized or normalized in seen:
+                continue
+            seen.add(normalized)
+            values.append(normalized)
+
+    issue_date = _normalize_text(chunk.get("issue_date") or "")
+    if issue_date and issue_date not in seen:
+        values.append(issue_date)
+
+    return " ".join(values)
+
+
 def build_bm25_document_tokens(chunk: dict) -> list[str]:
     """
     Build a weighted lexical representation from structured chunk fields.
@@ -151,10 +189,12 @@ def build_bm25_document_tokens(chunk: dict) -> list[str]:
     title_tokens = tokenize_legal_text(doc_title, doc_title=doc_title)
     section_tokens = tokenize_legal_text(section_path, doc_title=doc_title)
     body_tokens = tokenize_legal_text(text, doc_title=doc_title)
+    metadata_tokens = tokenize_legal_text(_metadata_text(chunk), doc_title=doc_title)
 
     weighted_tokens: list[str] = []
     weighted_tokens.extend(title_tokens * BM25_TITLE_WEIGHT)
     weighted_tokens.extend(section_tokens * BM25_SECTION_WEIGHT)
+    weighted_tokens.extend(metadata_tokens * BM25_METADATA_WEIGHT)
     weighted_tokens.extend(body_tokens)
     return weighted_tokens or ["emptychunk"]
 

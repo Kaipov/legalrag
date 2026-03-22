@@ -34,6 +34,35 @@ def test_select_generation_chunks_prefers_unique_docs_when_requested() -> None:
     assert selected == [chunks[0], chunks[2]]
 
 
+def test_select_generation_chunks_frontmatter_prefers_best_page_representative() -> None:
+    chunks = [
+        ({"chunk_id": "contents", "doc_id": "doc-a", "page_numbers": [2], "text": "DIFC TRUST LAW table of contents"}, 0.99),
+        ({"chunk_id": "page1-weak", "doc_id": "doc-a", "page_numbers": [1], "text": "DIFC TRUST LAW title page"}, 0.98),
+        ({"chunk_id": "page1-best", "doc_id": "doc-a", "page_numbers": [1], "text": "DIFC TRUST LAW title page official law number Law No. 4 of 2018"}, 0.95),
+        ({"chunk_id": "page3", "doc_id": "doc-a", "page_numbers": [3], "text": "operative provisions"}, 0.94),
+    ]
+    intent = GroundingIntent(kind="title_page", selection_mode="frontmatter", case_ids=("TRUST LAW",))
+    plan = QuestionPlan(
+        mode="title_page_metadata",
+        answer_type="number",
+        case_ids=("TRUST LAW",),
+        page_hint="first",
+        target_field="law_number",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="What official law number is stated on the cover page of the DIFC Trust Law?",
+        answer_type="number",
+        plan=plan,
+    )
+
+    assert selected[0] == chunks[2]
+    assert chunks[1] not in selected
+
+
 def test_select_generation_chunks_compare_prefers_case_coverage() -> None:
     chunks = [
         ({"chunk_id": "body-a", "doc_id": "doc-a", "page_numbers": [3], "text": "ARB 034/2025 procedural history"}, 0.98),
@@ -49,6 +78,140 @@ def test_select_generation_chunks_compare_prefers_case_coverage() -> None:
     selected = pipeline_mod._select_generation_chunks(chunks, 2, intent=intent)
 
     assert selected == [chunks[2], chunks[1]]
+
+
+def test_select_generation_chunks_compare_balances_case_slots() -> None:
+    chunks = [
+        ({"chunk_id": "a-anchor", "doc_id": "doc-a1", "page_numbers": [1], "text": "CA 005/2025 heard before Justice Wayne Martin"}, 0.99),
+        ({"chunk_id": "a-support", "doc_id": "doc-a2", "page_numbers": [2], "text": "CA 005/2025 Justice Wayne Martin appeared again"}, 0.98),
+        ({"chunk_id": "b-anchor", "doc_id": "doc-b1", "page_numbers": [1], "text": "TCD 001/2024 heard before Justice Wayne Martin"}, 0.97),
+        ({"chunk_id": "b-support", "doc_id": "doc-b2", "page_numbers": [2], "text": "TCD 001/2024 Justice Wayne Martin on the hearing"}, 0.96),
+    ]
+    intent = GroundingIntent(
+        kind="judge_compare",
+        selection_mode="compare_balanced",
+        case_ids=("CA 005/2025", "TCD 001/2024"),
+        prefer_unique_docs=True,
+    )
+    plan = QuestionPlan(
+        mode="judge_compare",
+        answer_type="boolean",
+        case_ids=("CA 005/2025", "TCD 001/2024"),
+        page_hint="front",
+        compare_op="set_overlap",
+        target_field="judge",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        4,
+        intent=intent,
+        question_text="Considering all documents across case CA 005/2025 and case TCD 001/2024, was there any judge who appeared in both cases?",
+        answer_type="boolean",
+        plan=plan,
+    )
+
+    assert selected == [chunks[0], chunks[2], chunks[1], chunks[3]]
+
+
+def test_select_generation_chunks_prefers_chunks_from_case_matched_doc_for_single_case_questions() -> None:
+    chunks = [
+        ({"chunk_id": "first-page", "doc_id": "doc-a", "page_numbers": [1], "text": "SCT 295/2025 title page"}, 0.98),
+        ({"chunk_id": "other-case", "doc_id": "doc-b", "page_numbers": [1], "text": "SCT 514/2025 title page"}, 0.97),
+        ({"chunk_id": "same-doc-body", "doc_id": "doc-a", "page_numbers": [12], "text": "Costs of the Permission to Appeal Application"}, 0.96),
+    ]
+    intent = GroundingIntent(kind="generic", case_ids=("SCT 295/2025",))
+
+    selected = pipeline_mod._select_generation_chunks(chunks, 2, intent=intent)
+
+    assert selected == [chunks[0], chunks[2]]
+
+
+def test_select_generation_chunks_generic_compare_prefers_page_two_case_coverage() -> None:
+    chunks = [
+        ({"chunk_id": "doc-a-body", "doc_id": "doc-a", "page_numbers": [4], "text": "SCT 169/2025 procedural history"}, 0.99),
+        ({"chunk_id": "doc-a-page2", "doc_id": "doc-a", "page_numbers": [2], "text": "SCT 169/2025 claim amount AED 391,123.45"}, 0.96),
+        ({"chunk_id": "doc-b-title", "doc_id": "doc-b", "page_numbers": [1], "text": "SCT 295/2025 title page"}, 0.95),
+        ({"chunk_id": "doc-b-page2", "doc_id": "doc-b", "page_numbers": [2], "text": "SCT 295/2025 seeking payment in the amount of AED 250,000"}, 0.94),
+    ]
+    intent = GroundingIntent(kind="generic", case_ids=("SCT 169/2025", "SCT 295/2025"))
+    plan = QuestionPlan(
+        mode="monetary_claim_compare",
+        answer_type="name",
+        case_ids=("SCT 169/2025", "SCT 295/2025"),
+        page_hint="page_2",
+        compare_op="max_number",
+        target_field="money_value",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="Identify the case with the higher monetary claim: SCT 169/2025 or SCT 295/2025?",
+        answer_type="name",
+        plan=plan,
+    )
+
+    assert selected == [chunks[1], chunks[3]]
+
+
+def test_select_generation_chunks_generic_single_case_prefers_money_signal_chunk() -> None:
+    chunks = [
+        ({"chunk_id": "title", "doc_id": "doc-a", "page_numbers": [1], "text": "CA 005/2025 title page"}, 0.99),
+        ({"chunk_id": "costs-order", "doc_id": "doc-a", "page_numbers": [3], "text": "assessed and fixed in the amount of AED 550,000"}, 0.98),
+        (
+            {
+                "chunk_id": "claim-value",
+                "doc_id": "doc-a",
+                "page_numbers": [3],
+                "text": "Background. The Claimant alleges underpayment and references a claim amount of AED 550,000 in the appeal judgment.",
+            },
+            0.95,
+        ),
+    ]
+    intent = GroundingIntent(kind="generic", case_ids=("CA 005/2025",))
+    plan = QuestionPlan(
+        mode="page_local_lookup",
+        answer_type="number",
+        case_ids=("CA 005/2025",),
+        page_hint="any",
+        target_field="money_value",
+    )
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="What was the claim value in AED referenced in the appeal judgment CA 005/2025?",
+        answer_type="number",
+        plan=plan,
+    )
+
+    assert selected == [chunks[2], chunks[1]]
+
+
+def test_select_generation_chunks_generic_penalizes_front_matter_for_admin_question() -> None:
+    chunks = [
+        ({"chunk_id": "definitions", "doc_id": "doc-a", "page_numbers": [42], "text": "FOUNDATIONS LAW Term Definition Council means the council established to administer a Foundation's property."}, 0.99),
+        ({"chunk_id": "title", "doc_id": "doc-a", "page_numbers": [1], "text": "FOUNDATIONS LAW DIFC Law No. 3 of 2018"}, 0.98),
+        ({"chunk_id": "contents", "doc_id": "doc-a", "page_numbers": [2], "text": "FOUNDATIONS LAW CONTENTS PART 1: GENERAL"}, 0.97),
+        ({"chunk_id": "admin", "doc_id": "doc-a", "page_numbers": [4], "text": "8. Administration of this Law. This Law is administered by the Registrar."}, 0.96),
+    ]
+    intent = GroundingIntent(kind="generic")
+    plan = QuestionPlan(mode="generic", answer_type="free_text")
+
+    selected = pipeline_mod._select_generation_chunks(
+        chunks,
+        2,
+        intent=intent,
+        question_text="Who administers the Foundations Law?",
+        answer_type="free_text",
+        plan=plan,
+    )
+
+    assert selected[0] == chunks[3]
+    assert chunks[0] not in selected
 
 
 def test_should_override_compare_null_when_generic_first_pages_cover_both_cases() -> None:
@@ -130,7 +293,7 @@ def test_answer_question_passes_answer_type_into_collect_grounding_pages(monkeyp
     monkeypatch.setattr(
         pipeline_mod,
         "build_prompt",
-        lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}],
+        lambda question, answer_type, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False: [{"role": "user", "content": "prompt"}],
     )
     monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: Confirmation Statement"]))
     monkeypatch.setattr(
@@ -185,7 +348,7 @@ def test_answer_question_overrides_article_grounding_with_structural_evidence(mo
     monkeypatch.setattr(
         pipeline_mod,
         "build_prompt",
-        lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}],
+        lambda question, answer_type, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False: [{"role": "user", "content": "prompt"}],
     )
     monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: true"]))
     monkeypatch.setattr(
@@ -286,7 +449,14 @@ def test_answer_question_overrides_compare_null_when_generic_first_pages_cover_b
         def encode(self, text: str) -> list[str]:
             return text.split()
 
-    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None):
+    def fake_build_prompt(
+        question: str,
+        answer_type: str,
+        chunks,
+        max_chunks=None,
+        intent=None,
+        allow_scoped_insufficiency=False,
+    ):
         prompt_call["intent_kind"] = intent.kind if intent is not None else "generic"
         prompt_call["chunk_ids"] = [chunk[0]["chunk_id"] for chunk in chunks]
         return [{"role": "user", "content": "compare prompt"}]
@@ -378,7 +548,14 @@ def test_run_generation_pass_limits_page_retrieval_to_generation_docs(monkeypatc
         def encode(self, text: str) -> list[str]:
             return text.split()
 
-    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None):
+    def fake_build_prompt(
+        question: str,
+        answer_type: str,
+        chunks,
+        max_chunks=None,
+        intent=None,
+        allow_scoped_insufficiency=False,
+    ):
         return [{"role": "user", "content": "prompt"}]
 
     def fake_collect_grounding_pages(reranked_chunks, **kwargs):
@@ -443,7 +620,11 @@ def test_answer_question_ttft_is_marked_before_grounding_collection(monkeypatch)
     monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
     monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
     monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
-    monkeypatch.setattr(pipeline_mod, "build_prompt", lambda question, answer_type, chunks, max_chunks=None, intent=None: [{"role": "user", "content": "prompt"}])
+    monkeypatch.setattr(
+        pipeline_mod,
+        "build_prompt",
+        lambda question, answer_type, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False: [{"role": "user", "content": "prompt"}],
+    )
     monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter(["SOURCES: 1\nANSWER: example answer"]))
     monkeypatch.setattr(
         pipeline_mod,
@@ -507,5 +688,115 @@ def test_answer_question_uses_question_specific_free_text_abstention(monkeypatch
 
     assert result.answer == "The provided DIFC documents do not contain information about any plea bargain in case ARB 034/2025."
     assert result.telemetry.retrieval == []
+
+
+def test_answer_question_retries_free_text_null_with_scoped_insufficiency(monkeypatch) -> None:
+    prompt_flags: list[bool] = []
+    responses = iter(
+        [
+            "SOURCES: NONE\nANSWER: NULL_ANSWER",
+            "SOURCES: 1\nANSWER: The provided context does not specify the outcome of the order in case SCT 295/2025.",
+        ]
+    )
+
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return [({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [1, 2, 12], "text": "SCT 295/2025 order materials"}, 0.9)]
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False):
+        prompt_flags.append(bool(allow_scoped_insufficiency))
+        return [{"role": "user", "content": "prompt"}]
+
+    def fake_collect_grounding_pages(reranked_chunks, **kwargs):
+        if kwargs.get("is_null"):
+            return []
+        return [{"doc_id": "doc-a", "page_numbers": [1, 2, 12]}]
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
+    monkeypatch.setattr(pipeline_mod, "detect_grounding_intent", lambda question, answer_type: GroundingIntent(kind="generic"))
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
+    monkeypatch.setattr(pipeline_mod, "build_prompt", fake_build_prompt)
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter([next(responses)]))
+    monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-free-text-scoped-fallback",
+            "question": "What was the outcome of the specific order or application described in case SCT 295/2025?",
+            "answer_type": "free_text",
+        }
+    )
+
+    assert prompt_flags == [False, True]
+    assert result.answer == "The provided context does not specify the outcome of the order in case SCT 295/2025."
+    assert [(ref.doc_id, ref.page_numbers) for ref in result.telemetry.retrieval] == [("doc-a", [1, 2, 12])]
+
+
+def test_answer_question_retries_article_structured_null_with_wider_context(monkeypatch) -> None:
+    prompt_chunk_ids: list[list[str]] = []
+    responses = iter(
+        [
+            "SOURCES: NONE\nANSWER: NULL_ANSWER",
+            "SOURCES: 3\nANSWER: 6",
+        ]
+    )
+
+    class FakeRetriever:
+        def retrieve(self, query: str, rerank_top_k: int | None = None, intent: GroundingIntent | None = None):
+            return [
+                ({"chunk_id": "c1", "doc_id": "doc-a", "page_numbers": [12], "text": "Later claims material"}, 0.9),
+                ({"chunk_id": "c2", "doc_id": "doc-a", "page_numbers": [4], "text": "Employment Law title and repeal"}, 0.8),
+                ({"chunk_id": "c3", "doc_id": "doc-a", "page_numbers": [6], "text": "Article 10 claim must be presented within 6 months"}, 0.7),
+            ]
+
+    class FakeTokenizer:
+        def encode(self, text: str) -> list[str]:
+            return text.split()
+
+    def fake_build_prompt(question: str, answer_type: str, chunks, max_chunks=None, intent=None, allow_scoped_insufficiency=False):
+        prompt_chunk_ids.append([chunk[0]["chunk_id"] for chunk in chunks])
+        return [{"role": "user", "content": "prompt"}]
+
+    def fake_collect_grounding_pages(reranked_chunks, **kwargs):
+        return [{"doc_id": "doc-a", "page_numbers": [6]}]
+
+    monkeypatch.setattr(pipeline_mod, "HybridRetriever", FakeRetriever)
+    monkeypatch.setattr(pipeline_mod, "try_resolve_question", lambda question_item, plan: None)
+    monkeypatch.setattr(
+        pipeline_mod,
+        "build_question_plan",
+        lambda question, answer_type: QuestionPlan(mode="article_lookup", answer_type=answer_type, article_refs=("Article 10",)),
+    )
+    monkeypatch.setattr(
+        pipeline_mod,
+        "detect_grounding_intent",
+        lambda question, answer_type: GroundingIntent(kind="article_ref", article_refs=("Article 10",)),
+    )
+    monkeypatch.setattr(pipeline_mod, "_get_tokenizer", lambda: FakeTokenizer())
+    monkeypatch.setattr(pipeline_mod, "detect_null", lambda question, answer_type, chunks, reranker_threshold: (False, None))
+    monkeypatch.setattr(pipeline_mod, "build_prompt", fake_build_prompt)
+    monkeypatch.setattr(pipeline_mod, "stream_generate", lambda messages: iter([next(responses)]))
+    monkeypatch.setattr(pipeline_mod, "collect_grounding_pages", fake_collect_grounding_pages)
+    monkeypatch.setattr(pipeline_mod, "select_article_evidence_pages", lambda *args, **kwargs: [EvidencePage(doc_id="doc-a", page_num=6)])
+
+    pipeline = pipeline_mod.RAGPipeline()
+    result = pipeline.answer_question(
+        {
+            "id": "q-article-structured-retry",
+            "question": "According to Article 10 of the Employment Law 2019, how many months after the Termination Date must a claim under this Law be presented to the Court, unless otherwise specified?",
+            "answer_type": "number",
+        }
+    )
+
+    assert prompt_chunk_ids == [["c1", "c2"], ["c1", "c2", "c3"]]
+    assert result.answer == 6
+    assert [(ref.doc_id, ref.page_numbers) for ref in result.telemetry.retrieval] == [("doc-a", [6])]
 
 

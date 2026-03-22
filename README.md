@@ -8,8 +8,8 @@ Baseline RAG pipeline for the ARLC legal challenge over DIFC documents.
 - Structure-aware chunking for legal documents with a 512-token budget measured by the embedding model tokenizer
 - Hybrid retrieval: BM25 + FAISS + reciprocal rank fusion
 - Gemini Embedding 2 Preview dense retrieval via API
-- Optional cross-encoder reranking with `bge-reranker-v2-m3` (disabled by default)
-- GPT-4o answer generation with answer-type-specific prompts
+- Optional reranking via local `bge-reranker-v2-m3` or Voyage `rerank-2.5` API (disabled by default)
+- OpenAI-compatible answer generation with answer-type-specific prompts
 - Null detection, grounding extraction, and submission telemetry
 - Local validation for answer format and telemetry completeness
 
@@ -41,6 +41,7 @@ Copy-Item .env.example .env
 - `EVAL_API_KEY` for downloading questions/documents and submitting
 - `OPENAI_API_KEY` or `OPENROUTER_API_KEY` for generation
 - `GEMINI_API_KEY` for embedding-token counting, chunking, indexing, and semantic retrieval
+- `VOYAGE_API_KEY` if you enable the hosted Voyage reranker
 
 Optional overrides:
 
@@ -51,6 +52,13 @@ Optional overrides:
 - `EMBEDDING_MODEL`
 - `EMBEDDING_BATCH_SIZE`
 - `MAX_CHUNK_TOKENS`
+- `ENABLE_RERANKER`
+- `RERANKER_PROVIDER`
+- `RERANKER_ENABLED_INTENTS`
+- `RERANK_TOP_K`
+- `RERANK_CANDIDATES`
+- `RERANKER_TIMEOUT_SECONDS`
+- `VOYAGE_RERANKER_MODEL`
 - `GENERATION_MODEL`
 - `SUBMISSION_PATH`
 - `CODE_ARCHIVE_PATH`
@@ -77,6 +85,24 @@ python -m scripts.preprocess
 3. Run the pipeline on questions:
 
 ```powershell
+python -m scripts.run --no-submit
+```
+
+To try `gpt-5.4-mini` without changing the repository default, set `GENERATION_MODEL=gpt-5.4-mini` in `.env` first, or override it for one run:
+
+```powershell
+$env:GENERATION_MODEL="gpt-5.4-mini"
+python -m scripts.run --no-submit
+```
+
+To try the hosted Voyage reranker only for `article_ref` questions:
+
+```powershell
+$env:ENABLE_RERANKER="1"
+$env:RERANKER_PROVIDER="voyage"
+$env:RERANKER_ENABLED_INTENTS="article_ref"
+$env:RERANK_TOP_K="10"
+$env:RERANK_CANDIDATES="10"
 python -m scripts.run --no-submit
 ```
 

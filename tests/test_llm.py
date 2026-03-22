@@ -58,10 +58,10 @@ def test_compute_retry_delay_prefers_retry_after_header() -> None:
     assert delay == 7
 
 
-def test_build_create_kwargs_uses_gpt5_compatible_parameters() -> None:
+def test_build_create_kwargs_uses_gpt54_mini_compatible_parameters() -> None:
     kwargs = llm_mod._build_create_kwargs(
         [{"role": "user", "content": "hi"}],
-        "gpt-5-mini",
+        "gpt-5.4-mini",
         0.1,
     )
 

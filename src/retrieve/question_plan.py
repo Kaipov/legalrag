@@ -23,6 +23,15 @@ _MONETARY_COMPARE_MARKERS = (
     "higher amount",
     "greater monetary claim",
 )
+_DATE_ISSUE_MARKERS = (
+    "date of issue",
+    "issue date",
+    "issued first",
+    "issued earlier",
+    "issued later",
+    "earlier issue date",
+    "later issue date",
+)
 _CASE_ID_RE = re.compile(r"\b(?:CFI|SCT|ENF|CA|ARB|TCD|DEC)\s*\d{3}/\d{4}\b", re.IGNORECASE)
 _ARTICLE_REF_RE = re.compile(r"\bArticle\s+\d+[A-Z]?(?:\(\d+[A-Z]?\)|\([a-z]\))*", re.IGNORECASE)
 
@@ -83,8 +92,16 @@ def _extract_article_refs(question_text: str) -> tuple[str, ...]:
 
 
 
-def _is_compare_question(text: str) -> bool:
-    return any(marker in text for marker in _COMPARE_MARKERS)
+def _is_compare_question(text: str, case_ids: tuple[str, ...] = ()) -> bool:
+    if any(marker in text for marker in _COMPARE_MARKERS):
+        return True
+    if len(case_ids) < 2:
+        return False
+    if "in common" in text:
+        return True
+    if re.search(r"\b(?:to|in)\s+both\b", text):
+        return True
+    return False
 
 
 
@@ -95,7 +112,7 @@ def _infer_target_field(text: str) -> str | None:
         return "money_value"
     if any(marker in text for marker in ("claim value", "claim amount", "value in aed")):
         return "money_value"
-    if any(marker in text for marker in ("date of issue", "issue date", "issued first", "issued earlier")):
+    if any(marker in text for marker in _DATE_ISSUE_MARKERS):
         return "issue_date"
     if "judge" in text:
         return "judge"
@@ -114,6 +131,7 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
     article_refs = _extract_article_refs(question_text)
     target_field = _infer_target_field(text)
     abstention_risk = check_foreign_concepts(question_text)
+    title_page_markers = ("title page", "cover page", "header/caption", "header", "caption")
 
     if abstention_risk:
         return QuestionPlan(
@@ -150,7 +168,29 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             target_field=target_field,
         )
 
-    if any(marker in text for marker in ("title page", "cover page", "header/caption", "header", "caption")) and (
+    if len(case_ids) >= 2 and any(marker in text for marker in title_page_markers) and _is_compare_question(text, case_ids):
+        if target_field == "judge":
+            return QuestionPlan(
+                mode="judge_compare",
+                answer_type=normalized_answer_type,
+                case_ids=case_ids,
+                article_refs=article_refs,
+                page_hint="front",
+                compare_op="set_overlap",
+                target_field="judge",
+            )
+        if normalized_answer_type in {"boolean", "name", "names"} and target_field == "party":
+            return QuestionPlan(
+                mode="party_compare",
+                answer_type=normalized_answer_type,
+                case_ids=case_ids,
+                article_refs=article_refs,
+                page_hint="first",
+                compare_op="set_overlap",
+                target_field="party",
+            )
+
+    if any(marker in text for marker in title_page_markers) and (
         case_ids or target_field == "law_number"
     ):
         return QuestionPlan(
@@ -173,24 +213,24 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             target_field="money_value",
         )
 
-    if len(case_ids) >= 2 and any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
+    if len(case_ids) >= 2 and any(marker in text for marker in _DATE_ISSUE_MARKERS):
         return QuestionPlan(
             mode="date_of_issue_compare",
             answer_type=normalized_answer_type,
             case_ids=case_ids,
             article_refs=article_refs,
-            page_hint="page_2",
+            page_hint="front",
             compare_op="min_date",
             target_field="issue_date",
         )
 
-    if len(case_ids) == 1 and any(marker in text for marker in ("date of issue", "issue date")):
+    if len(case_ids) == 1 and any(marker in text for marker in _DATE_ISSUE_MARKERS):
         return QuestionPlan(
             mode="page_local_lookup",
             answer_type=normalized_answer_type,
             case_ids=case_ids,
             article_refs=article_refs,
-            page_hint="page_2",
+            page_hint="front",
             target_field="issue_date",
         )
 
@@ -204,18 +244,18 @@ def build_question_plan(question_text: str, answer_type: str) -> QuestionPlan:
             target_field="money_value",
         )
 
-    if "judge" in text and _is_compare_question(text):
+    if "judge" in text and _is_compare_question(text, case_ids):
         return QuestionPlan(
             mode="judge_compare",
             answer_type=normalized_answer_type,
             case_ids=case_ids,
             article_refs=article_refs,
-            page_hint="first",
+            page_hint="front",
             compare_op="set_overlap",
             target_field="judge",
         )
 
-    if normalized_answer_type in {"boolean", "name", "names"} and any(marker in text for marker in _PARTY_MARKERS) and _is_compare_question(text):
+    if normalized_answer_type in {"boolean", "name", "names"} and any(marker in text for marker in _PARTY_MARKERS) and _is_compare_question(text, case_ids):
         return QuestionPlan(
             mode="party_compare",
             answer_type=normalized_answer_type,

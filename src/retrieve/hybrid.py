@@ -14,13 +14,14 @@ from src.config import (
     CHUNKS_JSONL,
     ENABLE_RERANKER,
     RERANK_CANDIDATES,
+    RERANKER_ENABLED_INTENTS,
     RERANK_TOP_K,
     RRF_K,
     SEMANTIC_TOP_K,
 )
 from src.retrieve.bm25 import BM25Searcher
 from src.retrieve.grounding_policy import GroundingIntent, score_chunk_for_intent
-from src.retrieve.rerank import CrossEncoderReranker
+from src.retrieve.rerank import build_reranker
 from src.retrieve.semantic import SemanticSearcher
 
 logger = logging.getLogger(__name__)
@@ -39,9 +40,15 @@ class HybridRetriever:
         self,
         chunks_path: Path | str | None = None,
         enable_reranker: bool | None = None,
+        reranker_enabled_intents: tuple[str, ...] | None = None,
     ):
         chunks_path = Path(chunks_path) if chunks_path else CHUNKS_JSONL
         self.enable_reranker = ENABLE_RERANKER if enable_reranker is None else enable_reranker
+        self.reranker_enabled_intents = (
+            tuple(intent.strip().lower() for intent in reranker_enabled_intents if intent and intent.strip())
+            if reranker_enabled_intents is not None
+            else RERANKER_ENABLED_INTENTS
+        )
 
         self.chunks_by_id: dict[str, dict] = {}
         self.doc_max_page_by_id: dict[str, int] = {}
@@ -62,10 +69,15 @@ class HybridRetriever:
 
         self.bm25 = BM25Searcher()
         self.semantic = SemanticSearcher()
-        self.reranker = CrossEncoderReranker() if self.enable_reranker else None
+        self.reranker = build_reranker() if self.enable_reranker else None
 
-        if self.enable_reranker:
-            logger.info("HybridRetriever initialized with reranker enabled")
+        if self.enable_reranker and self.reranker is not None:
+            logger.info(
+                "HybridRetriever initialized with reranker enabled for intents=%s",
+                ",".join(self.reranker_enabled_intents) or "(none)",
+            )
+        elif self.enable_reranker:
+            logger.info("HybridRetriever initialized with reranker requested but unavailable; using fallback retrieval")
         else:
             logger.info("HybridRetriever initialized with reranker disabled")
 
@@ -81,22 +93,29 @@ class HybridRetriever:
         Returns list of (chunk_dict, score) sorted by relevance.
         Score is the cross-encoder logit when reranker is enabled, otherwise the RRF score.
         """
-        rerank_top_k = rerank_top_k or RERANK_TOP_K
-        candidates = self._get_rrf_candidates(query)
+        requested_top_k = rerank_top_k or RERANK_TOP_K
+        intent_top_k = int(getattr(intent, "retrieval_top_k", 0) or 0)
+        output_top_k = max(requested_top_k, intent_top_k)
+        candidate_top_k = max(RERANK_CANDIDATES, output_top_k)
+        candidates = self._get_rrf_candidates(query, top_k=candidate_top_k)
         candidates = self._apply_intent_bias(candidates, intent)
 
         if not candidates:
             logger.warning(f"No candidates found for query: {query[:80]}...")
             return []
 
-        if not self.enable_reranker or self.reranker is None:
-            return candidates[:rerank_top_k]
+        if not self._should_rerank(intent):
+            return candidates[:output_top_k]
 
-        reranked = self.reranker.rerank(
-            query,
-            [chunk for chunk, _score in candidates],
-            top_k=rerank_top_k,
-        )
+        try:
+            reranked = self.reranker.rerank(
+                query,
+                [chunk for chunk, _score in candidates],
+                top_k=output_top_k,
+            )
+        except Exception as exc:
+            logger.warning("Reranker failed for query '%s...': %s. Falling back to baseline retrieval.", query[:80], exc)
+            return candidates[:output_top_k]
         return reranked
 
     def retrieve_without_rerank(
@@ -105,16 +124,17 @@ class HybridRetriever:
         top_k: int = 15,
     ) -> list[tuple[dict, float]]:
         """Retrieval without reranking (faster, for testing or fallback)."""
-        return self._get_rrf_candidates(query)[:top_k]
+        return self._get_rrf_candidates(query, top_k=top_k)[:top_k]
 
-    def _get_rrf_candidates(self, query: str) -> list[tuple[dict, float]]:
+    def _get_rrf_candidates(self, query: str, top_k: int | None = None) -> list[tuple[dict, float]]:
         """Return top fusion candidates as (chunk_dict, rrf_score)."""
         bm25_results = self.bm25.search(query, top_k=BM25_TOP_K)
         semantic_results = self.semantic.search(query, top_k=SEMANTIC_TOP_K)
         rrf_ranked = self._rrf_fusion(bm25_results, semantic_results)
+        limit = max(1, top_k or RERANK_CANDIDATES)
 
         candidates = []
-        for chunk_id, rrf_score in rrf_ranked[:RERANK_CANDIDATES]:
+        for chunk_id, rrf_score in rrf_ranked[:limit]:
             chunk = self.chunks_by_id.get(chunk_id)
             if chunk is not None:
                 candidates.append((chunk, float(rrf_score)))
@@ -138,6 +158,20 @@ class HybridRetriever:
 
         ranked.sort(key=lambda item: (-item[0], -item[1], item[2]))
         return [(chunk, score) for _bias, _base_score, _index, chunk, score in ranked]
+
+    def _should_rerank(self, intent: GroundingIntent | None) -> bool:
+        if not self.enable_reranker or self.reranker is None:
+            return False
+
+        if not self.reranker_enabled_intents:
+            return False
+
+        allowlist = set(self.reranker_enabled_intents)
+        if "all" in allowlist:
+            return True
+
+        intent_kind = str(getattr(intent, "kind", "") or "").lower()
+        return bool(intent_kind and intent_kind in allowlist)
 
     def _rrf_fusion(
         self,

@@ -116,6 +116,19 @@ def _free_text_question_policy(question: str) -> str:
     return "\n".join(policies)
 
 
+def _law_scope_question_policy(question: str, answer_type: str) -> str:
+    lower = str(question or "").lower()
+    normalized_answer_type = str(answer_type or "").lower()
+    if normalized_answer_type != "boolean":
+        return ""
+    if "deal with" not in lower or "difc law no." not in lower:
+        return ""
+    return (
+        "LAW SCOPE RULE: For questions asking whether a named DIFC Law deals with a topic, determine the law's subject matter from its title, scope, and substantive provisions. "
+        "Do not answer true based only on passing definitions, cross-references, or mentions of another law or topic inside the named law."
+    )
+
+
 def build_context_block(chunks: list[tuple[dict, float]]) -> str:
     """
     Build the context block from retrieved chunks with source markers.
@@ -155,6 +168,7 @@ def build_prompt(
     chunks: list[tuple[dict, float]],
     max_chunks: int | None = None,
     intent: GroundingIntent | None = None,
+    allow_scoped_insufficiency: bool = False,
 ) -> list[dict]:
     """
     Build the full prompt (messages format) for the LLM.
@@ -176,12 +190,23 @@ def build_prompt(
     extra_instruction = _intent_instruction(intent)
     free_text_policy = FREE_TEXT_POLICY_INSTRUCTIONS if normalized_answer_type == "free_text" else ""
     question_policy = _free_text_question_policy(question) if normalized_answer_type == "free_text" else ""
+    law_scope_policy = _law_scope_question_policy(question, normalized_answer_type)
+    scoped_insufficiency_policy = ""
+    if normalized_answer_type == "free_text" and allow_scoped_insufficiency:
+        scoped_insufficiency_policy = (
+            "SCOPED INSUFFICIENCY RULE: If the sources clearly discuss the target DIFC case, document, application, "
+            "or order but do not state the specific requested fact, answer that the provided context does not specify it. "
+            "In that situation, cite the supporting sources and do not output NULL_ANSWER. Reserve NULL_ANSWER for facts "
+            "that are absent from the provided DIFC context entirely."
+        )
 
     user_message = (
         f"FORMAT INSTRUCTION: {instruction}\n\n"
         f"{SOURCE_SELECTION_INSTRUCTIONS}\n\n"
         f"{free_text_policy}\n\n"
         f"{question_policy}\n\n"
+        f"{law_scope_policy}\n\n"
+        f"{scoped_insufficiency_policy}\n\n"
         f"{extra_instruction}\n\n"
         f"CONTEXT:\n{context}\n\n"
         f"QUESTION: {question}\n\n"

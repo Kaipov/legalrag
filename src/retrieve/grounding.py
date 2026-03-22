@@ -238,6 +238,8 @@ def _is_structured_answer_type(answer_type: str) -> bool:
 
 
 def _max_docs_limit(intent: GroundingIntent | None, answer_type: str) -> int:
+    if intent is not None and intent.max_docs is not None:
+        return max(1, int(intent.max_docs))
     if intent is None or intent.kind == "generic":
         return 1 if _is_structured_answer_type(answer_type) else 2
     if intent.is_compare:
@@ -255,6 +257,8 @@ def _max_docs_limit(intent: GroundingIntent | None, answer_type: str) -> int:
 
 
 def _max_total_pages_limit(intent: GroundingIntent | None, answer_type: str, doc_count: int) -> int:
+    if intent is not None and intent.max_total_pages is not None:
+        return max(1, int(intent.max_total_pages))
     if intent is None or intent.kind == "generic":
         return 2 if _is_structured_answer_type(answer_type) else 3
     if intent.is_compare:

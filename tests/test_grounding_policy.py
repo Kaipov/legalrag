@@ -8,7 +8,18 @@ def test_detect_grounding_intent_for_date_of_issue() -> None:
     )
 
     assert intent.kind == "date_of_issue"
-    assert intent.page_focus == "first"
+    assert intent.page_focus == "front"
+    assert intent.prefer_unique_docs is True
+
+
+def test_detect_grounding_intent_for_issued_earlier_question() -> None:
+    intent = detect_grounding_intent(
+        "Which case was issued earlier by the Court of First Instance: CFI 057/2025 or CFI 067/2025?",
+        "name",
+    )
+
+    assert intent.kind == "date_of_issue"
+    assert intent.page_focus == "front"
     assert intent.prefer_unique_docs is True
 
 
@@ -60,3 +71,49 @@ def test_score_chunk_for_intent_prefers_first_page_title_chunks() -> None:
     intent = detect_grounding_intent("From the title page, identify the Claimant.", "names")
 
     assert score_chunk_for_intent(title_chunk, intent, doc_max_page=4) > score_chunk_for_intent(body_chunk, intent, doc_max_page=4)
+
+
+def test_detect_grounding_intent_routes_title_page_multi_case_party_compare() -> None:
+    intent = detect_grounding_intent(
+        "From the title pages of all documents in case CA 005/2025 and case CFI 067/2025, identify whether any individual or company is named as a main party in both cases.",
+        "boolean",
+    )
+
+    assert intent.kind == "party_compare"
+    assert intent.page_focus == "first"
+    assert intent.max_docs == 6
+    assert intent.max_total_pages == 6
+
+
+def test_detect_grounding_intent_allows_multi_doc_title_page_coverage() -> None:
+    intent = detect_grounding_intent(
+        "From the header/caption section of each document in case TCD 001/2024, identify all parties listed as Claimant.",
+        "names",
+    )
+
+    assert intent.kind == "title_page"
+    assert intent.max_docs == 3
+    assert intent.max_total_pages == 3
+
+
+def test_detect_grounding_intent_detects_judge_compare_when_question_says_in_common() -> None:
+    intent = detect_grounding_intent(
+        "Did cases CA 004/2025 and ARB 034/2025 have any judges in common?",
+        "boolean",
+    )
+
+    assert intent.kind == "judge_compare"
+    assert intent.page_focus == "front"
+    assert intent.max_docs == 4
+    assert intent.max_total_pages == 4
+
+
+def test_detect_grounding_intent_detects_party_compare_when_question_says_to_both() -> None:
+    intent = detect_grounding_intent(
+        "Identify whether any person or company is a main party to both ENF 269/2023 and SCT 514/2025.",
+        "boolean",
+    )
+
+    assert intent.kind == "party_compare"
+    assert intent.max_docs == 4
+    assert intent.max_total_pages == 4

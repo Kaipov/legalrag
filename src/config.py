@@ -8,14 +8,22 @@ import os
 from pathlib import Path
 
 try:
-    from dotenv import load_dotenv
-    # Try loading from starter_kit/.env first, then project root
+    from dotenv import dotenv_values
+    # Load defaults from starter_kit/.env first, then project root, while
+    # preserving explicitly provided process environment variables.
     _sk_env = Path(__file__).resolve().parents[1] / "starter_kit" / ".env"
     _root_env = Path(__file__).resolve().parents[1] / ".env"
+    _merged_env: dict[str, str] = {}
     if _sk_env.exists():
-        load_dotenv(_sk_env)
+        _merged_env.update(
+            {key: value for key, value in dotenv_values(_sk_env).items() if value is not None}
+        )
     if _root_env.exists():
-        load_dotenv(_root_env, override=True)
+        _merged_env.update(
+            {key: value for key, value in dotenv_values(_root_env).items() if value is not None}
+        )
+    for _key, _value in _merged_env.items():
+        os.environ.setdefault(_key, _value)
 except ImportError:
     pass
 
@@ -31,6 +39,18 @@ def _get_int(key: str, default: int) -> int:
 def _get_optional_int(key: str) -> int | None:
     value = _get(key)
     return int(value) if value else None
+
+
+def _get_csv_tuple(key: str, default: str = "") -> tuple[str, ...]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for part in _get(key, default).split(","):
+        normalized = part.strip().lower()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        values.append(normalized)
+    return tuple(values)
 
 
 # --- Paths ---
@@ -57,6 +77,7 @@ ARTICLE_PAGE_MAP_JSON = INDEX_DIR / "article_page_map.json"
 OPENAI_API_KEY = _get("OPENAI_API_KEY")
 OPENROUTER_API_KEY = _get("OPENROUTER_API_KEY")
 GEMINI_API_KEY = _get("GEMINI_API_KEY")
+VOYAGE_API_KEY = _get("VOYAGE_API_KEY")
 EVAL_API_KEY = _get("EVAL_API_KEY")
 LLM_PROVIDER = _get("LLM_PROVIDER").lower()
 
@@ -71,6 +92,9 @@ EMBEDDING_API_BASE = _get("EMBEDDING_API_BASE", "https://generativelanguage.goog
 EMBEDDING_QUERY_TASK_TYPE = _get("EMBEDDING_QUERY_TASK_TYPE", "RETRIEVAL_QUERY")
 EMBEDDING_DOCUMENT_TASK_TYPE = _get("EMBEDDING_DOCUMENT_TASK_TYPE", "RETRIEVAL_DOCUMENT")
 RERANKER_MODEL = _get("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
+RERANKER_PROVIDER = _get("RERANKER_PROVIDER", "local").lower()
+VOYAGE_API_BASE = _get("VOYAGE_API_BASE", "https://api.voyageai.com/v1")
+VOYAGE_RERANKER_MODEL = _get("VOYAGE_RERANKER_MODEL", "rerank-2.5")
 GENERATION_MODEL = _get("GENERATION_MODEL", "gpt-4.1-mini")
 GENERATION_TEMPERATURE = 0.1
 
@@ -81,9 +105,14 @@ PAGE_BM25_TOP_K = max(1, _get_int("PAGE_BM25_TOP_K", 20))
 PAGE_SEMANTIC_TOP_K = max(1, _get_int("PAGE_SEMANTIC_TOP_K", 20))
 PAGE_GROUNDING_TOP_K = max(1, _get_int("PAGE_GROUNDING_TOP_K", 6))
 RRF_K = 60
-RERANK_TOP_K = 10          # how many chunks to keep after reranking
-RERANK_CANDIDATES = 30     # how many candidates to feed the reranker
+RERANK_TOP_K = max(1, _get_int("RERANK_TOP_K", 10))  # how many chunks to keep after reranking
+RERANK_CANDIDATES = max(  # how many candidates to feed the reranker
+    RERANK_TOP_K,
+    _get_int("RERANK_CANDIDATES", 30),
+)
 ENABLE_RERANKER = _get("ENABLE_RERANKER", "0").lower() in {"1", "true", "yes", "on"}
+RERANKER_ENABLED_INTENTS = _get_csv_tuple("RERANKER_ENABLED_INTENTS", "article_ref")
+RERANKER_TIMEOUT_SECONDS = max(1, _get_int("RERANKER_TIMEOUT_SECONDS", 10))
 RERANKER_BATCH_SIZE = max(1, int(_get("RERANKER_BATCH_SIZE", "4") or "4"))
 RERANKER_MAX_LENGTH = max(128, int(_get("RERANKER_MAX_LENGTH", "512") or "512"))
 RERANKER_USE_FP16 = _get("RERANKER_USE_FP16", "1").lower() in {"1", "true", "yes", "on"}

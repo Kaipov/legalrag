@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any
 
 from src.retrieve.grounding_utils import extract_question_anchors
@@ -10,13 +11,17 @@ from src.retrieve.grounding_utils import extract_question_anchors
 class GroundingIntent:
     kind: str
     page_focus: str = "any"
+    selection_mode: str = "default"
     keyphrases: tuple[str, ...] = ()
     case_ids: tuple[str, ...] = ()
     prefer_unique_docs: bool = False
+    retrieval_top_k: int | None = None
     generation_top_k: int | None = None
     grounding_chunk_top_k: int | None = None
     max_pages_per_chunk: int | None = None
     max_pages_per_doc: int | None = None
+    max_docs: int | None = None
+    max_total_pages: int | None = None
     article_refs: tuple[str, ...] = ()
     law_number: str | None = None
     quoted_sections: tuple[str, ...] = ()
@@ -48,19 +53,86 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
         "involve any of the same",
     )
     party_markers = ("party", "parties", "claimant", "defendant", "main party", "applicant", "respondent")
+    title_page_markers = ("title page", "cover page", "header/caption", "header", "caption")
     is_compare_question = any(marker in text for marker in compare_markers)
+    if not is_compare_question and len(case_ids) >= 2:
+        is_compare_question = "in common" in text or re.search(r"\b(?:to|in)\s+both\b", text) is not None
+    asks_for_case_file_coverage = any(
+        marker in text
+        for marker in (
+            "all documents",
+            "every document",
+            "each document",
+            "full case files",
+            "case files",
+        )
+    )
+    date_issue_markers = (
+        "date of issue",
+        "issue date",
+        "issued first",
+        "issued earlier",
+        "issued later",
+        "earlier issue date",
+        "later issue date",
+    )
 
-    if any(marker in text for marker in ("title page", "cover page", "header/caption", "header", "caption")):
+    if any(marker in text for marker in title_page_markers):
+        if len(case_ids) >= 2 and is_compare_question:
+            if "judge" in text:
+                return GroundingIntent(
+                    kind="judge_compare",
+                    page_focus="front",
+                    selection_mode="compare_balanced",
+                    keyphrases=("before", "justice", "judge", "hearing"),
+                    case_ids=case_ids,
+                    prefer_unique_docs=True,
+                    retrieval_top_k=20,
+                    generation_top_k=4,
+                    grounding_chunk_top_k=4,
+                    max_pages_per_chunk=2,
+                    max_pages_per_doc=1,
+                    max_docs=6,
+                    max_total_pages=6,
+                    quoted_sections=anchors.quoted_sections,
+                )
+            if answer_type in {"boolean", "name", "names"} and any(marker in text for marker in party_markers):
+                return GroundingIntent(
+                    kind="party_compare",
+                    page_focus="first",
+                    selection_mode="compare_balanced",
+                    keyphrases=("claimant", "defendant", "applicant", "respondent", "party", "parties"),
+                    case_ids=case_ids,
+                    prefer_unique_docs=True,
+                    retrieval_top_k=20,
+                    generation_top_k=4,
+                    grounding_chunk_top_k=4,
+                    max_pages_per_chunk=2,
+                    max_pages_per_doc=1,
+                    max_docs=6,
+                    max_total_pages=6,
+                    quoted_sections=anchors.quoted_sections,
+                )
+
+        max_docs = None
+        max_total_pages = None
+        if asks_for_case_file_coverage:
+            max_docs = 4 if len(case_ids) >= 2 else 3
+            max_total_pages = max_docs
         return GroundingIntent(
             kind="title_page",
-            page_focus="first",
+            page_focus="front",
+            selection_mode="frontmatter",
             keyphrases=("claimant", "defendant", "applicant", "respondent", "claim no", "case no", "title", "caption"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=3,
-            grounding_chunk_top_k=2,
+            grounding_chunk_top_k=3 if asks_for_case_file_coverage else 2,
             max_pages_per_chunk=2,
             max_pages_per_doc=1,
+            max_docs=max_docs,
+            max_total_pages=max_total_pages,
             quoted_sections=anchors.quoted_sections,
         )
 
@@ -83,13 +155,15 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
             quoted_sections=anchors.quoted_sections,
         )
 
-    if any(marker in text for marker in ("date of issue", "issue date", "issued first", "earlier issue date")):
+    if any(marker in text for marker in date_issue_markers):
         return GroundingIntent(
             kind="date_of_issue",
-            page_focus="first",
+            page_focus="front",
+            selection_mode="frontmatter",
             keyphrases=("date of issue", "issued on", "issued", "date"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=3,
             grounding_chunk_top_k=2,
             max_pages_per_chunk=2,
@@ -114,14 +188,18 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
     if "judge" in text and is_compare_question:
         return GroundingIntent(
             kind="judge_compare",
-            page_focus="first",
+            page_focus="front",
+            selection_mode="compare_balanced",
             keyphrases=("before", "justice", "judge", "hearing"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=4,
-            grounding_chunk_top_k=3,
+            grounding_chunk_top_k=4 if asks_for_case_file_coverage else 3,
             max_pages_per_chunk=2,
             max_pages_per_doc=1,
+            max_docs=6 if asks_for_case_file_coverage else 4,
+            max_total_pages=6 if asks_for_case_file_coverage else 4,
             quoted_sections=anchors.quoted_sections,
         )
 
@@ -129,13 +207,17 @@ def detect_grounding_intent(question_text: str, answer_type: str) -> GroundingIn
         return GroundingIntent(
             kind="party_compare",
             page_focus="first",
+            selection_mode="compare_balanced",
             keyphrases=("claimant", "defendant", "applicant", "respondent", "party", "parties"),
             case_ids=case_ids,
             prefer_unique_docs=True,
+            retrieval_top_k=20,
             generation_top_k=4,
-            grounding_chunk_top_k=3,
+            grounding_chunk_top_k=4 if asks_for_case_file_coverage else 3,
             max_pages_per_chunk=2,
             max_pages_per_doc=1,
+            max_docs=6 if asks_for_case_file_coverage else 4,
+            max_total_pages=6 if asks_for_case_file_coverage else 4,
             quoted_sections=anchors.quoted_sections,
         )
 
@@ -149,6 +231,17 @@ def _page_focus_bias(intent: GroundingIntent, pages: list[int], doc_max_page: in
 
     first_page = min(pages)
     last_page = max(pages)
+    if intent.page_focus == "front":
+        if first_page <= 1:
+            return 3.5
+        if first_page == 2:
+            return 3.0
+        if first_page == 3:
+            return 2.0
+        if first_page == 4:
+            return 1.0
+        return 0.0
+
     if intent.page_focus == "first":
         if first_page <= 1:
             return 3.5
